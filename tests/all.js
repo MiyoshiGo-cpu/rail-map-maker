@@ -3,4 +3,7 @@
 export const files = [
   'harness.test.js',
   'files.test.js',
+  'i18n.test.js',
+  'regions.test.js',
+  'check-i18n.test.js',
 ];

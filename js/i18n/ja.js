@@ -1,0 +1,182 @@
+// 日本語カタログ。キーは「画面.役割」の英語。値の {name} は差し込み。
+// 600行を超えそうなら ja-*.js に分けて、ここで結合する。
+export default {
+  // アプリ全体
+  'app.title': '架空路線図メーカー',
+  'app.loading': '読み込んでいます…',
+  'app.error.module': '起動できませんでした。ページを再読み込みしてください。',
+
+  // 共通
+  'common.ok': 'OK',
+  'common.cancel': 'キャンセル',
+  'common.close': '閉じる',
+  'common.save': '保存する',
+  'common.delete': '削除する',
+  'common.add': '追加する',
+  'common.edit': '編集する',
+  'common.back': '戻る',
+  'common.yes': 'はい',
+  'common.no': 'いいえ',
+  'common.none': 'なし',
+  'common.auto': '自動',
+  'common.more': 'その他の操作',
+  'common.name': '名前',
+  'common.note': 'メモ',
+  'common.color': '色',
+  'common.textColor': '文字の色',
+  'common.search': '検索',
+  'common.filter': '絞り込み',
+  'common.move': '移動',
+  'common.moveUp': '上へ',
+  'common.moveDown': '下へ',
+  'common.duplicate': '複製する',
+  'common.rename': '名前を変える',
+  'common.untitled': '（名前なし）',
+  'common.count': '{count}件',
+
+  // 単位
+  'unit.km': '{value} km',
+  'unit.mi': '{value} mi',
+  'unit.kmh': '{value} km/h',
+  'unit.mm': '{value} mm',
+  'unit.minutes': '{value}分',
+  'unit.seconds': '{value}秒',
+  'unit.people': '{value}人',
+  'unit.year': '{value}年',
+
+  // 列挙：路線の種類
+  'lineKind.shinkansen': '新幹線',
+  'lineKind.conventional': '在来線',
+  'lineKind.subway': '地下鉄',
+  'lineKind.tram': '路面電車',
+  'lineKind.monorail': 'モノレール',
+  'lineKind.agt': '新交通システム',
+  'lineKind.cable': 'ケーブルカー',
+  'lineKind.maglev': 'リニア',
+  'lineKind.freight': '貨物線',
+
+  // 列挙：電化方式
+  'electrification.none': '非電化',
+  'electrification.dc600': '直流600V',
+  'electrification.dc750': '直流750V',
+  'electrification.dc1500': '直流1500V',
+  'electrification.dc3000': '直流3000V',
+  'electrification.ac15k16': '交流15kV・16.7Hz',
+  'electrification.ac20k50': '交流20kV・50Hz',
+  'electrification.ac20k60': '交流20kV・60Hz',
+  'electrification.ac25k50': '交流25kV・50Hz',
+  'electrification.ac25k60': '交流25kV・60Hz',
+
+  // 列挙：集電方式
+  'collection.overhead': '架線',
+  'collection.thirdRail': '第三軌条',
+
+  // 列挙：線路の数
+  'tracks.1': '単線',
+  'tracks.2': '複線',
+  'tracks.3': '三線',
+  'tracks.4': '複々線',
+  'tracks.6': '三複線',
+
+  // 列挙：構造
+  'structure.ground': '地上',
+  'structure.elevated': '高架',
+  'structure.underground': '地下',
+  'structure.cutting': '掘割',
+  'structure.tunnel': 'トンネル',
+  'structure.bridge': '橋梁',
+  'structure.semiUnderground': '半地下',
+
+  // 列挙：状態
+  'status.open': '営業中',
+  'status.construction': '建設中',
+  'status.planned': '計画',
+  'status.suspended': '休止',
+  'status.abolished': '廃止',
+
+  // 列挙：駅のランク
+  'rank.terminal': 'ターミナル',
+  'rank.major': '主要駅',
+  'rank.normal': '一般駅',
+  'rank.unstaffed': '無人駅',
+  'rank.temporary': '臨時駅',
+  'rank.signal': '信号場',
+  'rank.freight': '貨物駅',
+  'rank.depot': '車両基地',
+
+  // 列挙：ホーム
+  'platform.island': '島式',
+  'platform.side': '相対式',
+  'platform.bay': '頭端式',
+  'platform.mixed': '複合',
+  'platform.summary': '{faces}面{tracks}線',
+
+  // 列挙：付帯施設
+  'facility.airport': '空港',
+  'facility.port': '港',
+  'facility.busTerminal': 'バスターミナル',
+
+  // 列挙：バッジの形
+  'badgeShape.square': '四角',
+  'badgeShape.roundSquare': '角丸四角',
+  'badgeShape.circle': '丸',
+  'badgeShape.pill': 'だ円',
+  'badgeShape.none': 'なし',
+
+  // 列挙：上り方向
+  'upDirection.toStart': '起点方向が上り',
+  'upDirection.toEnd': '終点方向が上り',
+
+  // 列挙：ラベルの位置と向き
+  'labelPos.auto': '自動',
+  'labelPos.N': '上',
+  'labelPos.NE': '右上',
+  'labelPos.E': '右',
+  'labelPos.SE': '右下',
+  'labelPos.S': '下',
+  'labelPos.SW': '左下',
+  'labelPos.W': '左',
+  'labelPos.NW': '左上',
+  'labelOrientation.horizontal': '横書き',
+  'labelOrientation.vertical': '縦書き',
+  'labelOrientation.rot45': '45°回転',
+  'labelOrientation.rotMinus45': '−45°回転',
+
+  // 列挙：曲がり位置
+  'bend.auto': '自動',
+  'bend.diagonalFirst': '斜め→直線',
+  'bend.straightFirst': '直線→斜め',
+
+  // 地域パック jp の区分・行政区分
+  'operatorCategory.jr': 'JR',
+  'operatorCategory.major': '大手私鉄',
+  'operatorCategory.semiMajor': '準大手私鉄',
+  'operatorCategory.minor': '中小私鉄',
+  'operatorCategory.public': '公営',
+  'operatorCategory.thirdSector': '第三セクター',
+  'operatorCategory.freight': '貨物',
+  'operatorCategory.other': 'その他',
+  'region.jp.name': '日本',
+  'region.jp.admin1': '都道府県',
+  'region.jp.admin2': '市区町村',
+  'preset.serviceSet.jrConventional': 'JR在来線',
+  'preset.serviceSet.private': '私鉄',
+  'preset.serviceSet.subway': '地下鉄',
+  'preset.serviceSet.shinkansen': '新幹線',
+  'preset.serviceSet.tram': '路面電車',
+
+  // 英字の規則
+  'romaji.longVowel.omit': '省略する（Tokyo）',
+  'romaji.longVowel.macron': 'マクロン（Tōkyō）',
+  'romaji.longVowel.keep': 'そのまま（Toukyou）',
+  'romaji.nBeforeBmp.m': 'b・m・p の前は m（Shimbashi）',
+  'romaji.nBeforeBmp.n': '常に n（Shinbashi）',
+
+  // 地図に描く定型文・既定の名前（地図の言語で使う）
+  'map.default.operatorName': '事業者{n}',
+  'map.default.operatorShort': '事業者{n}',
+  'map.default.lineName': '路線{n}',
+  'map.default.projectName': '新しい路線図',
+  'map.copySuffix': '{name}（コピー）',
+  'map.lineSplitSuffix': '{name}（{n}）',
+};
