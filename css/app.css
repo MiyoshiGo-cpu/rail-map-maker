@@ -1,0 +1,330 @@
+/* 架空路線図メーカー：トークン・基本・レイアウト（部品は components.css） */
+
+:root {
+  /* §4.1 のトークン */
+  --sign: #263241;
+  --sign-text: #FFFFFF;
+  --sign-hover: #34445A;
+  --paper: #FFFFFF;
+  --ink: #1F2933;
+  --ink-sub: #52606D;
+  --rule: #CBD2D9;
+  --caution: #F2B600;
+  --danger: #D0312D;
+  --accent: #0079C2;
+  --accent-text: #FFFFFF;
+  --surface: #F3F5F7;       /* 表の見出しなど、紙より一段沈んだ面 */
+  --canvas-bg: #FFFFFF;
+
+  --font-ui: -apple-system, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo", sans-serif;
+  --fs-12: 12px;
+  --fs-14: 14px;
+  --fs-16: 16px;
+  --fs-20: 20px;
+  --fs-24: 24px;
+
+  --tap: 44px;
+  --badge-radius: 7px;
+  --header-h: 52px;
+  --toolbar-h: 60px;
+  --panel-w: 340px;
+
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+
+  --ease: 180ms cubic-bezier(.2, .7, .3, 1);
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #18212B;
+    --ink: #E6EBF0;
+    --ink-sub: #9AA5B1;
+    --rule: #3A4654;
+    --surface: #202B37;
+    --sign-hover: #3A4A61;
+  }
+}
+
+html:lang(en) {
+  --font-ui: -apple-system, "Segoe UI", Roboto, "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-14);
+  font-weight: 500;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  overflow: hidden;           /* 画面全体はスクロールさせない（各領域でスクロール） */
+  overscroll-behavior: none;
+}
+
+button, input, select, textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button { touch-action: manipulation; }
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+[hidden] { display: none !important; }
+
+.num, input[type="number"], td.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+#app {
+  height: 100dvh;
+  width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+}
+
+/* ---------- エディタのレイアウト ---------- */
+
+.editor {
+  height: 100dvh;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) var(--panel-w);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "header header header"
+    "banner banner banner"
+    "tools  stage  panel"
+    "data   data   data";
+  background: var(--paper);
+}
+
+.ed-header {
+  grid-area: header;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: calc(var(--header-h) + var(--safe-t));
+  padding: var(--safe-t) calc(12px + var(--safe-r)) 0 calc(12px + var(--safe-l));
+  background: var(--sign);
+  color: var(--sign-text);
+}
+
+.ed-banner { grid-area: banner; }
+
+.ed-tools {
+  grid-area: tools;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 8px calc(12px) calc(8px + var(--safe-l));
+  background: var(--sign);
+  overflow-y: auto;
+}
+
+.ed-stage {
+  grid-area: stage;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--canvas-bg);
+}
+
+.ed-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;           /* ページのズーム・スクロールを止める */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.ed-panel {
+  grid-area: panel;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--rule);
+  background: var(--paper);
+}
+
+.ed-panel-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.ed-data {
+  grid-area: data;
+  height: min(40dvh, 360px);
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--rule);
+  background: var(--paper);
+  padding-bottom: var(--safe-b);
+}
+
+.sheet-handle { display: none; }
+
+/* ---------- スマホ（幅900px未満） ---------- */
+
+@media (max-width: 899.98px) {
+  :root {
+    --header-h: 48px;
+  }
+
+  .editor {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "header"
+      "banner"
+      "stage"
+      "tools";
+    position: relative;
+  }
+
+  .ed-tools {
+    flex-direction: row;
+    justify-content: space-around;
+    gap: 0;
+    min-height: calc(var(--toolbar-h) + var(--safe-b));
+    padding: 6px calc(4px + var(--safe-r)) calc(6px + var(--safe-b)) calc(4px + var(--safe-l));
+    overflow: visible;
+    position: relative;
+    z-index: 40;              /* 下がったシートの下端を隠す */
+  }
+
+  /* プロパティはボトムシートになる */
+  .ed-panel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: calc(var(--toolbar-h) + var(--safe-b));
+    z-index: 20;
+    height: var(--sheet-full);
+    border-left: 0;
+    border-top: 1px solid var(--rule);
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, .14);
+    transform: translateY(calc(var(--sheet-full) - var(--sheet-visible)));
+    transition: transform var(--ease);
+    --sheet-full: calc(100dvh - var(--header-h) - var(--safe-t) - var(--toolbar-h) - var(--safe-b) - 12px);
+    --sheet-visible: 64px;
+    padding-left: var(--safe-l);
+    padding-right: var(--safe-r);
+  }
+  .ed-panel[data-stage="half"] { --sheet-visible: min(48dvh, var(--sheet-full)); }
+  .ed-panel[data-stage="full"] { --sheet-visible: var(--sheet-full); }
+  .ed-panel[data-stage="hidden"] { --sheet-visible: 0px; box-shadow: none; }
+  .ed-panel.is-dragging { transition: none; }
+
+  .sheet-handle {
+    display: block;
+    flex: none;
+    height: 22px;
+    width: 100%;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    cursor: grab;
+    touch-action: none;
+  }
+  .sheet-handle::before {
+    content: "";
+    display: block;
+    width: 40px;
+    height: 5px;
+    margin: 8px auto 0;
+    border-radius: 3px;
+    background: var(--rule);
+  }
+
+  /* データ表はシートの上に全面で重ねる */
+  .ed-data {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(var(--header-h) + var(--safe-t));
+    bottom: calc(var(--toolbar-h) + var(--safe-b));
+    height: auto;
+    z-index: 30;
+    border-top: 0;
+    padding: 0 var(--safe-r) 0 var(--safe-l);
+  }
+}
+
+/* ---------- プロジェクト一覧 ---------- */
+
+.plist {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+}
+
+.plist-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: calc(var(--header-h) + var(--safe-t));
+  padding: var(--safe-t) calc(16px + var(--safe-r)) 0 calc(16px + var(--safe-l));
+  background: var(--sign);
+  color: var(--sign-text);
+}
+
+.plist-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--fs-20);
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plist-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px calc(16px + var(--safe-r)) calc(24px + var(--safe-b)) calc(16px + var(--safe-l));
+}
+
+.plist-inner {
+  max-width: 880px;
+  margin: 0 auto;
+}

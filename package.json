@@ -1,0 +1,11 @@
+{
+  "name": "rail-map-maker",
+  "private": true,
+  "description": "架空鉄道の路線図エディタ兼シミュレーター（パッケージは使わない。テストとスクリプト実行用）",
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"tests/*.test.js\"",
+    "check-i18n": "node tools/check-i18n.js",
+    "serve": "py tools/serve.py 8000"
+  }
+}
