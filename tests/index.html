@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>テスト - 架空路線図メーカー</title>
+<style>
+  body { margin: 0; padding: 16px; font-family: -apple-system, "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif; font-weight: 500; color: #1F2933; background: #FFFFFF; }
+  h1 { font-size: 20px; margin: 0 0 8px; }
+  #summary { padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; font-weight: 700; background: #E4E7EB; }
+  #summary.ok { background: #D6F5E0; color: #14532D; }
+  #summary.ng { background: #FDE2E1; color: #7F1D1D; }
+  h2 { font-size: 14px; margin: 16px 0 4px; color: #52606D; }
+  ul { list-style: none; margin: 0; padding: 0; }
+  li { padding: 4px 0; border-bottom: 1px solid #E4E7EB; font-size: 14px; }
+  li.ng { color: #B91C1C; }
+  li .ms { color: #7B8794; font-size: 12px; margin-left: 6px; font-variant-numeric: tabular-nums; }
+  pre { white-space: pre-wrap; font-size: 12px; margin: 4px 0 0 1.5em; color: #7F1D1D; }
+</style>
+</head>
+<body>
+<h1>テスト</h1>
+<div id="summary">実行中…</div>
+<div id="list"></div>
+<script type="module">
+  import { setCurrentFile, runRegistered } from './harness.js';
+  import { files } from './all.js';
+
+  const summary = document.getElementById('summary');
+  const list = document.getElementById('list');
+  const groups = new Map();
+  let pass = 0;
+  let fail = 0;
+  const loadErrors = [];
+
+  for (const f of files) {
+    setCurrentFile(f);
+    try {
+      await import('./' + f);
+    } catch (e) {
+      loadErrors.push({ file: f, error: e });
+    }
+  }
+
+  function group(file) {
+    if (!groups.has(file)) {
+      const h2 = document.createElement('h2');
+      h2.textContent = file;
+      const ul = document.createElement('ul');
+      list.append(h2, ul);
+      groups.set(file, ul);
+    }
+    return groups.get(file);
+  }
+
+  for (const le of loadErrors) {
+    fail++;
+    const li = document.createElement('li');
+    li.className = 'ng';
+    li.textContent = '✕ 読み込みに失敗';
+    const pre = document.createElement('pre');
+    pre.textContent = String(le.error && (le.error.stack || le.error.message) || le.error);
+    li.append(pre);
+    group(le.file).append(li);
+  }
+
+  await runRegistered((r) => {
+    const li = document.createElement('li');
+    li.className = r.ok ? 'ok' : 'ng';
+    li.textContent = (r.ok ? '✓ ' : '✕ ') + r.name;
+    const ms = document.createElement('span');
+    ms.className = 'ms';
+    ms.textContent = r.ms.toFixed(1) + 'ms';
+    li.append(ms);
+    if (!r.ok) {
+      const pre = document.createElement('pre');
+      pre.textContent = String(r.error && (r.error.stack || r.error.message) || r.error);
+      li.append(pre);
+      console.error(r.name, r.error);
+    }
+    group(r.file).append(li);
+    if (r.ok) pass++;
+    else fail++;
+  });
+
+  summary.textContent = `成功 ${pass} ／ 失敗 ${fail}`;
+  summary.className = fail ? 'ng' : 'ok';
+  document.title = (fail ? '✕ ' : '✓ ') + document.title;
+</script>
+</body>
+</html>
