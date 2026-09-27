@@ -41,16 +41,17 @@ const jp = {
   },
 
   // 路線の種類ごとの既定値（§3.2）
+  // （集電方式・線路の数・構造は §3.2 にないため、一般的な値を置いた）
   lineKindDefaults: {
-    shinkansen:   { gauge: 1435, electrification: 'ac25k60', maxSpeed: 260, accel: 2.6, decel: 2.7, spacingKm: 30, collection: 'overhead', tracks: 2 },
-    conventional: { gauge: 1067, electrification: 'dc1500', maxSpeed: 100, accel: 2.5, decel: 3.5, spacingKm: 3.0, collection: 'overhead', tracks: 2 },
-    subway:       { gauge: 1067, electrification: 'dc1500', maxSpeed: 80, accel: 3.3, decel: 3.5, spacingKm: 1.2, collection: 'overhead', tracks: 2 },
-    tram:         { gauge: 1067, electrification: 'dc600', maxSpeed: 40, accel: 3.0, decel: 4.0, spacingKm: 0.5, collection: 'overhead', tracks: 2 },
-    monorail:     { gauge: null, electrification: 'dc1500', maxSpeed: 65, accel: 3.5, decel: 4.0, spacingKm: 1.5, collection: 'overhead', tracks: 2 },
-    agt:          { gauge: null, electrification: 'dc750', maxSpeed: 60, accel: 3.5, decel: 4.0, spacingKm: 1.0, collection: 'thirdRail', tracks: 2 },
-    cable:        { gauge: 1067, electrification: 'none', maxSpeed: 20, accel: 1.0, decel: 1.0, spacingKm: 1.0, collection: 'overhead', tracks: 1 },
-    maglev:       { gauge: null, electrification: 'none', maxSpeed: 500, accel: 4.0, decel: 4.0, spacingKm: 60, collection: 'overhead', tracks: 2 },
-    freight:      { gauge: 1067, electrification: 'dc1500', maxSpeed: 95, accel: 1.5, decel: 3.0, spacingKm: 10, collection: 'overhead', tracks: 2 },
+    shinkansen:   { gauge: 1435, electrification: 'ac25k60', maxSpeed: 260, accel: 2.6, decel: 2.7, spacingKm: 30, collection: 'overhead', tracks: 2, structure: 'elevated' },
+    conventional: { gauge: 1067, electrification: 'dc1500', maxSpeed: 100, accel: 2.5, decel: 3.5, spacingKm: 3.0, collection: 'overhead', tracks: 2, structure: 'ground' },
+    subway:       { gauge: 1067, electrification: 'dc1500', maxSpeed: 80, accel: 3.3, decel: 3.5, spacingKm: 1.2, collection: 'overhead', tracks: 2, structure: 'underground' },
+    tram:         { gauge: 1067, electrification: 'dc600', maxSpeed: 40, accel: 3.0, decel: 4.0, spacingKm: 0.5, collection: 'overhead', tracks: 2, structure: 'ground' },
+    monorail:     { gauge: null, electrification: 'dc1500', maxSpeed: 65, accel: 3.5, decel: 4.0, spacingKm: 1.5, collection: 'overhead', tracks: 2, structure: 'elevated' },
+    agt:          { gauge: null, electrification: 'dc750', maxSpeed: 60, accel: 3.5, decel: 4.0, spacingKm: 1.0, collection: 'thirdRail', tracks: 2, structure: 'elevated' },
+    cable:        { gauge: 1067, electrification: 'none', maxSpeed: 20, accel: 1.0, decel: 1.0, spacingKm: 1.0, collection: 'overhead', tracks: 1, structure: 'ground' },
+    maglev:       { gauge: null, electrification: 'none', maxSpeed: 500, accel: 4.0, decel: 4.0, spacingKm: 60, collection: 'overhead', tracks: 2, structure: 'tunnel' },
+    freight:      { gauge: 1067, electrification: 'dc1500', maxSpeed: 95, accel: 1.5, decel: 3.0, spacingKm: 10, collection: 'overhead', tracks: 2, structure: 'ground' },
   },
   defaultLineKind: 'conventional',
 

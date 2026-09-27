@@ -6,4 +6,7 @@ export const files = [
   'i18n.test.js',
   'regions.test.js',
   'check-i18n.test.js',
+  'store.test.js',
+  'migrate.test.js',
+  'actions.test.js',
 ];
