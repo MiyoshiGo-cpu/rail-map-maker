@@ -136,6 +136,7 @@
   cursor: pointer;
 }
 .ed-project-btn:hover { background: var(--sign-hover); }
+.ed-project-btn svg { width: 18px; height: 18px; flex: none; }
 .ed-project-btn .name {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -356,3 +357,83 @@
 .menu-item:hover, .menu-item:focus-visible { background: var(--surface); }
 .menu-item[data-danger] { color: var(--danger); }
 .menu-sep { height: 1px; margin: 6px 0; background: var(--rule); }
+
+.field-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: var(--fs-14);
+}
+.fieldset {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+/* ---------- プロジェクト一覧 ---------- */
+
+.plist-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.plist-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--rule);
+  border-left: 6px solid var(--accent);
+  border-radius: 8px;
+  background: var(--paper);
+}
+.plist-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 64px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.plist-open:hover { background: var(--surface); }
+.plist-name {
+  max-width: 100%;
+  font-size: var(--fs-16);
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.plist-sub {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 12px;
+  color: var(--ink-sub);
+  font-size: var(--fs-12);
+}
+.plist-item .icon-btn { margin-right: 4px; color: var(--ink); }
+.plist-item .icon-btn:hover { background: var(--surface); }
+.plist-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 24px 4px;
+  color: var(--ink-sub);
+}
+.plist-empty p { margin: 0; }
+
+@media (max-width: 899.98px) {
+  /* ビューが1つだけのときは切り替えを出さない。保存状態は問題があるときだけ出す */
+  .view-tabs.is-single { display: none; }
+  .save-status:not([data-state="error"]) { display: none; }
+  .ed-project-btn { max-width: none; flex: 1 1 auto; }
+}

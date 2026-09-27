@@ -34,6 +34,51 @@ export default {
   'common.untitled': '（名前なし）',
   'common.count': '{count}件',
 
+  // エラー（共通）
+  'error.nameRequired': '名前を入力してください。',
+
+  // 保存
+  'storage.unavailable': 'この環境ではブラウザに保存できません。プライベートブラウズの場合は、通常のウィンドウで開いてください。',
+  'save.saved': '保存済み',
+  'save.dirty': '未保存',
+  'save.saving': '保存中…',
+  'save.error': '保存できません',
+  'save.failed': '保存に失敗しました。端末の空き容量を確かめてから、もう一度操作してください。',
+  'save.invalidDetail': 'データに問題があるため保存していません（{detail}）。直前の操作を取り消してください。',
+
+  // プロジェクト一覧
+  'plist.new': '新しいプロジェクト',
+  'plist.empty': 'プロジェクトがありません。「新しいプロジェクト」から作ってください。',
+  'plist.counts': '駅 {stations}・路線 {lines}',
+  'plist.updated': '更新 {date}',
+  'plist.actions': '「{name}」の操作',
+  'plist.renameTitle': 'プロジェクトの名前を変える',
+  'plist.renamed': '名前を変えました',
+  'plist.duplicated': '複製しました',
+  'plist.deleted': '削除しました',
+  'plist.deleteConfirm.title': 'プロジェクトを削除しますか？',
+  'plist.deleteConfirm.message': '「{name}」を削除します。削除すると元に戻せません。',
+
+  // 新規作成
+  'newProject.title': '新しいプロジェクト',
+  'newProject.name': 'プロジェクト名',
+  'newProject.author': '作者名（任意）',
+  'newProject.world': '地形',
+  'newProject.world.none': '路線図のみ',
+  'newProject.create': '作る',
+
+  // エディタ
+  'editor.backToList': 'プロジェクト一覧へ',
+  'editor.projectMenu': 'プロジェクトのメニュー',
+  'editor.undo': '取り消す',
+  'editor.redo': 'やり直す',
+  'editor.notFound': 'プロジェクトが見つかりません。一覧から開き直してください。',
+  'views.label': '表示の切り替え',
+  'views.schematic': '路線図',
+  'panel.label': 'プロパティ',
+  'panel.resize': 'パネルの大きさを変える',
+  'panel.project.title': 'プロジェクト',
+
   // 単位
   'unit.km': '{value} km',
   'unit.mi': '{value} mi',

@@ -9,4 +9,6 @@ export const files = [
   'store.test.js',
   'migrate.test.js',
   'actions.test.js',
+  'validate.test.js',
+  'autosave.test.js',
 ];

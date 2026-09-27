@@ -186,7 +186,9 @@ async function main() {
       const re = /\bt\(\s*'([\w.]+)'/g;
       let m;
       while ((m = re.exec(src))) {
-        if (!keys.has(m[1])) {
+        // 'save.' + s のような組み立ては、その接頭辞のキーがあればよい
+        const ok = m[1].endsWith('.') ? [...keys].some((k) => k.startsWith(m[1])) : keys.has(m[1]);
+        if (!ok) {
           const lineNo = src.slice(0, m.index).split('\n').length;
           problems.push(`${r}:${lineNo}  カタログにないキー：${m[1]}`);
         }

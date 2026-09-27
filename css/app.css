@@ -328,3 +328,6 @@ button { touch-action: manipulation; }
   max-width: 880px;
   margin: 0 auto;
 }
+
+/* まだツールがないときは下部ツールバーの高さを0にする */
+.editor.no-tools { --toolbar-h: 0px; }
