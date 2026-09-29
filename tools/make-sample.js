@@ -87,8 +87,7 @@ const ics = store.getState().interchanges;
 d({ type: 'interchange/update', interchangeId: ics[0].id, fields: { walkMinutes: 3 } });
 d({ type: 'interchange/update', interchangeId: ics[1].id, fields: { walkMinutes: 4 } });
 
-// ---------- 表示位置 ----------
-d({ type: 'project/view', view: 'schematic', state: { cx: 24, cy: -48, zoom: 1 }, silent: true });
+// 表示位置は既定のまま（初めて開いたときに、画面の大きさに合わせて全体を表示する）
 
 const out = { ...store.getState(), updatedAt: NOW };
 const problems = checkIntegrity(out);
