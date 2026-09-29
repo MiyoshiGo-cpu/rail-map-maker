@@ -5,7 +5,8 @@
  *   | { type: 'line', lineId: string }
  *   | { type: 'section', lineId: string, index: number }
  *   | { type: 'interchange', id: string }
- *   | { type: 'operator', id: string }} Selection
+ *   | { type: 'operator', id: string }
+ *   | { type: 'serviceType', id: string }} Selection
  */
 
 /**
@@ -56,6 +57,7 @@ export function accentFor(p, s) {
   const lineColor = (id) => p.lines.find((l) => l.id === id)?.color;
   if (s.drawing) return lineColor(s.drawing.lineId) || DEFAULT_ACCENT;
   if (s.selection.type === 'line' || s.selection.type === 'section') return lineColor(s.selection.lineId) || DEFAULT_ACCENT;
+  if (s.selection.type === 'serviceType') return p.serviceTypes.find((x) => x.id === s.selection.id)?.color || DEFAULT_ACCENT;
   if (s.selection.type === 'stations' && s.selection.ids.length) {
     const id = s.selection.ids[0];
     const line = [...p.lines].sort((a, b) => a.order - b.order).find((l) => l.stops.some((x) => x.stationId === id));
@@ -84,6 +86,7 @@ export function repairFor(p, s) {
   }
   if (sel.type === 'interchange' && !p.interchanges.some((x) => x.id === sel.id)) return { selection: NO_SELECTION };
   if (sel.type === 'operator' && !p.operators.some((x) => x.id === sel.id)) return { selection: NO_SELECTION };
+  if (sel.type === 'serviceType' && !p.serviceTypes.some((x) => x.id === sel.id)) return { selection: NO_SELECTION };
   if (s.drawing && !hasLine(s.drawing.lineId)) return { drawing: null };
   if (s.lineChoice !== 'new' && !hasLine(s.lineChoice)) return { lineChoice: 'new' };
   return null;

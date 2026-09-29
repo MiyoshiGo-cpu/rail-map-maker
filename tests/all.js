@@ -22,4 +22,5 @@ export const files = [
   'file-io.test.js',
   'sample.test.js',
   'distance.test.js',
+  'service-types.test.js',
 ];

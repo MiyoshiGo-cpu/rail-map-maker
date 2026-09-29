@@ -122,6 +122,13 @@ const jp = {
     },
   ],
 
+  // 事業者に合った種別のプリセット（路線の種類が優先。なければ事業者の区分、それもなければ fallback）
+  serviceSetDefaults: {
+    byLineKind: { shinkansen: 'shinkansen', tram: 'tram', subway: 'subway' },
+    byCategory: { jr: 'jrConventional', public: 'subway' },
+    fallback: 'private',
+  },
+
   // 途中駅の停車時間の既定（rank の上限ごと）
   dwellSecByRank: [
     { maxRank: 1, sec: 30 },

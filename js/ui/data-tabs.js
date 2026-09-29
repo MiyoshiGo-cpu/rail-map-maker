@@ -19,7 +19,7 @@ import { cells } from './grid.js';
  */
 
 /** 入力欄のセル（値の取り出し方と、変えたときの処理） */
-function inputCell(make, get) {
+export function inputCell(make, get) {
   const el = make();
   el.classList.add('grid-input');
   return { el, update: (row) => el.setValue(get(row)) };

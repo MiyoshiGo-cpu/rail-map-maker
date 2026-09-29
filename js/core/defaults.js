@@ -1,6 +1,7 @@
 // 既定値を作る関数と、読み込んだデータの補完（schema.js の型に合わせる）
 import { SCHEMA_VERSION, DEFAULT_WALK_MINUTES, ID_PREFIX } from './schema.js';
-import { getRegion } from './regions/index.js';
+import { getRegion, defaultDwellSec } from './regions/index.js';
+import { readableTextColor } from './color.js';
 import { newId } from './ids.js';
 
 /** @typedef {import('./schema.js').Project} Project */
@@ -185,6 +186,51 @@ export function createInterchange(fields) {
   return { walkMinutes: DEFAULT_WALK_MINUTES, showConnector: true, ...fields };
 }
 
+/** 種別の既定の色（各駅停車の灰色） */
+const DEFAULT_TYPE_COLOR = '#6E7780';
+
+/**
+ * @param {RegionPack} region
+ * @param {Partial<import('./schema.js').ServiceType> & { id: string, operatorId: string, name: string }} fields
+ * @returns {import('./schema.js').ServiceType}
+ */
+export function createServiceType(region, fields) {
+  const rank = fields.rank ?? 1;
+  const color = fields.color || DEFAULT_TYPE_COLOR;
+  return {
+    shortName: fields.name,
+    names: {},
+    color,
+    textColor: readableTextColor(color),
+    rank,
+    surcharge: false,
+    seating: 'free',
+    stopRule: { base: 'all', interchanges: false },
+    dwellSec: defaultDwellSec(region, rank),
+    ...fields,
+  };
+}
+
+/**
+ * プリセットの1つから種別の項目を作る（ID と事業者は呼び出し側で付ける）
+ * @param {RegionPack} region
+ * @param {import('./schema.js').ServiceTypePreset} x
+ */
+export function serviceTypeFromPreset(region, x) {
+  return {
+    name: x.name,
+    shortName: x.shortName,
+    names: x.en ? { en: x.en } : {},
+    color: x.color,
+    textColor: readableTextColor(x.color),
+    rank: x.rank,
+    surcharge: !!x.surcharge,
+    seating: x.seating || 'free',
+    stopRule: { base: x.base, interchanges: !!x.interchanges },
+    dwellSec: defaultDwellSec(region, x.rank),
+  };
+}
+
 /** 駅間の数（環状なら駅の数） */
 export function sectionCount(line) {
   const n = line.stops.length;
@@ -224,7 +270,13 @@ export function normalizeProject(p) {
     meta: isObj(p.meta) ? p.meta : {},
     updatedAt: p.updatedAt || base.updatedAt,
   };
-  for (const key of ['serviceTypes', 'services', 'rollingStock', 'fareTables']) out[key] = arr(p[key]);
+  for (const key of ['services', 'rollingStock', 'fareTables']) out[key] = arr(p[key]);
+  out.serviceTypes = arr(p.serviceTypes).map((x) => {
+    const st = createServiceType(region, { ...x, name: x.name ?? '' });
+    st.names = isObj(x.names) ? x.names : {};
+    st.stopRule = { base: 'all', interchanges: false, ...(isObj(x.stopRule) ? x.stopRule : {}) };
+    return st;
+  });
 
   out.operators = arr(p.operators).map((o) => ({ names: {}, ...o }));
   out.stations = arr(p.stations).map((s) => {

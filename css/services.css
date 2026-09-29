@@ -4,3 +4,7 @@
 
 .drag-grip.is-placeholder { cursor: default; }
 .stops-loop .stop-name { color: var(--ink-sub); }
+
+/* ---------- 事業者のパネル：種別の一覧とプリセット ---------- */
+
+.chip-list + .field-row { margin-top: 12px; }

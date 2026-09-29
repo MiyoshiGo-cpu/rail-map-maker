@@ -7,7 +7,14 @@ import { normalizeForSearch } from '../core/search.js';
 import { createGrid } from './grid.js';
 import { enableRowDrag } from './row-drag.js';
 import { createStopsEditor } from './stops-editor.js';
-import { TABS, TAB_ORDER } from './data-tabs.js';
+import { TABS as BASE_TABS, TAB_ORDER as BASE_ORDER } from './data-tabs.js';
+import { SERVICE_TABS, SERVICE_TAB_ORDER } from './data-tabs-services.js';
+import { openMenu } from './menu.js';
+import { toast } from './toast.js';
+import { getRegion } from '../core/regions/index.js';
+
+const TABS = { ...BASE_TABS, ...SERVICE_TABS };
+const TAB_ORDER = [...BASE_ORDER, ...SERVICE_TAB_ORDER];
 
 const MOBILE = '(max-width: 899.98px)';
 
@@ -54,12 +61,41 @@ export function createDataView(ctx) {
     type: 'button',
     on: { click: () => store.dispatch({ type: 'operator/add' }) },
   }, icon('plus'), t('data.addOperator'));
+  // 種別を追加：事業者を選び、プリセットをまとめてか1つだけ追加する
+  const addType = h('button', {
+    class: 'btn btn-small',
+    type: 'button',
+    on: {
+      click: () => {
+        const p = store.getState();
+        if (!p.operators.length) {
+          toast(t('serviceType.needOperator'));
+          return;
+        }
+        const region = getRegion(p.locale.region);
+        const presetMenu = (op) => openMenu(addType, [
+          ...region.serviceTypePresets.map((x) => ({
+            label: t(x.labelKey),
+            onSelect: () => {
+              const ids = store.dispatch({ type: 'serviceType/addPreset', operatorId: op.id, presetId: x.id });
+              toast(ids.length ? t('serviceType.added', { count: ids.length }) : t('serviceType.addedNone'));
+            },
+          })),
+          { separator: true },
+          { label: t('serviceType.addOne'), onSelect: () => ctx.activate({ type: 'serviceType', id: store.dispatch({ type: 'serviceType/add', operatorId: op.id }) }) },
+        ], { label: t('serviceType.addTo', { name: op.name }) });
+        if (p.operators.length === 1) presetMenu(p.operators[0]);
+        else openMenu(addType, p.operators.map((op) => ({ label: t('serviceType.addTo', { name: op.name }), onSelect: () => presetMenu(op) })), { label: t('data.addType') });
+      },
+    },
+  }, icon('plus'), t('data.addType'));
   const body = h('div', { class: 'data-body' });
   const el = h('section', { class: 'ed-data', 'aria-label': t('data.title') },
     h('div', { class: 'data-head' },
       tabs,
       filter,
       addOperator,
+      addType,
       h('button', { class: 'icon-btn on-paper-btn', type: 'button', 'aria-label': t('common.close'), title: t('common.close'), on: { click: () => ctx.close() } }, icon('close')),
     ),
     body,
@@ -106,7 +142,8 @@ export function createDataView(ctx) {
       caption: t(def.label),
     });
     const wrap = h('div', { class: 'grid-wrap' }, grid.el);
-    body.replaceChildren(wrap);
+    const emptyNote = h('p', { class: 'panel-empty', hidden: true });
+    body.replaceChildren(wrap, emptyNote);
     let detach = null;
     if (tab === 'lines') {
       detach = enableRowDrag(grid.tbody, (from, to) => {
@@ -119,6 +156,8 @@ export function createDataView(ctx) {
         const rows = def.rows(p, query);
         grid.render(rows);
         wrap.classList.toggle('is-empty', rows.length === 0);
+        emptyNote.hidden = rows.length > 0;
+        emptyNote.textContent = def.empty && !query ? t(def.empty) : t('data.empty');
         const key = def.selectedKey(es.get().selection);
         grid.markSelected((k) => k === key);
       },
@@ -153,7 +192,7 @@ export function createDataView(ctx) {
             : null;
           return h('li', { class: ['card', def.rowKey(row) === key ? 'is-selected' : ''] }, main, extra);
         }));
-        if (!rows.length) list.append(h('li', { class: 'panel-empty' }, t('data.empty')));
+        if (!rows.length) list.append(h('li', { class: 'panel-empty' }, def.empty && !query ? t(def.empty) : t('data.empty')));
       },
       dispose: () => detach && detach(),
     };
@@ -167,6 +206,7 @@ export function createDataView(ctx) {
     }
     for (const [k, b] of tabButtons) b.setAttribute('aria-selected', String(k === tab));
     addOperator.hidden = tab !== 'operators';
+    addType.hidden = tab !== 'serviceTypes';
     filter.hidden = !!stopsLine;
     if (stopsLine) {
       stops = createStopsEditor({

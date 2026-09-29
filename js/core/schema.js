@@ -21,6 +21,8 @@ export const LABEL_ORIENTATIONS = /** @type {const} */ (['horizontal', 'vertical
 export const BENDS = /** @type {const} */ (['auto', 'diagonalFirst', 'straightFirst']);
 export const PLATFORM_TYPES = /** @type {const} */ (['island', 'side', 'bay', 'mixed']);
 export const FACILITIES = /** @type {const} */ (['airport', 'port', 'busTerminal']);
+export const STOP_RULES = /** @type {const} */ (['all', 'majorAndAbove', 'terminalOnly', 'manual']);
+export const SEATINGS = /** @type {const} */ (['free', 'reserved', 'mixed']);
 
 /** ID の接頭辞 */
 export const ID_PREFIX = {
@@ -371,6 +373,20 @@ export const DEFAULT_WALK_MINUTES = 5;
  */
 
 /**
+ * 種別のプリセットの1つ（地域パック）
+ * @typedef {object} ServiceTypePreset
+ * @property {string} name
+ * @property {string} shortName
+ * @property {string} en 英語の表記
+ * @property {string} color
+ * @property {number} rank
+ * @property {'all'|'majorAndAbove'|'terminalOnly'|'manual'} base
+ * @property {boolean} interchanges
+ * @property {boolean} [surcharge]
+ * @property {'free'|'reserved'|'mixed'} [seating]
+ */
+
+/**
  * 地域パック（js/core/regions/）
  * @typedef {object} RegionPack
  * @property {string} id
@@ -387,6 +403,7 @@ export const DEFAULT_WALK_MINUTES = 5;
  * @property {Record<string, { gauge: number|null, electrification: Electrification, maxSpeed: number, accel: number, decel: number, spacingKm: number, collection: 'overhead'|'thirdRail', tracks: 1|2|3|4|6, structure: Structure }>} lineKindDefaults
  * @property {LineKind} defaultLineKind
  * @property {NumberingRule} numberingDefaults
- * @property {Array<{ id: string, labelKey: string, types: Array<object> }>} serviceTypePresets
+ * @property {Array<{ id: string, labelKey: string, types: Array<ServiceTypePreset> }>} serviceTypePresets
+ * @property {{ byLineKind: Record<string, string>, byCategory: Record<string, string>, fallback: string }} serviceSetDefaults 事業者に合ったプリセット
  * @property {Array<{ maxRank: number, sec: number }>} dwellSecByRank
  */
