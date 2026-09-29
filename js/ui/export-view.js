@@ -1,6 +1,6 @@
 // 「書き出す」のシート（§5.9）：今表示しているビューを、選んだ形式で書き出す。
 // PNG は倍率（1〜4倍）と背景の透過を選ぶ。約1,600万画素を超えるときは案内を出し、倍率を下げて書き出せるようにする。
-// SVG は同じ表示リストから作る（文字は文字のまま）。
+// SVG は同じ表示リストから作る（文字は文字のまま）。印刷は SVG を用紙（A4・A3）に収める。
 // iPhone では共有シートを開く（写真に保存するときは「画像を保存」）。JSON（バックアップ）もここから書き出せる。
 import { h } from './dom.js';
 import { t, formatNumber } from '../i18n/i18n.js';
@@ -10,9 +10,10 @@ import { toast } from './toast.js';
 import { exportTarget, renderPng, renderSvgBlob } from './exporter.js';
 import { exportSize, fittingScale, EXPORT_SCALES, DEFAULT_EXPORT_SCALE } from '../core/export-size.js';
 import { exportFilename, saveBlobFile } from '../storage/file-io.js';
+import { printTarget } from './print.js';
 
 /** 選んだ形式・倍率・透過は、開いているあいだ覚えておく */
-const prefs = { format: 'png', scale: DEFAULT_EXPORT_SCALE, transparent: false };
+const prefs = { format: 'png', scale: DEFAULT_EXPORT_SCALE, transparent: false, paper: 'a4', orientation: 'landscape' };
 
 /**
  * @param {{
@@ -32,7 +33,7 @@ export function openExportSheet(ctx) {
   const btn = (label, onClick, cls = 'btn') => h('button', { class: cls, type: 'button', on: { click: onClick } }, label);
 
   const format = selectInput({
-    options: ['png', 'svg', 'json'].map((v) => ({ value: v, label: t('export.format.' + v) })),
+    options: ['png', 'svg', 'print', 'json'].map((v) => ({ value: v, label: t('export.format.' + v) })),
     value: prefs.format,
     onChange: (v) => {
       prefs.format = v;
@@ -48,6 +49,16 @@ export function openExportSheet(ctx) {
     },
   });
   const transparent = checkInput({ label: t('export.transparent'), checked: prefs.transparent, onChange: (v) => { prefs.transparent = v; } });
+  const paper = selectInput({
+    options: ['a4', 'a3'].map((v) => ({ value: v, label: t('print.paper.' + v) })),
+    value: prefs.paper,
+    onChange: (v) => { prefs.paper = v; },
+  });
+  const orientation = selectInput({
+    options: ['landscape', 'portrait'].map((v) => ({ value: v, label: t('print.orientation.' + v) })),
+    value: prefs.orientation,
+    onChange: (v) => { prefs.orientation = v; },
+  });
   // 路線図のタイトルと凡例（設定の「凡例とタイトル」と同じ。地図にも出る）
   const setShow = (key, v) => {
     const s = store.getState().style;
@@ -69,12 +80,17 @@ export function openExportSheet(ctx) {
   const hint = (key) => (coarse ? h('p', { class: 'panel-note' }, t(key)) : null);
   const pngBox = h('div', {}, field(t('export.scale'), scale), sizeNote, warn, hint('export.shareHint'));
   const svgBox = h('div', {}, h('p', { class: 'panel-note' }, t('export.svgNote')), hint('export.shareHintFile'));
+  const printBox = h('div', {},
+    h('div', { class: 'field-row' }, field(t('print.paper'), paper), field(t('print.orientation'), orientation)),
+    h('p', { class: 'panel-note' }, t('print.note')),
+  );
   const imageBox = h('div', {},
     transparent,
     view === 'schematic' ? h('div', {}, includeTitle, includeLegend) : null,
     nothing,
     pngBox,
     svgBox,
+    printBox,
   );
   const jsonBox = h('div', {}, h('p', { class: 'panel-note' }, t('export.jsonNote')));
 
@@ -97,16 +113,19 @@ export function openExportSheet(ctx) {
     imageBox.hidden = f === 'json';
     jsonBox.hidden = f !== 'json';
     ready.hidden = !pending;
+    runBtn.textContent = t(f === 'print' ? 'print.run' : 'export.run');
     if (f === 'json') {
       runBtn.disabled = false;
       return;
     }
     const s = store.getState().style;
+    transparent.hidden = f === 'print';
     includeTitle.setValue(s.title.show);
     includeLegend.setValue(s.legend.show);
     nothing.hidden = !!target;
     pngBox.hidden = f !== 'png' || !target;
     svgBox.hidden = f !== 'svg' || !target;
+    printBox.hidden = f !== 'print' || !target;
     runBtn.disabled = !target;
     if (!target || f !== 'png') return;
     const size = exportSize(target.bounds, prefs.scale);
@@ -127,6 +146,11 @@ export function openExportSheet(ctx) {
       return;
     }
     if (!target) return;
+    if (prefs.format === 'print') {
+      sheet.close();
+      printTarget(target, { paper: prefs.paper, orientation: prefs.orientation, title: store.getState().name });
+      return;
+    }
     runBtn.disabled = true;
     reduceBtn.disabled = true;
     runBtn.textContent = t('export.running');
@@ -141,7 +165,6 @@ export function openExportSheet(ctx) {
       console.error(e);
       toast(t('editor.exportFailed'), { kind: 'error' });
     } finally {
-      runBtn.textContent = t('export.run');
       reduceBtn.disabled = false;
       refresh();
     }

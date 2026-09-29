@@ -114,6 +114,7 @@ export default {
   'export.format.png': 'PNG 画像',
   'export.format.svg': 'SVG（ほかのソフトで編集できる図）',
   'export.svgNote': '文字は文字のまま入ります。フォントは入らないので、開くパソコンによって書体が変わることがあります。',
+  'export.format.print': '印刷',
   'export.format.json': 'JSON（プロジェクトのバックアップ）',
   'export.scale': '倍率',
   'export.scaleValue': '{n}倍',
@@ -132,4 +133,14 @@ export default {
   'export.ready': '画像の準備ができました。下のボタンで共有シートを開いてください。',
   'export.share': '共有シートを開く',
   'export.tapAgain': 'もう一度「書き出す」を押してください。',
+
+  // 印刷（§5.9）
+  'print.paper': '用紙',
+  'print.paper.a4': 'A4',
+  'print.paper.a3': 'A3',
+  'print.orientation': '向き',
+  'print.orientation.landscape': '横',
+  'print.orientation.portrait': '縦',
+  'print.note': '用紙に収まるように大きさを合わせて印刷します。',
+  'print.run': '印刷する',
 };

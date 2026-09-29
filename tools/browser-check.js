@@ -7,6 +7,8 @@
 //       … tests/index.html を開き、成功・失敗の数と失敗したテストを表示する
 //   node tools/browser-check.js shot [パス] [--sizes=390x844,1280x800] [--script=手順.js] [--out=フォルダ] [--wait=800]
 //       … ページを開いて（手順があれば実行して）画面写真を撮る。コンソールのエラーがあれば表示して終了コード1
+//       --pdf を付けると、画面写真に加えて印刷の結果を PDF にする（ページの CSS の用紙の大きさを使う）
+//       --media=print を付けると、印刷用の CSS を当てた状態で画面写真を撮る（PDF の中身を目で確かめる代わり）
 //   共通：--base=http://localhost:8000/ （URL の頭）
 // 手順のファイルは、ページの中で async 関数の本体として実行する（例：await rmmDebug...）。
 // Chromium の場所は環境変数 CHROMIUM か /opt/pw-browsers/chromium。
@@ -156,10 +158,24 @@ async function runShots(cdp, errors) {
       if (v !== undefined) console.log(`[${w}x${hgt}] 手順の結果：`, typeof v === 'string' ? v : JSON.stringify(v));
       await sleep(wait);
     }
+    if (opts.media) await cdp.send('Emulation.setEmulatedMedia', { media: opts.media });
     const shot = await cdp.send('Page.captureScreenshot', { format: 'png' });
+    if (opts.media) await cdp.send('Emulation.setEmulatedMedia', { media: '' });
     const file = join(outDir, `shot-${w}x${hgt}.png`);
     writeFileSync(file, Buffer.from(shot.data, 'base64'));
     console.log('画面写真：' + file);
+    if (opts.pdf) {
+      const pdf = await cdp.send('Page.printToPDF', { preferCSSPageSize: true, printBackground: true });
+      const buf = Buffer.from(pdf.data, 'base64');
+      const pdfFile = join(outDir, `print-${w}x${hgt}.pdf`);
+      writeFileSync(pdfFile, buf);
+      // ページ数と用紙の大きさ（MediaBox、pt）を数える
+      const text = buf.toString('latin1');
+      const pages = (text.match(/\/Type\s*\/Page[^s]/g) || []).length;
+      const box = /\/MediaBox\s*\[\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)/.exec(text);
+      const mm = box ? `${Math.round((box[3] - box[1]) / 72 * 25.4)}×${Math.round((box[4] - box[2]) / 72 * 25.4)}mm` : '?';
+      console.log(`印刷：${pdfFile}（${pages}ページ・${mm}）`);
+    }
   }
   return errors.length === 0;
 }

@@ -10,6 +10,8 @@ import { openStationSearch } from './search-view.js';
 import { openSettings } from './settings-view.js';
 import { openHelp } from './help-view.js';
 import { openExportSheet } from './export-view.js';
+import { exportTarget } from './exporter.js';
+import { preparePrint, cleanupPrint } from './print.js';
 
 const MOBILE = '(max-width: 899.98px)';
 
@@ -39,6 +41,17 @@ export function createEditorCommands(ctx) {
   const timer = setInterval(() => {
     if (changedSincePoint) checkpoint('auto');
   }, RESTORE_POINT_INTERVAL_MS);
+
+  // ブラウザのメニューや Ctrl+P で印刷したときも、画面ではなく今のビューの絵を用紙に収めて印刷する
+  const onBeforePrint = () => {
+    if (document.querySelector('.print-root')) return;
+    const p = store.getState();
+    const target = exportTarget(p, es.get().view === 'stopChart' ? 'stopChart' : 'schematic', ctx.getChartScene());
+    if (!target) return;
+    preparePrint(target, { title: p.name });
+    window.addEventListener('afterprint', cleanupPrint, { once: true });
+  };
+  window.addEventListener('beforeprint', onBeforePrint);
 
   /** JSON で書き出す（Ctrl+S・書き出すボタン・バックアップの案内） */
   async function exportJson() {
@@ -132,6 +145,7 @@ export function createEditorCommands(ctx) {
     settings,
     menuItems,
     dispose() {
+      window.removeEventListener('beforeprint', onBeforePrint);
       clearInterval(timer);
       unsubscribe();
     },

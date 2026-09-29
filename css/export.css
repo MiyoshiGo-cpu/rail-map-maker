@@ -29,3 +29,28 @@
 .palette-swatch:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .palette-hex { display: flex; gap: 6px; margin-top: 10px; }
 .palette-hex .input { flex: 1; min-width: 0; font-variant-numeric: tabular-nums; }
+
+/* ---------- 印刷（§5.9）：印刷の中身だけを出し、用紙に収める ---------- */
+
+.print-root { display: none; }
+@media print {
+  html.is-printing,
+  html.is-printing body {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: #FFFFFF !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  html.is-printing body > :not(.print-root) { display: none !important; }
+  html.is-printing .print-root {
+    display: block;
+    /* 端数で2ページ目に送られないように、少し小さくする */
+    width: calc(var(--print-w) - 1mm);
+    height: calc(var(--print-h) - 1mm);
+    overflow: hidden;
+    break-inside: avoid;
+  }
+  .print-root svg { display: block; width: 100%; height: 100%; }
+}
