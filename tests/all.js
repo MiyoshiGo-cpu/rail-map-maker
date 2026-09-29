@@ -26,4 +26,5 @@ export const files = [
   'services.test.js',
   'runtime.test.js',
   'through-check.test.js',
+  'stopchart.test.js',
 ];
