@@ -86,7 +86,7 @@
 
 - [x] フェーズ1：路線図エディタの土台（2026-09-29 完了・公開済み）
 - [x] フェーズ2：種別・運行系統・直通運転（2026-09-29 完了・公開済み）
-- [ ] フェーズ3：見た目と書き出し
+- [x] フェーズ3：見た目と書き出し（2026-09-29 完了・公開済み）
 - [ ] フェーズ4：架空地形と地理ビュー
 - [ ] フェーズ5：実在の日本地図モード
 - [ ] フェーズ6：シミュレーション
@@ -100,7 +100,8 @@
 
 - フェーズ1は完了（2026-09-29）。完了条件13個をすべて確認し、公開版を PC と iPhone（Safari・ホーム画面）で確認済み。未計測なのは iPhone 実機での駅200・路線20の操作感だけ（任意）。
 - フェーズ2は完了（2026-09-29）。計画のステップ0〜10をすべて終え、完了条件5つを確かめ、公開版を iPhone で確認してもらった。
-- フェーズ3（見た目と書き出し）は計画のステップ1〜9をすべて終え、区切り3として main に反映した（2026-09-29）。完了条件5つのうち4つは Chromium で確かめ済み（PNG と SVG の画素比較、1,600万画素の案内、駅名標の前後の駅のテスト、A4 横の PDF が1ページ）。残りは iPhone で PNG を共有シートから写真に保存できるかの確認で、確認が済んだら「進捗」にチェックを付ける。次はフェーズ4（架空地形と地理ビュー）の計画。
+- フェーズ3は完了（2026-09-29）。計画のステップ1〜9をすべて終え、完了条件5つを確かめた（4つは Chromium で：PNG と SVG の画素比較、1,600万画素の案内、駅名標の前後の駅のテスト、A4 横の PDF が1ページ。iPhone での PNG の保存は確認してもらった）。
+- 次はフェーズ4（架空地形と地理ビュー）。計画を出して承認待ち。
 - 性能（PC）：駅200・路線20で、パン・ズームの描画1回が中央値0.8〜3.5ms（3倍の画素数）、ラベル込みの表示リスト作成が約9ms。
 - 描画：core/schematic.js → core/parallel.js → render/scene-schematic.js（連絡線・駅記号・labels.js のラベル）→ render/backend-canvas.js。操作：ui/editor.js（約555行。これ以上は editor-views.js などに分ける）＋ editor-header.js・editor-commands.js・editor-state.js・tools/・panels/・data-view.js・check-view.js。起動と画面の切り替え・iPhone 向けの処理は js/main.js。
 - 型は core/schema.js、既定値と補完は defaults.js、アクションは core/actions/、保存は js/storage/。CSS は app.css・components.css・table.css・services.css（フェーズ2）、カタログは js/i18n/ja.js（約490行）＋ ja-help.js ＋ ja-services.js（フェーズ2）。営業キロは core/distance.js、種別は core/actions/service-types.js・ui/panels/service-type-panel.js・ui/data-tabs-services.js。系統：経路の展開・停車駅・直通の判定は core/services.js、経路の候補は core/network.js、所要時間は core/runtime.js、アクションと後始末は core/actions/services.js、チェックは core/validate-services.js。画面は ui/panels/service-panel.js・service-new-panel.js・ui/route-picker.js・service-ui.js・pending-pick.js（地図のタップで駅を選ぶ）・service-overlay.js（路線図の強調）。停車駅案内図は core/stopchart.js（中身）→ render/scene-stopchart.js（表示リスト。横・縦）→ ui/stopchart-view.js（ビュー）、ビューの切り替えは ui/editor-views.js。スタイル：プリセットは地域パック（jp.js の stylePresets）、適用は core/map-style.js、色づかい（inkOf・paperOf・tone・lineAppearance）は render/styles.js、設定の欄は ui/style-settings.js。パレットは ui/color-palette.js（色は jp.js の linePalette）、色の差は core/color.js の colorDistance（CIEDE2000）。凡例とタイトルは render/scene-legend.js（設定の欄は ui/legend-settings.js）、駅の記号は render/station-symbol.js。駅名標は core/signboard.js（中身）→ render/scene-signboard.js（3つのテンプレート）→ ui/signboard-view.js（ビュー）。案内図と駅名標のビューは ui/editor-views.js の createOtherViews でまとめて作る。書き出し：シートは ui/export-view.js、絵と PNG は ui/exporter.js、大きさの上限は core/export-size.js、SVG は render/backend-svg.js、印刷は ui/print.js（印刷用 CSS は css/export.css）。カタログはフェーズ3の分を js/i18n/ja-export.js、CSS は css/export.css。
@@ -117,9 +118,8 @@
 
 ### 次にやること（この順番で）
 
-1. iPhone でフェーズ3の最終確認（特に PNG を共有シートから写真に保存）をしてもらう → 「進捗」のフェーズ3にチェックし、このファイルを更新。
-2. フェーズ4（架空地形と地理ビュー。SPEC §7 と §6.7・§6.8・§5.4）の計画を立てて承認をもらう。
-3. （任意）iPhone で大きな路線図の操作感を確かめてもらう（「iPhone での確認手順」の5）。
+1. フェーズ4（架空地形と地理ビュー。SPEC §7 と §6.7・§6.8・§5.4）の計画の承認をもらい、ステップ順に進める。
+2. （任意）iPhone で大きな路線図の操作感を確かめてもらう（「iPhone での確認手順」の5）。
 
 ### フェーズ3の計画（2026-09-29 承認）
 
