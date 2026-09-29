@@ -30,15 +30,27 @@ if (vv) {
   });
 }
 
-// ホーム画面から起動した iPhone では 100dvh が時計の表示の分だけ短くなり、下に隙間ができる。
-// アドレスバーが無いので、実際の高さを --app-h に入れて使う（css の #app など）
-const standalone = matchMedia('(display-mode: standalone)').matches || /** @type {any} */ (navigator).standalone === true;
+// ホーム画面から起動したときは、アドレスバーが無いので実際の高さを --app-h に入れて使う（css の #app など）。
+// iPhone では 100dvh も clientHeight も時計の表示の分だけ短く伝えられ、下に隙間ができるため、
+// 画面の幅いっぱいに開いていて差が小さいときは、画面そのものの高さを使う
+const iosStandalone = /** @type {any} */ (navigator).standalone === true;
+const standalone = matchMedia('(display-mode: standalone)').matches || iosStandalone;
 if (standalone) {
   const setAppHeight = () => {
-    document.documentElement.style.setProperty('--app-h', `${document.documentElement.clientHeight}px`);
+    let h = document.documentElement.clientHeight;
+    if (iosStandalone) {
+      const landscape = innerWidth > innerHeight;
+      const long = Math.max(screen.width, screen.height);
+      const short = Math.min(screen.width, screen.height);
+      const sw = landscape ? long : short;
+      const sh = landscape ? short : long;
+      if (Math.abs(innerWidth - sw) <= 1 && sh > h && sh - h <= 100) h = sh;
+    }
+    document.documentElement.style.setProperty('--app-h', `${h}px`);
   };
   setAppHeight();
   addEventListener('resize', setAppHeight);
+  addEventListener('orientationchange', () => setTimeout(setAppHeight, 300));
 }
 
 /** @type {{ dispose: () => any } | null} */
