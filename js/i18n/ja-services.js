@@ -127,6 +127,18 @@ export default {
   'time.ms': '{m}分{s}秒',
   'time.hm': '{h}時間{m}分',
 
+  // 停車駅案内図（§5.5）
+  'views.stopChart': '案内図',
+  'chart.target': '案内図にする路線',
+  'chart.chainLabel': '{lines}（直通）',
+  'chart.toHorizontal': '横に並べる',
+  'chart.toVertical': '縦に並べる',
+  'chart.noLines': '路線がまだありません。「路線図」で路線を引いてください。',
+  'chart.noServices': 'この路線を走る系統がまだありません。「データ」→「系統」で系統を作ってください。',
+  'map.throughTo': '{name}直通',
+  'map.fromTo': '{from}→{to}',
+  'map.sectionTime': '{from}→{to}　{time}',
+
   // 地図の言語で作る名前の既定
   'map.default.typeName': '種別{n}',
 

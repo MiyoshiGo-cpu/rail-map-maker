@@ -14,7 +14,7 @@ const UNIT = {
 };
 const SUB_COLOR = '#52606D';
 /** 縦書きで横に倒して書く文字（長音・ダッシュ・波ダッシュ・かっこ） */
-const ROTATE_IN_VERTICAL = new Set(['\u30FC', '\u2015', '\u2014', '\u2010', '-', '\u301C', '\uFF5E', '~', '(', ')', '\uFF08', '\uFF09', '[', ']', '\u300C', '\u300D']);
+export const ROTATE_IN_VERTICAL = new Set(['\u30FC', '\u2015', '\u2014', '\u2010', '-', '\u301C', '\uFF5E', '~', '(', ')', '\uFF08', '\uFF09', '[', ']', '\u300C', '\u300D']);
 const MAJOR_RANKS = new Set(['terminal', 'major']);
 const RANK_ORDER = { terminal: 0, major: 1, normal: 2, unstaffed: 3, temporary: 3, freight: 4, depot: 4, signal: 5 };
 

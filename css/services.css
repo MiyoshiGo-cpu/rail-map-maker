@@ -62,3 +62,39 @@
 .service-stop { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 40px; border-bottom: 1px solid var(--rule); }
 .service-stop.is-pass .check span { color: var(--ink-sub); }
 .service-stop-time { color: var(--ink-sub); font-size: var(--fs-12); white-space: nowrap; }
+
+/* ---------- 停車駅案内図のビュー ---------- */
+
+.chart-view {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+.chart-view[hidden] { display: none; }
+.chart-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px calc(12px + var(--safe-r)) 8px calc(12px + var(--safe-l));
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper);
+}
+.chart-bar .select { flex: 1 1 auto; min-width: 0; max-width: 420px; }
+.chart-bar .btn { flex: none; }
+.chart-canvas { position: relative; flex: 1 1 auto; min-height: 0; }
+.ed-tools .badge-btn.is-hidden { display: none; }
+
+/* スマホ：ビューが2つ以上なら、ヘッダーの下の段に切り替えを出す（§4.2） */
+@media (max-width: 899.98px) {
+  /* ヘッダーを2段にするので、その分だけ高さ（シートとデータ表の位置の計算にも使う）を足す */
+  .editor { --header-h: 88px; }
+  .ed-header { flex-wrap: wrap; align-content: center; row-gap: 0; }
+  .ed-header .view-tabs:not(.is-single) {
+    order: 10;
+    flex: 1 1 100%;
+    padding-bottom: 6px;
+  }
+  .ed-header .view-tabs .badge-btn { min-height: 32px; max-width: none; }
+  .ed-header .ed-project-btn { flex: 1 1 0; min-width: 0; }
+}

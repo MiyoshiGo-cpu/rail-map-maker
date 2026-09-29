@@ -31,6 +31,7 @@ import { allLineKm } from './distance.js';
  * @typedef {object} ChartRow
  * @property {string[]} serviceIds まとめた系統（先頭が手本）
  * @property {(ChartCell | null)[]} cells 列ごと（走らない列は null）
+ * @property {(string | null)[]} hops 列 c と c+1 の間を走るときの種別（走らなければ null）
  * @property {number} start 最初に走る列
  * @property {number} end 最後に走る列
  * @property {ChartExit[]} exits
@@ -38,6 +39,7 @@ import { allLineKm } from './distance.js';
  * @property {string[]} typeIds 通る順の種別（続けて同じものは1つ）
  * @property {boolean} named 同じ種別の行がほかにもある（系統名を添える）
  * @property {number | null} sec 手本の系統の、この行の範囲の所要時間（秒）
+ * @property {[number, number] | null} secSpan sec を測った最初と最後の列
  */
 
 /**
@@ -238,6 +240,8 @@ export function buildStopChart(p, targetId) {
     const flags = stopFlags(p, sv, path);
     /** @type {(ChartCell | null)[]} */
     const cells = new Array(n).fill(null);
+    /** @type {(string | null)[]} */
+    const hops = new Array(Math.max(0, n - 1)).fill(null);
     /** @type {ChartExit[]} */
     const exits = [];
     /** 列 → 経路の位置（所要時間に使う） */
@@ -249,6 +253,7 @@ export function buildStopChart(p, targetId) {
         // 種別は、この重なりの中を走る駅間の区間のもの（端の駅で次の区間の種別にしない）
         const hop = path.hops[k < r.len - 1 ? pos : pos - 1];
         cells[c] = { stop: flags[pos], typeId: sv.segments[hop ? hop.seg : segmentAt(path, pos)].typeId };
+        if (k < r.len - 1 && path.hops[pos]) hops[Math.min(c, c + r.dir)] = sv.segments[path.hops[pos].seg].typeId;
         posOf.set(c, pos);
       }
       // 経路がこの重なりの外へ続くところ
@@ -273,6 +278,7 @@ export function buildStopChart(p, targetId) {
     rows.push({
       serviceIds: [sv.id],
       cells,
+      hops,
       start: covered[0],
       end: covered[covered.length - 1],
       // 案内図の路線の中で続く（環状線を回り続けるなど）のは直通ではない
@@ -281,6 +287,7 @@ export function buildStopChart(p, targetId) {
       typeIds,
       named: false,
       sec,
+      secSpan: sec === null ? null : [stopCols[0], stopCols[stopCols.length - 1]],
     });
   }
 
@@ -297,6 +304,7 @@ export function buildStopChart(p, targetId) {
     }
     into.serviceIds.push(...r.serviceIds);
     r.cells.forEach((x, c) => { if (x && !into.cells[c]) into.cells[c] = x; });
+    r.hops.forEach((x, c) => { if (x && !into.hops[c]) into.hops[c] = x; });
     into.typeIds = [];
     for (let c = 0; c < n; c++) {
       const x = into.cells[c];

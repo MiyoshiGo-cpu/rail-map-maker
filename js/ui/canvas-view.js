@@ -26,10 +26,11 @@ import { zoomAt, panBy, fitBounds, screenToWorld } from '../core/viewport.js';
  *   onViewChange: (v: ViewState) => void,
  *   getBounds: () => ({ minX: number, minY: number, maxX: number, maxY: number } | null),
  *   getInsets?: () => { top: number, right: number, bottom: number, left: number },
+ *   label?: string,
  * }} opt
  */
 export function createCanvasView(opt) {
-  const canvas = /** @type {HTMLCanvasElement} */ (h('canvas', { class: 'ed-canvas', role: 'img', 'aria-label': t('views.schematic') }));
+  const canvas = /** @type {HTMLCanvasElement} */ (h('canvas', { class: 'ed-canvas', role: 'img', 'aria-label': opt.label || t('views.schematic') }));
   const zoomIn = h('button', { class: 'icon-btn', type: 'button', 'aria-label': t('canvas.zoomIn'), title: t('canvas.zoomIn'), on: { click: () => zoomBy(1.25) } }, icon('plus'));
   const zoomOut = h('button', { class: 'icon-btn', type: 'button', 'aria-label': t('canvas.zoomOut'), title: t('canvas.zoomOut'), on: { click: () => zoomBy(0.8) } }, icon('minus'));
   const fitBtn = h('button', { class: 'icon-btn', type: 'button', 'aria-label': t('canvas.fit'), title: t('canvas.fit'), on: { click: () => fitAll() } }, icon('fit'));

@@ -33,6 +33,8 @@ import { createPlaceStationTool } from './tools/place-station-tool.js';
 import { createDrawLineTool } from './tools/draw-line-tool.js';
 import { pickPending, pendingHint } from './pending-pick.js';
 import { drawServiceHighlight } from './service-overlay.js';
+import { createStopChartView } from './stopchart-view.js';
+import { viewTabs, createViewSwitcher } from './editor-views.js';
 
 /** 当たり判定の半径（画面の px。§4.4） */
 const HIT_RADIUS = { touch: 22, mouse: 8, pen: 12 };
@@ -104,6 +106,9 @@ export function createEditor(opt) {
       pending: null,
       routeDraft: null,
       drawer: null,
+      view: 'schematic',
+      chartTarget: '',
+      chartLayout: 'auto',
     });
 
     // ---------- ヘッダーと保存 ----------
@@ -115,6 +120,8 @@ export function createEditor(opt) {
       onRedo: () => store.redo(),
       onExport: () => commands.exportJson(),
       menuItems: () => commands.menuItems(),
+      views: viewTabs(),
+      onView: (v) => changeView(v),
     });
     autosave = createAutosave(store, {
       save: (p) => putProject(p),
@@ -416,11 +423,22 @@ export function createEditor(opt) {
     cleanups.push(() => commands.dispose());
     const checkView = createCheckView({ store, close: () => es.set({ drawer: null }), go: (target) => commands.goTo(target) });
 
+    // ---------- 停車駅案内図のビュー ----------
+    const chartView = createStopChartView({ store, es, onSelectService: (id) => es.set({ selection: { type: 'service', id } }) });
+    cleanups.push(() => chartView.dispose());
+    const views = createViewSwitcher({ store, es, chartView });
+    /** ビューを切り替える。スマホでは、切り替えた先が見えるようにシートを下げる */
+    function changeView(v) {
+      if (!v || es.get().view === v) return;
+      views.setView(v);
+      if (window.matchMedia('(max-width: 899.98px)').matches) panels.el.dataset.stage = 'peek';
+    }
+
     replaceChildren(el,
       header.el,
       h('div', { class: 'ed-banner' }, banner.el),
       toolsNav,
-      h('main', { class: 'ed-stage' }, canvasView.el),
+      h('main', { class: 'ed-stage' }, canvasView.el, chartView.el),
       panels.el,
       dataView.el,
       checkView.el,
@@ -428,7 +446,8 @@ export function createEditor(opt) {
 
     // ---------- キーボード（§4.5） ----------
     cleanups.push(attachShortcuts({
-      setTool,
+      // 案内図では描くツールに切り替えない
+      setTool: (id) => { if (es.get().view !== 'stopChart') setTool(id); },
       undo: () => store.undo(),
       redo: () => store.redo(),
       deleteSelection,
@@ -453,10 +472,10 @@ export function createEditor(opt) {
         else if (s.rangeMode || s.marquee) es.set({ rangeMode: false, marquee: null });
         else if (s.selection.type !== 'none') es.set({ selection: NO_SELECTION });
       },
-      fit: () => canvasView.fitAll(),
-      zoom: (f) => canvasView.zoomBy(f),
-      toolKey: (e) => !!currentTool().onKey?.(e),
-      view: () => {},
+      fit: () => (es.get().view === 'stopChart' ? chartView.fitAll() : canvasView.fitAll()),
+      zoom: (f) => (es.get().view === 'stopChart' ? chartView.zoomBy(f) : canvasView.zoomBy(f)),
+      toolKey: (e) => es.get().view !== 'stopChart' && !!currentTool().onKey?.(e),
+      view: (n) => changeView(views.viewForKey(n)),
       search: () => commands.search(),
       exportJson: () => commands.exportJson(),
     }));
@@ -471,7 +490,13 @@ export function createEditor(opt) {
         es.set(fix);
         return;
       }
-      header.update(p.name, store.canUndo(), store.canRedo());
+      header.update(p.name, store.canUndo(), store.canRedo(), s.view);
+      // ビュー：案内図では描くツールを隠し、案内図を描き直す
+      const onChart = s.view === 'stopChart';
+      canvasView.el.hidden = onChart;
+      chartView.el.hidden = !onChart;
+      for (const b of toolButtons.values()) b.classList.toggle('is-hidden', onChart);
+      if (onChart) chartView.update(p);
       document.title = `${p.name} - ${t('app.title')}`;
       banner.update(!bannerHidden && needsBackupReminder(p), p.meta.lastBackupAt);
       for (const [id, b] of toolButtons) b.setAttribute('aria-pressed', String(s.tool === id));

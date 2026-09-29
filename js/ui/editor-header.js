@@ -12,6 +12,8 @@ import { openMenu } from './menu.js';
  *   onRedo: () => void,
  *   onExport: () => void,
  *   menuItems: () => import('./menu.js').MenuItem[],
+ *   views: { id: string, label: string }[],
+ *   onView: (id: string) => void,
  * }} opt
  */
 export function createEditorHeader(opt) {
@@ -34,12 +36,20 @@ export function createEditorHeader(opt) {
   }, icon('more'));
   const exportBtn = h('button', { class: 'btn btn-sign btn-small pc-only', type: 'button', on: { click: opt.onExport } }, icon('export'), t('editor.export'));
 
+  // ビュー切替（できたビューだけ出す）
+  const viewButtons = opt.views.map((v) => h('button', {
+    class: 'badge-btn',
+    type: 'button',
+    role: 'tab',
+    dataset: { view: v.id },
+    'aria-selected': 'false',
+    on: { click: () => opt.onView(v.id) },
+  }, h('span', { class: 'badge-label' }, v.label)));
+
   const el = h('header', { class: 'ed-header on-sign' },
     h('button', { class: 'icon-btn', type: 'button', 'aria-label': t('editor.backToList'), title: t('editor.backToList'), on: { click: opt.onExit } }, icon('back')),
     projectBtn,
-    h('nav', { class: 'view-tabs is-single', role: 'tablist', 'aria-label': t('views.label') },
-      h('button', { class: 'badge-btn', type: 'button', role: 'tab', 'aria-selected': 'true' }, h('span', { class: 'badge-label' }, t('views.schematic'))),
-    ),
+    h('nav', { class: ['view-tabs', opt.views.length < 2 ? 'is-single' : ''], role: 'tablist', 'aria-label': t('views.label') }, viewButtons),
     h('div', { class: 'ed-header-actions' }, undoBtn, redoBtn, saveStatus, exportBtn, moreBtn),
   );
 
@@ -54,8 +64,9 @@ export function createEditorHeader(opt) {
       saveStatus.textContent = t('save.' + s);
       saveStatus.title = message;
     },
-    /** @param {string} name @param {boolean} canUndo @param {boolean} canRedo */
-    update(name, canUndo, canRedo) {
+    /** @param {string} name @param {boolean} canUndo @param {boolean} canRedo @param {string} view */
+    update(name, canUndo, canRedo, view) {
+      for (const b of viewButtons) b.setAttribute('aria-selected', String(b.dataset.view === view));
       nameEl.textContent = name || t('common.untitled');
       undoBtn.disabled = !canUndo;
       redoBtn.disabled = !canRedo;

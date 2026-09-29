@@ -46,6 +46,8 @@ test('案内図：行は遅い順。各社の「各駅停車」は1行にまと�
   assert.deepEqual(local.typeIds.map(typeName), ['各駅停車', '各駅停車', '各駅停車']);
   assert.deepEqual(stopsOf(chart, local, names), ['a0', 'a1', 'J1', 'b1', 'b2', 'J2', 'c1', 'c2', 'c3']);
   assert.deepEqual(express.typeIds.map(typeName), ['急行', '各駅停車', '急行']);
+  // 駅間ごとの種別：a0-a1-J1 は急行、J1-…-J2 は各駅停車、J2-c1-c2-c3 は急行
+  assert.deepEqual(express.hops.map(typeName), ['急行', '急行', '各駅停車', '各駅停車', '各駅停車', '急行', '急行', '急行']);
   assert.deepEqual(stopsOf(chart, express, names), ['a0', 'a1', 'J1', 'b1', 'b2', 'J2', 'c1', 'c3']);
   assert.equal(express.serviceIds[0], through);
   // C線の急行は、直通急行と停車駅が同じなので同じ行
