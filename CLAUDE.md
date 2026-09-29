@@ -99,11 +99,11 @@
 作業の区切りごとに書き換える。どこまで進んだか、次にやること、未解決の問題を3〜8行で書き、セッションが変わってもここを読めば続きから再開できるようにする。
 
 - フェーズ1は完了（2026-09-29）。完了条件13個をすべて確認し、公開版を PC と iPhone（Safari・ホーム画面）で確認済み。未計測なのは iPhone 実機での駅200・路線20の操作感だけ（任意）。
-- フェーズ2は計画を承認済み（2026-09-29。下の「フェーズ2の計画」）。区切り1（営業キロ・種別）と区切り2（系統の計算・画面・直通チェック・路線図での強調。ステップ3〜6）を main に反映した。区切り2の iPhone 確認待ち。次はステップ7（停車駅案内図の中身）。
+- フェーズ2は計画のステップ0〜10をすべて終え、完了条件5つを確かめて区切り3として main に反映した（2026-09-29）。iPhone での最終確認待ち。確認できたら「進捗」のフェーズ2にチェックし、次はフェーズ3（見た目と書き出し）の計画を立てる。
 - 性能（PC）：駅200・路線20で、パン・ズームの描画1回が中央値0.8〜3.5ms（3倍の画素数）、ラベル込みの表示リスト作成が約9ms。
-- 描画：core/schematic.js → core/parallel.js → render/scene-schematic.js（連絡線・駅記号・labels.js のラベル）→ render/backend-canvas.js。操作：ui/editor.js（約530行）＋ editor-header.js・editor-commands.js・editor-state.js・tools/・panels/・data-view.js・check-view.js。起動と画面の切り替え・iPhone 向けの処理は js/main.js。
-- 型は core/schema.js、既定値と補完は defaults.js、アクションは core/actions/、保存は js/storage/。CSS は app.css・components.css・table.css・services.css（フェーズ2）、カタログは js/i18n/ja.js（約490行）＋ ja-help.js ＋ ja-services.js（フェーズ2）。営業キロは core/distance.js、種別は core/actions/service-types.js・ui/panels/service-type-panel.js・ui/data-tabs-services.js。系統：経路の展開・停車駅・直通の判定は core/services.js、経路の候補は core/network.js、所要時間は core/runtime.js、アクションと後始末は core/actions/services.js、チェックは core/validate-services.js。画面は ui/panels/service-panel.js・service-new-panel.js・ui/route-picker.js・service-ui.js・pending-pick.js（地図のタップで駅を選ぶ）・service-overlay.js（路線図の強調）。
-- 確認用：`?debug=1` で window.rmmDebug（store・es・canvasView・getScene・commands）と、一覧の「性能確認用のデータを作る」。テストは Node 180件・ブラウザ（/tests/）175件（tests/helpers.js の throughNetwork が直通の路線網の見本）、`node tools/check-i18n.js` は0件。
+- 描画：core/schematic.js → core/parallel.js → render/scene-schematic.js（連絡線・駅記号・labels.js のラベル）→ render/backend-canvas.js。操作：ui/editor.js（約555行。これ以上は editor-views.js などに分ける）＋ editor-header.js・editor-commands.js・editor-state.js・tools/・panels/・data-view.js・check-view.js。起動と画面の切り替え・iPhone 向けの処理は js/main.js。
+- 型は core/schema.js、既定値と補完は defaults.js、アクションは core/actions/、保存は js/storage/。CSS は app.css・components.css・table.css・services.css（フェーズ2）、カタログは js/i18n/ja.js（約490行）＋ ja-help.js ＋ ja-services.js（フェーズ2）。営業キロは core/distance.js、種別は core/actions/service-types.js・ui/panels/service-type-panel.js・ui/data-tabs-services.js。系統：経路の展開・停車駅・直通の判定は core/services.js、経路の候補は core/network.js、所要時間は core/runtime.js、アクションと後始末は core/actions/services.js、チェックは core/validate-services.js。画面は ui/panels/service-panel.js・service-new-panel.js・ui/route-picker.js・service-ui.js・pending-pick.js（地図のタップで駅を選ぶ）・service-overlay.js（路線図の強調）。停車駅案内図は core/stopchart.js（中身）→ render/scene-stopchart.js（表示リスト。横・縦）→ ui/stopchart-view.js（ビュー）、ビューの切り替えは ui/editor-views.js。
+- 確認用：`?debug=1` で window.rmmDebug（store・es・canvasView・getScene・commands）と、一覧の「性能確認用のデータを作る」。テストは Node 187件・ブラウザ（/tests/）182件（tests/helpers.js の throughNetwork が直通の路線網の見本）、`node tools/check-i18n.js` は0件。
 
 ### 直近で対応した問題（2026-09-29、すべて解決済み）
 
@@ -116,11 +116,11 @@
 
 ### 次にやること（この順番で）
 
-1. （任意）iPhone で大きな路線図の操作感を確かめてもらう（「iPhone での確認手順」の5）。
-2. 下の「フェーズ2の計画」をステップ順に進める。ステップごとに実装 → テスト → check-i18n → ブラウザ確認 → コミット。区切りでは main に反映し、iPhone での確認手順を伝えて、確認を待つ。
-3. 完了条件を総点検 → main に反映して公開 → iPhone で確認 → 「進捗」にチェックし、このファイルを更新。
+1. フェーズ2の最終確認（区切り3）の結果を聞き、問題があれば直す。問題がなければ「進捗」のフェーズ2にチェックを入れ、このファイルを更新する。
+2. （任意）iPhone で大きな路線図の操作感を確かめてもらう（「iPhone での確認手順」の5）。
+3. フェーズ3「見た目と書き出し」の計画を立てて出す。コードはまだ書かない。SPEC §7 フェーズ3 と §5.6〜5.9（駅名標・凡例・スタイル・書き出し）を読み、作るファイル・ステップと区切り・質問・リスク・確認方法をまとめて承認を待つ。停車駅案内図の書き出し（表示リストは render/scene-stopchart.js にある）も含めるか確認する。
 
-### フェーズ2の計画（2026-09-29 承認）
+### フェーズ2の計画（2026-09-29 承認・すべて実施）
 
 | # | ステップ | 主なファイル |
 |---|---|---|
@@ -189,3 +189,6 @@
 - 2026-09-29 系統の停車駅：stopsAuto の間は種別のルールからその都度計算し、Service.stops には系統を編集した時点の停車駅を見本として入れる（駅のランクを変えても stops は古いまま。表示と計算はいつも計算し直した値を使う）。信号場・貨物駅・車両基地には全駅停車でも止まらない。停車駅の数は同じ駅を1つと数える（環状線を一周する系統）。
 - 2026-09-29 経路の候補：路線をまたぐたびに 2km 相当の重みを足した最短経路を基本に、使った路線を1本ずつ外して別の経路を探す（最大5件）。環状線を通る区間は逆回りも候補に出す。廃止の路線は使わない。最初の区間も、選んだ種別と事業者が違えば、その路線の事業者の近い種別にする。
 - 2026-09-29 直通チェックは、つなぎ目だけでなく経路に沿って軌間・電化方式が変わる所をすべて見る（区間ごとの上書きも含む）。軌間の null（対象外）どうしは同じとみなす。
+- 2026-09-29 停車駅案内図：行は停車駅と種別の名前が同じ系統をまとめる（事業者ごとの「各駅停車」も1行。種別の札は名前が変わる所だけ）。直通の並びの案内図は、手本の系統の経路に、最初と最後の路線を端の駅まで足して並べる。案内図の路線の中で続く（環状線を回り続けるなど）のは直通の印を出さない。行を押すとその系統を選ぶ。
+- 2026-09-29 スマホのヘッダーは2段（上：戻る・名前・↶↷⋯、下：路線図・案内図）。そのため --header-h を 88px にした。ビューを切り替えたときはシートを見出しだけに下げる。
+- 2026-09-29 サンプル：2号線の東の終点をみなと急行の東湾（(10,-1) に移動）、緑ヶ丘線の起点を2号線の西公園にして、緑ヶ丘線 → 2号線 → みなと急行本線 の直通急行（2号線内は各駅停車）を入れた。JR の東湾・旭町との乗換グループは残した。営業キロは路線図の上の距離から1マス0.8kmで入れ、使っていない種別は外した。
