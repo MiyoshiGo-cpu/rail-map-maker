@@ -136,7 +136,25 @@ function capsuleItem(it) {
   });
 }
 
+/** 角ごとに半径の違う角丸の四角（左上・右上・右下・左下）の d 属性 */
+export function cornersPath(x, y, w, h, corners) {
+  const lim = Math.min(w, h) / 2;
+  const [a, b, c, d] = corners.map((r) => Math.max(0, Math.min(r || 0, lim)));
+  const arc = (r, ex, ey) => (r ? `A${num(r)} ${num(r)} 0 0 1 ${num(ex)} ${num(ey)}` : '');
+  return `M${num(x + a)} ${num(y)}L${num(x + w - b)} ${num(y)}${arc(b, x + w, y + b)}`
+    + `L${num(x + w)} ${num(y + h - c)}${arc(c, x + w - c, y + h)}`
+    + `L${num(x + d)} ${num(y + h)}${arc(d, x, y + h - d)}`
+    + `L${num(x)} ${num(y + a)}${arc(a, x + a, y)}Z`;
+}
+
 function rrectItem(it) {
+  if (it.corners) {
+    return `<path${attrs({
+      d: cornersPath(-it.w / 2, -it.h / 2, it.w, it.h, it.corners),
+      transform: `translate(${num(it.x)} ${num(it.y)})${it.angle ? ` rotate(${num(deg(it.angle))})` : ''}`,
+      ...paint(it),
+    })}/>`;
+  }
   return rectEl(-it.w / 2, -it.h / 2, it.w, it.h, it.r, {
     transform: `translate(${num(it.x)} ${num(it.y)})${it.angle ? ` rotate(${num(deg(it.angle))})` : ''}`,
     ...paint(it),

@@ -10,7 +10,7 @@ import { mapTranslator } from '../i18n/i18n.js';
 /**
  * 書き出す絵
  * @typedef {object} ExportTarget
- * @property {'schematic'|'stopChart'} view
+ * @property {'schematic'|'stopChart'|'signboard'} view
  * @property {any[]} items 表示リスト
  * @property {{ minX: number, minY: number, maxX: number, maxY: number }} bounds
  * @property {string} background
@@ -21,14 +21,14 @@ let measure = null;
 /**
  * 今表示しているビューの絵（書き出すものが無ければ null）
  * @param {import('../core/schema.js').Project} p
- * @param {'schematic'|'stopChart'} view
- * @param {any} [chartScene] 案内図のビューが表示している表示リスト
+ * @param {'schematic'|'stopChart'|'signboard'} view
+ * @param {any} [viewScene] 案内図・駅名標のビューが表示している表示リスト
  * @returns {ExportTarget | null}
  */
-export function exportTarget(p, view, chartScene) {
-  if (view === 'stopChart') {
-    if (!chartScene || !chartScene.items.length) return null;
-    return { view, items: chartScene.items, bounds: chartScene.bounds, background: p.style.background };
+export function exportTarget(p, view, viewScene) {
+  if (view !== 'schematic') {
+    if (!viewScene || !viewScene.items.length) return null;
+    return { view, items: viewScene.items, bounds: viewScene.bounds, background: p.style.background };
   }
   if (!measure) measure = createMeasure();
   const scene = buildSchematicScene(p, { measure, level: 0, mapT: mapTranslator(p.locale.mapLanguage) });

@@ -340,6 +340,14 @@ export const DEFAULT_WALK_MINUTES = 5;
  * @property {'circle'|'tick'} stationSymbol 一般駅の記号（tick は線の上の短い目盛り）
  * @property {LegendSettings} legend 凡例（§5.7）
  * @property {TitleSettings} title タイトル・作者・日付（§5.7）
+ * @property {SignboardSettings} signboard 駅名標（§5.6）
+ */
+
+/**
+ * 駅名標のテンプレートと表示項目（表示中の駅・路線は保存しない）
+ * @typedef {object} SignboardSettings
+ * @property {'band'|'number'|'kana'} template 帯型・ナンバリング強調型・ひらがな主体型
+ * @property {{ reading: boolean, en: boolean, subName: boolean, number: boolean, neighbors: boolean, multilingual: boolean }} items
  */
 
 /**

@@ -32,6 +32,10 @@ export function defaultStyle() {
     stationSymbol: 'circle',
     legend: { show: false, corner: 'br', lines: true, types: true, symbols: true },
     title: { show: false, corner: 'tl', text: '', showAuthor: true, date: '' },
+    signboard: {
+      template: 'band',
+      items: { reading: true, en: true, subName: true, number: true, neighbors: true, multilingual: false },
+    },
   };
 }
 
@@ -268,7 +272,7 @@ const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const arr = (v) => (Array.isArray(v) ? v : []);
 
 /**
- * 見た目の設定の補完（凡例・タイトルは中の項目まで補う）
+ * 見た目の設定の補完（凡例・タイトル・駅名標は中の項目まで補う）
  * @param {import('./schema.js').MapStyle} base
  * @param {any} s
  */
@@ -279,6 +283,17 @@ function normalizeStyle(base, s) {
     ...src,
     legend: { ...base.legend, ...(isObj(src.legend) ? src.legend : {}) },
     title: { ...base.title, ...(isObj(src.title) ? src.title : {}) },
+    signboard: normalizeSignboard(base.signboard, src.signboard),
+  };
+}
+
+/** 駅名標の設定の補完（表示項目の中まで補う） */
+function normalizeSignboard(base, s) {
+  const src = isObj(s) ? s : {};
+  return {
+    ...base,
+    ...src,
+    items: { ...base.items, ...(isObj(src.items) ? src.items : {}) },
   };
 }
 

@@ -20,7 +20,7 @@ const MOBILE = '(max-width: 899.98px)';
  *   store: any,
  *   es: any,
  *   canvasView: ReturnType<typeof import('./canvas-view.js').createCanvasView>,
- *   getChartScene: () => any,
+ *   getViewScene: (view: string) => any,
  *   onExit: () => void,
  * }} ctx
  */
@@ -46,7 +46,8 @@ export function createEditorCommands(ctx) {
   const onBeforePrint = () => {
     if (document.querySelector('.print-root')) return;
     const p = store.getState();
-    const target = exportTarget(p, es.get().view === 'stopChart' ? 'stopChart' : 'schematic', ctx.getChartScene());
+    const view = es.get().view;
+    const target = exportTarget(p, view, ctx.getViewScene(view));
     if (!target) return;
     preparePrint(target, { title: p.name });
     window.addEventListener('afterprint', cleanupPrint, { once: true });
@@ -70,7 +71,7 @@ export function createEditorCommands(ctx) {
 
   /** 「書き出す」のシート（今表示しているビューを PNG などで。JSON もここから） */
   function openExport() {
-    openExportSheet({ store, es, getChartScene: ctx.getChartScene, onJson: exportJson });
+    openExportSheet({ store, es, getViewScene: ctx.getViewScene, onJson: exportJson });
   }
 
   /** 世界座標の格子点を画面に出す */

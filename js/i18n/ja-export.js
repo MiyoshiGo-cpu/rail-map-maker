@@ -143,4 +143,22 @@ export default {
   'print.orientation.portrait': '縦',
   'print.note': '用紙に収まるように大きさを合わせて印刷します。',
   'print.run': '印刷する',
+
+  // 駅名標（§5.6）
+  'views.signboard': '駅名標',
+  'sign.station': '駅',
+  'sign.line': '路線',
+  'sign.template': 'テンプレート',
+  'sign.template.band': '帯型',
+  'sign.template.number': 'ナンバリング強調型',
+  'sign.template.kana': 'ひらがな主体型',
+  'sign.items': '表示する項目',
+  'sign.item.reading': 'よみ',
+  'sign.item.en': '英字',
+  'sign.item.subName': '副駅名',
+  'sign.item.number': '駅番号',
+  'sign.item.neighbors': '前後の駅',
+  'sign.item.multilingual': 'ほかの言語の表記',
+  'sign.noStations': '路線に入っている駅がありません。路線図で路線を引くと、駅名標を作れます。',
+  'map.sign.subName': '（{name}）',
 };

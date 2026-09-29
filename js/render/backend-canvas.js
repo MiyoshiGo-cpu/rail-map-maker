@@ -202,7 +202,8 @@ function drawRRectItem(ctx, it) {
   ctx.translate(it.x, it.y);
   if (it.angle) ctx.rotate(it.angle);
   ctx.beginPath();
-  ctx.roundRect(-it.w / 2, -it.h / 2, it.w, it.h, it.r || 0);
+  // corners があれば角ごとの半径（左上・右上・右下・左下）
+  ctx.roundRect(-it.w / 2, -it.h / 2, it.w, it.h, it.corners || it.r || 0);
   fillStroke(ctx, it);
   ctx.restore();
 }

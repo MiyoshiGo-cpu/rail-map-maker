@@ -32,4 +32,5 @@ export const files = [
   'legend.test.js',
   'export-size.test.js',
   'backend-svg.test.js',
+  'signboard.test.js',
 ];

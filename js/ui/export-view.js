@@ -19,14 +19,14 @@ const prefs = { format: 'png', scale: DEFAULT_EXPORT_SCALE, transparent: false, 
  * @param {{
  *   store: any,
  *   es: any,
- *   getChartScene: () => any,
+ *   getViewScene: (view: string) => any,
  *   onJson: () => void,
  * }} ctx
  */
 export function openExportSheet(ctx) {
   const { store, es } = ctx;
-  const view = es.get().view === 'stopChart' ? 'stopChart' : 'schematic';
-  let target = exportTarget(store.getState(), view, ctx.getChartScene());
+  const view = es.get().view;
+  let target = exportTarget(store.getState(), view, ctx.getViewScene(view));
   /** 共有シートを開けなかったときの、準備ができたファイル */
   let pending = null;
   const coarse = window.matchMedia('(pointer: coarse)').matches;
@@ -63,7 +63,7 @@ export function openExportSheet(ctx) {
   const setShow = (key, v) => {
     const s = store.getState().style;
     store.dispatch({ type: 'project/style', fields: { [key]: { ...s[key], show: v } } });
-    target = exportTarget(store.getState(), view, ctx.getChartScene());
+    target = exportTarget(store.getState(), view, ctx.getViewScene(view));
     refresh();
   };
   const includeTitle = checkInput({ label: t('export.includeTitle'), onChange: (v) => setShow('title', v) });
