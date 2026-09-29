@@ -6,7 +6,8 @@ import { computeBundles } from '../core/parallel.js';
 import { offsetPolyline, turnSign, collinearExtent, boundsOf } from '../core/geometry.js';
 import { effectiveSectionAttrs } from '../core/lines.js';
 import { createSpatialIndex } from './spatial-index.js';
-import { strokeFor, bundleSpacing, mapFont, MAP_INK, MAP_PAPER } from './styles.js';
+import { strokeFor, bundleSpacing, MAP_INK, MAP_PAPER } from './styles.js';
+import { layoutLabels } from './labels.js';
 
 /** @typedef {import('../core/schema.js').Project} Project */
 /** @typedef {(font: string, text: string) => number} Measure 文字の幅を測る */
@@ -32,7 +33,7 @@ function bboxOfPts(pts, pad) {
 
 /**
  * @param {Project} p
- * @param {{ measure: Measure }} opt
+ * @param {{ measure: Measure, level?: number }} opt level はズームで隠す段階（labels.js の labelLevel）
  */
 export function buildSchematicScene(p, opt) {
   const style = p.style;
@@ -117,36 +118,20 @@ export function buildSchematicScene(p, opt) {
     stationItems.set(st.id, items[0]);
   }
 
-  // ---------- 駅名（仮：右側に置く。自動配置はステップ11） ----------
-  const labelItems = [];
-  const fontMain = mapFont(style, style.fontSize, 600);
-  const fontTerminal = mapFont(style, style.fontSize * 1.1, 700);
-  for (const st of p.stations) {
-    const sym = stationItems.get(st.id);
-    if (!sym || !st.name || (st.label.schematic && st.label.schematic.hidden) || st.rank === 'signal') continue;
-    const font = st.rank === 'terminal' ? fontTerminal : fontMain;
-    const x = sym.bbox.maxX + 4;
-    const y = (sym.bbox.minY + sym.bbox.maxY) / 2;
-    const w = opt.measure(font, st.name);
-    const hgt = style.fontSize * 1.2;
-    labelItems.push({
-      kind: 'text',
-      x,
-      y,
-      text: st.name,
-      font,
-      color: MAP_INK,
-      align: 'left',
-      halo: MAP_PAPER,
-      target: { type: 'label', id: st.id },
-      bbox: { minX: x, minY: y - hgt / 2, maxX: x + w, maxY: y + hgt / 2 },
-    });
-  }
+  // ---------- 駅名 ----------
+  const labels = layoutLabels(p, {
+    measure: opt.measure,
+    level: opt.level ?? 0,
+    symbols: stationItems,
+    passes,
+    obstacles: [...lineItems, ...symbolItems],
+  });
+  const labelItems = labels.items;
 
   const items = [...lineItems, ...symbolItems, ...labelItems];
   const index = createSpatialIndex();
   for (const it of items) index.insert(it);
-  return { items, index, sectionItems, stationItems, geom, bundles };
+  return { items, index, sectionItems, stationItems, geom, bundles, labelInfo: labels.info, level: opt.level ?? 0 };
 }
 
 /**

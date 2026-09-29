@@ -1,7 +1,7 @@
-// 駅のパネル（§3 Station の全項目。英字の自動生成はステップ11、ラベルの設定はステップ11で足す）
+// 駅のパネル（§3 Station の全項目と、路線図での駅名ラベルの設定）
 import { h } from '../dom.js';
 import { t } from '../../i18n/i18n.js';
-import { STATION_RANKS, STATION_STRUCTURES, PLATFORM_TYPES, FACILITIES } from '../../core/schema.js';
+import { STATION_RANKS, STATION_STRUCTURES, PLATFORM_TYPES, FACILITIES, LABEL_POSITIONS, LABEL_ORIENTATIONS } from '../../core/schema.js';
 import { getRegion } from '../../core/regions/index.js';
 import { field, textInput, textArea, selectInput, numberInput, checkInput, group, enumOptions } from '../form.js';
 
@@ -62,6 +62,14 @@ export function createStationPanel(ctx, stationId) {
   const ridership = numberInput({ step: 1, min: 0, onChange: (v) => set({ ridership: v === null ? undefined : Math.max(0, Math.round(v)) }) });
   const note = textArea({ onChange: (v) => set({ note: opt(v) }) });
 
+  // ---------- 駅名ラベル（路線図） ----------
+  const setLabel = (fields) => store.dispatch({ type: 'station/label', stationId, fields });
+  const lPos = selectInput({ options: enumOptions(LABEL_POSITIONS, (v) => t('labelPos.' + v)), onChange: (v) => setLabel({ pos: v }) });
+  const lOrient = selectInput({ options: enumOptions(LABEL_ORIENTATIONS, (v) => t('labelOrientation.' + v)), onChange: (v) => setLabel({ orientation: v }) });
+  const lText = textArea({ rows: 2, onChange: (v) => setLabel({ text: v.trim() ? v.replace(/\s+$/, '') : undefined }) });
+  const lHidden = checkInput({ label: t('label.hidden'), onChange: (v) => setLabel({ hidden: v }) });
+  const lReset = h('button', { class: 'btn btn-small', type: 'button', on: { click: () => setLabel({ dx: undefined, dy: undefined }) } }, t('label.resetOffset'));
+
   const el = h('div', {},
     h('div', { class: 'panel-head' }, title),
     h('div', { class: 'panel-section' }, lineChips),
@@ -73,6 +81,16 @@ export function createStationPanel(ctx, stationId) {
       field(t('station.subName'), subName),
       field(t('station.rank'), rank),
     ]),
+    group(t('label.title'), [
+      h('div', { class: 'field-row' },
+        field(t('label.position'), lPos),
+        field(t('label.orientation'), lOrient),
+      ),
+      field(t('label.text'), lText, { hint: t('label.textHint') }),
+      lHidden,
+      h('p', { class: 'panel-note' }, t('label.dragHint')),
+      h('div', { class: 'panel-actions' }, lReset),
+    ], { collapsible: true }),
     group(t('panel.details'), [
       h('div', { class: 'field-row' },
         field(t('station.code3'), code3),
@@ -135,6 +153,14 @@ export function createStationPanel(ctx, stationId) {
       closed.setValue(st.closedYear);
       ridership.setValue(st.ridership);
       note.setValue(st.note || '');
+      const lb = st.label.schematic;
+      lPos.setValue(lb.pos);
+      lOrient.setValue(lb.orientation);
+      lText.setValue(lb.text || '');
+      lText.placeholder = st.name;
+      // 信号場は既定で駅名を出さない
+      lHidden.setValue(lb.hidden === true || (st.rank === 'signal' && lb.hidden !== false));
+      lReset.disabled = !lb.dx && !lb.dy;
 
       const lines = p.lines.filter((l) => l.stops.some((s) => s.stationId === stationId)).sort((a, b) => a.order - b.order);
       lineChips.replaceChildren(...(lines.length

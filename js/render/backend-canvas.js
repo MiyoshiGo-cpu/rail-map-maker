@@ -1,6 +1,7 @@
 // Canvas 2D の描画：高精細（devicePixelRatio）への合わせ込み、格子、表示リストの描画
 import { GRID, visibleWorldRect } from '../core/viewport.js';
 import { luminance } from '../core/color.js';
+import { drawPictogram } from './pictograms.js';
 
 /** iPhone の canvas の上限（約1,600万画素）を超えないようにする */
 const MAX_CANVAS_PIXELS = 16_000_000;
@@ -135,6 +136,7 @@ export function drawItems(ctx, items, visible) {
       case 'capsule': drawCapsuleItem(ctx, it); break;
       case 'rrect': drawRRectItem(ctx, it); break;
       case 'text': drawTextItem(ctx, it); break;
+      case 'label': drawLabelItem(ctx, it); break;
       default: break;
     }
   }
@@ -219,6 +221,45 @@ function drawTextItem(ctx, it) {
   }
   ctx.fillStyle = it.color;
   ctx.fillText(it.text, 0, 0);
+  ctx.restore();
+}
+
+/** 駅名の札（文字の並びとマーク。回転は ax, ay を中心に） */
+function drawLabelItem(ctx, it) {
+  ctx.save();
+  if (it.angle) {
+    ctx.translate(it.ax, it.ay);
+    ctx.rotate(it.angle);
+    ctx.translate(-it.ax, -it.ay);
+  }
+  ctx.translate(it.x, it.y);
+  ctx.lineJoin = 'round';
+  // 先に白い縁取りをすべて描き、そのあとで文字を描く（隣の行の縁取りが文字に重ならないように）
+  for (const pass of [0, 1]) {
+    for (const r of it.runs) {
+      if (r.kind === 'icon') {
+        if (pass === 1) drawPictogram(ctx, r.icon, r.x, r.y, r.size, r.color, it.halo);
+        continue;
+      }
+      ctx.save();
+      ctx.translate(r.x, r.y);
+      if (r.rot) ctx.rotate(r.rot);
+      ctx.font = r.font;
+      ctx.textAlign = r.align || 'left';
+      ctx.textBaseline = 'middle';
+      if (pass === 0) {
+        if (it.halo) {
+          ctx.strokeStyle = it.halo;
+          ctx.lineWidth = 3;
+          ctx.strokeText(r.text, 0, 0);
+        }
+      } else {
+        ctx.fillStyle = r.color;
+        ctx.fillText(r.text, 0, 0);
+      }
+      ctx.restore();
+    }
+  }
   ctx.restore();
 }
 

@@ -376,6 +376,7 @@ export const DEFAULT_WALK_MINUTES = 5;
  * @property {string} nameKey
  * @property {ProjectLocale} locale
  * @property {boolean} autoRomanize
+ * @property {string} romanizeFrom 英字を作るときの地図の言語
  * @property {string} romanizeTo
  * @property {RomajiSettings} romajiDefaults
  * @property {string[]} operatorCategories

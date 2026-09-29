@@ -19,6 +19,7 @@ const jp = {
 
   // 英字（names.en）の自動生成（§6.1）
   autoRomanize: true,
+  romanizeFrom: 'ja',
   romanizeTo: 'en',
   romajiDefaults: {
     longVowel: 'omit',

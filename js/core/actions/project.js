@@ -1,4 +1,5 @@
 // プロジェクト全体に関わるアクション
+import { applyRomaji } from './stations.js';
 
 /** @typedef {import('../patch.js').Tx} Tx */
 
@@ -15,6 +16,12 @@ export const projectReducers = {
   /** 見た目の設定を変える { fields } */
   'project/style'(tx, { fields }) {
     tx.merge(['style'], fields);
+  },
+
+  /** 英字の規則を変え、自動生成中の駅の英字をまとめて作り直す { fields } */
+  'project/romaji'(tx, { fields }, ctx) {
+    tx.merge(['settings', 'romaji'], fields);
+    tx.state.stations.forEach((_, i) => applyRomaji(tx, ctx, i));
   },
 
   /** 表示位置と倍率（履歴に入れない） { view: 'schematic'|'geo', state } */

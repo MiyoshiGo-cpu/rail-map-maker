@@ -91,6 +91,34 @@ export function createSelectTool(ed) {
     };
   }
 
+  /** 駅名ラベルをドラッグして微調整する（自動の位置なら、いまの方向に固定してからずらす） */
+  function labelDrag(stationId, w0) {
+    const st = store.getState().stations.find((s) => s.id === stationId);
+    const lb = st.label.schematic;
+    const pos = lb.pos && lb.pos !== 'auto' ? lb.pos : (ed.getScene().labelInfo.get(stationId)?.pos || 'E');
+    const dx0 = lb.dx || 0;
+    const dy0 = lb.dy || 0;
+    ed.select({ type: 'stations', ids: [stationId] });
+    let last = null;
+    const fieldsAt = (q) => {
+      const w = ed.toWorld(q);
+      return { pos, dx: Math.round(dx0 + w.x - w0.x), dy: Math.round(dy0 + w.y - w0.y) };
+    };
+    return {
+      move(q) {
+        last = fieldsAt(q);
+        store.preview({ type: 'station/label', stationId, fields: last });
+      },
+      end() {
+        store.cancelPreview();
+        if (last) store.dispatch({ type: 'station/label', stationId, fields: last });
+      },
+      cancel() {
+        store.cancelPreview();
+      },
+    };
+  }
+
   /** 範囲選択 */
   function marqueeDrag(w0, additive) {
     return {
@@ -139,6 +167,7 @@ export function createSelectTool(ed) {
       const v = viaAt(p, w);
       if (v) return viaDrag(v);
       const hit = ed.hitTest(p, w, (tg) => tg.type === 'station' || tg.type === 'label');
+      if (hit && hit.type === 'label') return labelDrag(hit.id, w);
       if (hit) return moveDrag(hit.id, w);
       return null;
     },

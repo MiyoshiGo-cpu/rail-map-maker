@@ -2,9 +2,27 @@
 import { ID_PREFIX } from '../schema.js';
 import { createStation } from '../defaults.js';
 import { removeStop } from '../lines.js';
+import { romanize } from '../romaji.js';
 
 /** @typedef {import('../patch.js').Tx} Tx */
 /** @typedef {import('./context.js').ActionContext} Ctx */
+
+/**
+ * 自動生成が有効な駅の英字を、よみから作り直す（§6.1。地域パックが英字の自動生成を使い、地図の言語が合うときだけ）
+ * @param {Tx} tx
+ * @param {Ctx} ctx
+ * @param {number} i 駅の位置
+ */
+export function applyRomaji(tx, ctx, i) {
+  const p = tx.state;
+  const r = ctx.region;
+  if (!r.autoRomanize || p.locale.mapLanguage !== r.romanizeFrom) return;
+  const st = p.stations[i];
+  if (!st.autoRomanize) return;
+  const en = romanize(st.reading || '', p.settings.romaji) || undefined;
+  if ((st.names[r.romanizeTo] || undefined) === en) return;
+  tx.set(['stations', i, 'names'], { ...st.names, [r.romanizeTo]: en });
+}
 
 /**
  * 駅を足す
@@ -21,6 +39,7 @@ export function addStationTo(tx, ctx, pos, fields = {}) {
     ...fields,
   });
   tx.push(['stations'], st);
+  applyRomaji(tx, ctx, tx.state.stations.length - 1);
   return st.id;
 }
 
@@ -65,11 +84,12 @@ export const stationReducers = {
     return addStationTo(tx, ctx, { x, y }, fields);
   },
 
-  /** { stationId, fields }（undefined のキーは消す） */
-  'station/update'(tx, { stationId, fields }) {
+  /** { stationId, fields }（undefined のキーは消す）。よみを変えたら英字も作り直す */
+  'station/update'(tx, { stationId, fields }, ctx) {
     const i = tx.indexOf('stations', stationId);
     if (i < 0) return;
     tx.merge(['stations', i], fields);
+    if ('reading' in fields || 'autoRomanize' in fields) applyRomaji(tx, ctx, i);
   },
 
   /** ラベルの設定を変える { stationId, view: 'schematic'|'geo', fields } */

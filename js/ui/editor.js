@@ -15,6 +15,8 @@ import { createCanvasView } from './canvas-view.js';
 import { stationBounds, visibleWorldRect, screenToWorld, GRID } from '../core/viewport.js';
 import { alignHorizontal, alignVertical, alignDiagonal, distributeEvenly, hasCollision } from '../core/align.js';
 import { buildSchematicScene } from '../render/scene-schematic.js';
+import { labelLevel } from '../render/labels.js';
+import { LABEL_POSITIONS } from '../core/schema.js';
 import { drawItems, createMeasure } from '../render/backend-canvas.js';
 import { createEditorState, NO_SELECTION } from './editor-state.js';
 import { drawOverlay, drawUnderlay } from './overlay.js';
@@ -159,9 +161,11 @@ export function createEditor(opt) {
     let cache = { key: null, scene: null };
     function getScene() {
       const p = store.getState();
-      const key = [p.stations, p.lines, p.interchanges, p.operators, p.style, p.locale, p.settings];
+      // ズームで駅名を隠す段階が変わったときだけ、ラベルを置き直す
+      const level = labelLevel(canvasView ? canvasView.getView().zoom : 1);
+      const key = [p.stations, p.lines, p.interchanges, p.operators, p.style, p.locale, p.settings, level];
       if (!cache.scene || cache.key.some((v, i) => v !== key[i])) {
-        cache = { key, scene: buildSchematicScene(p, { measure }) };
+        cache = { key, scene: buildSchematicScene(p, { measure, level }) };
       }
       return cache.scene;
     }
@@ -229,7 +233,8 @@ export function createEditor(opt) {
       },
       openMenuAt(p, items) {
         const r = canvasView.canvas.getBoundingClientRect();
-        openMenu({ x: r.left + p.x, y: r.top + p.y }, items);
+        lastMenuPoint = { x: r.left + p.x, y: r.top + p.y };
+        openMenu(lastMenuPoint, items);
       },
       confirm: (o) => confirmDialog(o),
       toast: (m) => toast(m),
@@ -251,6 +256,7 @@ export function createEditor(opt) {
       stationMenuItems(stationId) {
         return [
           { label: t('station.branch'), onSelect: () => { setTool('line'); tools.line.branchFrom(stationId); } },
+          { label: t('label.position'), onSelect: () => labelPosMenu(stationId) },
           { separator: true },
           { label: t('station.delete'), danger: true, onSelect: () => toolCtx.deleteStations([stationId]) },
         ];
@@ -288,6 +294,22 @@ export function createEditor(opt) {
       on: { click: () => es.set({ rangeMode: !es.get().rangeMode }) },
     }, icon('range'));
     canvasView.addControl(rangeBtn);
+
+    /** ラベルの位置を選ぶメニュー（長押しメニューから開く） */
+    let lastMenuPoint = { x: 0, y: 0 };
+    function labelPosMenu(stationId) {
+      const st = store.getState().stations.find((s) => s.id === stationId);
+      if (!st) return;
+      const set = (fields) => store.dispatch({ type: 'station/label', stationId, fields });
+      openMenu(lastMenuPoint, [
+        ...LABEL_POSITIONS.map((pos) => ({
+          label: (st.label.schematic.pos === pos ? '\u2713 ' : '') + t('labelPos.' + pos),
+          onSelect: () => set({ pos }),
+        })),
+        { separator: true },
+        { label: t('label.resetOffset'), disabled: !st.label.schematic.dx && !st.label.schematic.dy, onSelect: () => set({ dx: undefined, dy: undefined }) },
+      ], { label: t('label.position') });
+    }
 
     /** 選んだ駅を整列する */
     function align(mode) {

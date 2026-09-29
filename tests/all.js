@@ -15,4 +15,6 @@ export const files = [
   'octilinear.test.js',
   'parallel.test.js',
   'align.test.js',
+  'romaji.test.js',
+  'labels.test.js',
 ];
