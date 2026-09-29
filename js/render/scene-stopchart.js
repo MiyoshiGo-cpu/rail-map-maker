@@ -130,14 +130,19 @@ function badge(b, ctx, type, x, y, h, text) {
   return w;
 }
 
-/** 行の中で種別が変わる列（最初の駅間は除く） */
-function typeChanges(row) {
+/**
+ * 行の中で種別が変わる列（最初の駅間は除く）。事業者ごとの「各駅停車」のように名前が同じなら変わったとみなさない
+ * @param {any} row
+ * @param {Map<string, any>} typeById
+ */
+function typeChanges(row, typeById) {
   const out = [];
   let prev = null;
   row.hops.forEach((id, c) => {
     if (!id) return;
-    if (prev && id !== prev) out.push({ col: c, typeId: id });
-    prev = id;
+    const name = typeById.get(id)?.name ?? id;
+    if (prev !== null && name !== prev) out.push({ col: c, typeId: id });
+    prev = name;
   });
   return out;
 }
@@ -225,7 +230,7 @@ function horizontalScene(ctx) {
       b.line([xOf(c), y, xOf(c + 1), y], ctx.hopColor(row, c), 6);
     }
     // 種別が変わるところに小さな札
-    for (const ch of typeChanges(row)) {
+    for (const ch of typeChanges(row, typeById)) {
       const t = typeById.get(ch.typeId);
       badge(b, ctx, t, xOf(ch.col) + 4, y - 13, 15, t ? t.shortName || t.name : '');
     }
@@ -338,7 +343,7 @@ function verticalScene(ctx) {
       if (!row.hops[c]) continue;
       b.line([x, yOf(c), x, yOf(c + 1)], ctx.hopColor(row, c), 6);
     }
-    for (const ch of typeChanges(row)) {
+    for (const ch of typeChanges(row, typeById)) {
       const t = typeById.get(ch.typeId);
       badge(b, ctx, t, x + 6, yOf(ch.col) + ROWH / 2 - 2, 14, t ? t.shortName || t.name : '');
     }

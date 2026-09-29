@@ -26,7 +26,7 @@
       "color": "#2E7D32",
       "textColor": "#FFFFFF",
       "badgeShape": "square",
-      "id": "op_c1bnbo",
+      "id": "op_9ri2ve",
       "name": "湾岸旅客鉄道"
     },
     {
@@ -38,7 +38,7 @@
       "color": "#E8541E",
       "textColor": "#FFFFFF",
       "badgeShape": "roundSquare",
-      "id": "op_yg3cuf",
+      "id": "op_r4aeun",
       "name": "みなと急行電鉄"
     },
     {
@@ -50,7 +50,7 @@
       "color": "#1E6FD9",
       "textColor": "#FFFFFF",
       "badgeShape": "pill",
-      "id": "op_kbl29y",
+      "id": "op_lnvacp",
       "name": "緑ヶ丘電鉄"
     },
     {
@@ -62,7 +62,7 @@
       "color": "#0E9AA7",
       "textColor": "#FFFFFF",
       "badgeShape": "circle",
-      "id": "op_e1u7qn",
+      "id": "op_71pbjo",
       "name": "湾岸市交通局"
     }
   ],
@@ -78,31 +78,40 @@
       "upDirection": "toStart",
       "stops": [
         {
-          "stationId": "st_0csaul"
+          "stationId": "st_j33ucy",
+          "km": 0
         },
         {
-          "stationId": "st_2g2g66"
+          "stationId": "st_ym2pcl",
+          "km": 3.2
         },
         {
-          "stationId": "st_l1mqrg"
+          "stationId": "st_m9vkkj",
+          "km": 7.7
         },
         {
-          "stationId": "st_e3dsrh"
+          "stationId": "st_nwrf56",
+          "km": 11.7
         },
         {
-          "stationId": "st_ox932p"
+          "stationId": "st_6msuhk",
+          "km": 16
         },
         {
-          "stationId": "st_l9ffnk"
+          "stationId": "st_r8htor",
+          "km": 21.1
         },
         {
-          "stationId": "st_q2pq3b"
+          "stationId": "st_89m3cb",
+          "km": 26.2
         },
         {
-          "stationId": "st_m7k4zx"
+          "stationId": "st_bhwhg4",
+          "km": 30.5
         },
         {
-          "stationId": "st_sbivsa"
+          "stationId": "st_v0pckw",
+          "km": 36.3
         }
       ],
       "defaults": {
@@ -136,10 +145,11 @@
         "mode": "auto"
       },
       "status": "open",
-      "id": "ln_x5faz2",
-      "operatorId": "op_c1bnbo",
+      "id": "ln_87boqv",
+      "operatorId": "op_9ri2ve",
       "name": "湾岸環状線",
-      "order": 0
+      "order": 0,
+      "loopKm": 41.4
     },
     {
       "names": {
@@ -152,22 +162,28 @@
       "upDirection": "toStart",
       "stops": [
         {
-          "stationId": "st_6icncz"
+          "stationId": "st_asw093",
+          "km": 0
         },
         {
-          "stationId": "st_0csaul"
+          "stationId": "st_j33ucy",
+          "km": 3.2
         },
         {
-          "stationId": "st_k6v9fz"
+          "stationId": "st_xunmvp",
+          "km": 6.4
         },
         {
-          "stationId": "st_c92oz5"
+          "stationId": "st_x5jej9",
+          "km": 10.4
         },
         {
-          "stationId": "st_aso0yo"
+          "stationId": "st_bilyty",
+          "km": 13.6
         },
         {
-          "stationId": "st_l9ffnk"
+          "stationId": "st_r8htor",
+          "km": 16
         }
       ],
       "defaults": {
@@ -197,8 +213,8 @@
         "mode": "auto"
       },
       "status": "open",
-      "id": "ln_j79e2l",
-      "operatorId": "op_e1u7qn",
+      "id": "ln_49vojg",
+      "operatorId": "op_71pbjo",
       "name": "1号線",
       "order": 1,
       "displayName": "南北線"
@@ -214,22 +230,28 @@
       "upDirection": "toStart",
       "stops": [
         {
-          "stationId": "st_d95ngf"
+          "stationId": "st_67uozc",
+          "km": 0
         },
         {
-          "stationId": "st_m7k4zx"
+          "stationId": "st_bhwhg4",
+          "km": 3.2
         },
         {
-          "stationId": "st_huzgzk"
+          "stationId": "st_foyjxw",
+          "km": 6.4
         },
         {
-          "stationId": "st_c92oz5"
+          "stationId": "st_x5jej9",
+          "km": 9.6
         },
         {
-          "stationId": "st_nnng36"
+          "stationId": "st_udjczi",
+          "km": 12.8
         },
         {
-          "stationId": "st_e3dsrh"
+          "stationId": "st_dg9j3c",
+          "km": 17.9
         }
       ],
       "defaults": {
@@ -246,7 +268,9 @@
         {},
         {},
         {},
-        {}
+        {
+          "schematicBend": "diagonalFirst"
+        }
       ],
       "numbering": {
         "enabled": true,
@@ -259,8 +283,8 @@
         "mode": "auto"
       },
       "status": "open",
-      "id": "ln_gcegcu",
-      "operatorId": "op_e1u7qn",
+      "id": "ln_cjagbe",
+      "operatorId": "op_71pbjo",
       "name": "2号線",
       "order": 2,
       "displayName": "東西線"
@@ -276,22 +300,28 @@
       "upDirection": "toStart",
       "stops": [
         {
-          "stationId": "st_nwsq3t"
+          "stationId": "st_dg9j3c",
+          "km": 0
         },
         {
-          "stationId": "st_1c508h"
+          "stationId": "st_jnjel8",
+          "km": 4
         },
         {
-          "stationId": "st_nlbsm4"
+          "stationId": "st_904j1p",
+          "km": 6.4
         },
         {
-          "stationId": "st_u27exe"
+          "stationId": "st_558u2c",
+          "km": 9.8
         },
         {
-          "stationId": "st_uyl3or"
+          "stationId": "st_j4pshe",
+          "km": 12.2
         },
         {
-          "stationId": "st_jrdfv1"
+          "stationId": "st_9l2gq9",
+          "km": 14.6
         }
       ],
       "defaults": {
@@ -321,8 +351,8 @@
         "mode": "auto"
       },
       "status": "open",
-      "id": "ln_7diey7",
-      "operatorId": "op_yg3cuf",
+      "id": "ln_cqe4de",
+      "operatorId": "op_r4aeun",
       "name": "みなと急行本線",
       "order": 3
     },
@@ -337,19 +367,28 @@
       "upDirection": "toStart",
       "stops": [
         {
-          "stationId": "st_1klhud"
+          "stationId": "st_67uozc",
+          "km": 0
         },
         {
-          "stationId": "st_q3t42g"
+          "stationId": "st_ghy43e",
+          "km": 7.9
         },
         {
-          "stationId": "st_a2c8i7"
+          "stationId": "st_j4336x",
+          "km": 11.3
         },
         {
-          "stationId": "st_41k2v7"
+          "stationId": "st_kflrjn",
+          "km": 14.7
         },
         {
-          "stationId": "st_w4tmqm"
+          "stationId": "st_4wtgpg",
+          "km": 17.9
+        },
+        {
+          "stationId": "st_leov4r",
+          "km": 21.1
         }
       ],
       "defaults": {
@@ -362,6 +401,9 @@
         "status": "open"
       },
       "sections": [
+        {
+          "schematicBend": "straightFirst"
+        },
         {},
         {},
         {},
@@ -378,8 +420,8 @@
         "mode": "auto"
       },
       "status": "open",
-      "id": "ln_mp4uf1",
-      "operatorId": "op_kbl29y",
+      "id": "ln_iukdc9",
+      "operatorId": "op_lnvacp",
       "name": "緑ヶ丘線",
       "order": 4
     }
@@ -412,7 +454,7 @@
           "orientation": "horizontal"
         }
       },
-      "id": "st_0csaul"
+      "id": "st_j33ucy"
     },
     {
       "name": "青葉通",
@@ -439,7 +481,7 @@
           "orientation": "horizontal"
         }
       },
-      "id": "st_2g2g66"
+      "id": "st_ym2pcl"
     },
     {
       "name": "北野",
@@ -466,7 +508,7 @@
           "orientation": "horizontal"
         }
       },
-      "id": "st_l1mqrg"
+      "id": "st_m9vkkj"
     },
     {
       "name": "東湾",
@@ -493,7 +535,7 @@
           "orientation": "horizontal"
         }
       },
-      "id": "st_e3dsrh"
+      "id": "st_nwrf56"
     },
     {
       "name": "桜台",
@@ -520,7 +562,7 @@
           "orientation": "horizontal"
         }
       },
-      "id": "st_ox932p"
+      "id": "st_6msuhk"
     },
     {
       "name": "港町",
@@ -549,7 +591,7 @@
           "orientation": "horizontal"
         }
       },
-      "id": "st_l9ffnk"
+      "id": "st_r8htor"
     },
     {
       "name": "西浜",
@@ -576,7 +618,7 @@
           "orientation": "horizontal"
         }
       },
-      "id": "st_q2pq3b"
+      "id": "st_89m3cb"
     },
     {
       "name": "川端",
@@ -603,7 +645,7 @@
           "orientation": "horizontal"
         }
       },
-      "id": "st_m7k4zx"
+      "id": "st_bhwhg4"
     },
     {
       "name": "旭町",
@@ -630,7 +672,7 @@
           "orientation": "horizontal"
         }
       },
-      "id": "st_sbivsa"
+      "id": "st_v0pckw"
     },
     {
       "name": "北公園",
@@ -657,7 +699,7 @@
           "orientation": "horizontal"
         }
       },
-      "id": "st_6icncz"
+      "id": "st_asw093"
     },
     {
       "name": "市役所前",
@@ -684,7 +726,7 @@
           "orientation": "horizontal"
         }
       },
-      "id": "st_k6v9fz"
+      "id": "st_xunmvp"
     },
     {
       "name": "本町",
@@ -711,7 +753,7 @@
           "orientation": "horizontal"
         }
       },
-      "id": "st_c92oz5"
+      "id": "st_x5jej9"
     },
     {
       "name": "県庁前",
@@ -738,7 +780,7 @@
           "orientation": "horizontal"
         }
       },
-      "id": "st_aso0yo"
+      "id": "st_bilyty"
     },
     {
       "name": "西公園",
@@ -765,7 +807,7 @@
           "orientation": "horizontal"
         }
       },
-      "id": "st_d95ngf"
+      "id": "st_67uozc"
     },
     {
       "name": "大通",
@@ -792,7 +834,7 @@
           "orientation": "horizontal"
         }
       },
-      "id": "st_huzgzk"
+      "id": "st_foyjxw"
     },
     {
       "name": "東町",
@@ -819,7 +861,7 @@
           "orientation": "horizontal"
         }
       },
-      "id": "st_nnng36"
+      "id": "st_udjczi"
     },
     {
       "name": "東湾",
@@ -834,7 +876,7 @@
       "geo": null,
       "schematic": {
         "x": 10,
-        "y": 3
+        "y": -1
       },
       "label": {
         "schematic": {
@@ -846,7 +888,7 @@
           "orientation": "horizontal"
         }
       },
-      "id": "st_nwsq3t"
+      "id": "st_dg9j3c"
     },
     {
       "name": "海岸通",
@@ -873,7 +915,7 @@
           "orientation": "horizontal"
         }
       },
-      "id": "st_1c508h"
+      "id": "st_jnjel8"
     },
     {
       "name": "臨海公園",
@@ -882,7 +924,7 @@
         "en": "Rinkaikoen"
       },
       "autoRomanize": true,
-      "rank": "normal",
+      "rank": "major",
       "structure": "ground",
       "facilities": [],
       "geo": null,
@@ -900,7 +942,7 @@
           "orientation": "horizontal"
         }
       },
-      "id": "st_nlbsm4"
+      "id": "st_904j1p"
     },
     {
       "name": "若葉",
@@ -927,7 +969,7 @@
           "orientation": "horizontal"
         }
       },
-      "id": "st_u27exe"
+      "id": "st_558u2c"
     },
     {
       "name": "みなと台",
@@ -954,7 +996,7 @@
           "orientation": "horizontal"
         }
       },
-      "id": "st_uyl3or"
+      "id": "st_j4pshe"
     },
     {
       "name": "臨海空港",
@@ -983,7 +1025,7 @@
           "orientation": "horizontal"
         }
       },
-      "id": "st_jrdfv1"
+      "id": "st_9l2gq9"
     },
     {
       "name": "旭町",
@@ -1010,7 +1052,7 @@
           "orientation": "horizontal"
         }
       },
-      "id": "st_1klhud"
+      "id": "st_ghy43e"
     },
     {
       "name": "桜井",
@@ -1037,7 +1079,7 @@
           "orientation": "horizontal"
         }
       },
-      "id": "st_q3t42g"
+      "id": "st_j4336x"
     },
     {
       "name": "丘の上",
@@ -1064,7 +1106,7 @@
           "orientation": "horizontal"
         }
       },
-      "id": "st_a2c8i7"
+      "id": "st_kflrjn"
     },
     {
       "name": "緑ヶ丘",
@@ -1073,7 +1115,7 @@
         "en": "Midorigaoka"
       },
       "autoRomanize": true,
-      "rank": "normal",
+      "rank": "major",
       "structure": "ground",
       "facilities": [],
       "geo": null,
@@ -1091,7 +1133,7 @@
           "orientation": "horizontal"
         }
       },
-      "id": "st_41k2v7"
+      "id": "st_4wtgpg"
     },
     {
       "name": "森林公園",
@@ -1118,31 +1160,380 @@
           "orientation": "horizontal"
         }
       },
-      "id": "st_w4tmqm"
+      "id": "st_leov4r"
     }
   ],
   "interchanges": [
     {
       "walkMinutes": 3,
       "showConnector": true,
-      "id": "ic_6b8ktk",
+      "id": "ic_y51wfv",
       "stationIds": [
-        "st_e3dsrh",
-        "st_nwsq3t"
+        "st_nwrf56",
+        "st_dg9j3c"
       ]
     },
     {
       "walkMinutes": 4,
       "showConnector": true,
-      "id": "ic_dgypsd",
+      "id": "ic_8tt9z4",
       "stationIds": [
-        "st_sbivsa",
-        "st_1klhud"
+        "st_v0pckw",
+        "st_ghy43e"
       ]
     }
   ],
-  "serviceTypes": [],
-  "services": [],
+  "serviceTypes": [
+    {
+      "id": "ty_jjw47n",
+      "operatorId": "op_9ri2ve",
+      "name": "普通",
+      "shortName": "普",
+      "names": {
+        "en": "Local"
+      },
+      "color": "#6E7780",
+      "textColor": "#FFFFFF",
+      "rank": 1,
+      "surcharge": false,
+      "seating": "free",
+      "stopRule": {
+        "base": "all",
+        "interchanges": false
+      },
+      "dwellSec": 30
+    },
+    {
+      "id": "ty_ixt3ez",
+      "operatorId": "op_r4aeun",
+      "name": "各駅停車",
+      "shortName": "各停",
+      "names": {
+        "en": "Local"
+      },
+      "color": "#6E7780",
+      "textColor": "#FFFFFF",
+      "rank": 1,
+      "surcharge": false,
+      "seating": "free",
+      "stopRule": {
+        "base": "all",
+        "interchanges": false
+      },
+      "dwellSec": 30
+    },
+    {
+      "id": "ty_zrc6xi",
+      "operatorId": "op_r4aeun",
+      "name": "急行",
+      "shortName": "急",
+      "names": {
+        "en": "Express"
+      },
+      "color": "#E8541E",
+      "textColor": "#1F2933",
+      "rank": 6,
+      "surcharge": false,
+      "seating": "free",
+      "stopRule": {
+        "base": "majorAndAbove",
+        "interchanges": true
+      },
+      "dwellSec": 40
+    },
+    {
+      "id": "ty_yy4nwh",
+      "operatorId": "op_r4aeun",
+      "name": "有料特急",
+      "shortName": "特",
+      "names": {
+        "en": "Reserved Limited Express"
+      },
+      "color": "#5A2D82",
+      "textColor": "#FFFFFF",
+      "rank": 10,
+      "surcharge": true,
+      "seating": "reserved",
+      "stopRule": {
+        "base": "terminalOnly",
+        "interchanges": true
+      },
+      "dwellSec": 60
+    },
+    {
+      "id": "ty_xenztz",
+      "operatorId": "op_lnvacp",
+      "name": "各駅停車",
+      "shortName": "各停",
+      "names": {
+        "en": "Local"
+      },
+      "color": "#6E7780",
+      "textColor": "#FFFFFF",
+      "rank": 1,
+      "surcharge": false,
+      "seating": "free",
+      "stopRule": {
+        "base": "all",
+        "interchanges": false
+      },
+      "dwellSec": 30
+    },
+    {
+      "id": "ty_k65ilc",
+      "operatorId": "op_lnvacp",
+      "name": "急行",
+      "shortName": "急",
+      "names": {
+        "en": "Express"
+      },
+      "color": "#E8541E",
+      "textColor": "#1F2933",
+      "rank": 6,
+      "surcharge": false,
+      "seating": "free",
+      "stopRule": {
+        "base": "majorAndAbove",
+        "interchanges": true
+      },
+      "dwellSec": 40
+    },
+    {
+      "id": "ty_h8z1a9",
+      "operatorId": "op_71pbjo",
+      "name": "各駅停車",
+      "shortName": "各停",
+      "names": {
+        "en": "Local"
+      },
+      "color": "#6E7780",
+      "textColor": "#FFFFFF",
+      "rank": 1,
+      "surcharge": false,
+      "seating": "free",
+      "stopRule": {
+        "base": "all",
+        "interchanges": false
+      },
+      "dwellSec": 30
+    }
+  ],
+  "services": [
+    {
+      "segments": [
+        {
+          "lineId": "ln_87boqv",
+          "from": "st_j33ucy",
+          "to": "st_j33ucy",
+          "typeId": "ty_jjw47n",
+          "loopDir": "cw"
+        }
+      ],
+      "stops": [
+        "st_j33ucy",
+        "st_ym2pcl",
+        "st_m9vkkj",
+        "st_nwrf56",
+        "st_6msuhk",
+        "st_r8htor",
+        "st_89m3cb",
+        "st_bhwhg4",
+        "st_v0pckw"
+      ],
+      "stopsAuto": true,
+      "frequency": {
+        "morning": 20,
+        "day": 12,
+        "evening": 18,
+        "night": 8
+      },
+      "bothDirections": true,
+      "id": "sv_idi1rt",
+      "cars": 11
+    },
+    {
+      "segments": [
+        {
+          "lineId": "ln_49vojg",
+          "from": "st_asw093",
+          "to": "st_r8htor",
+          "typeId": "ty_h8z1a9"
+        }
+      ],
+      "stops": [
+        "st_asw093",
+        "st_j33ucy",
+        "st_xunmvp",
+        "st_x5jej9",
+        "st_bilyty",
+        "st_r8htor"
+      ],
+      "stopsAuto": true,
+      "frequency": {
+        "morning": 6,
+        "day": 4,
+        "evening": 6,
+        "night": 2
+      },
+      "bothDirections": true,
+      "id": "sv_zndpm9",
+      "cars": 6
+    },
+    {
+      "segments": [
+        {
+          "lineId": "ln_cjagbe",
+          "from": "st_67uozc",
+          "to": "st_dg9j3c",
+          "typeId": "ty_h8z1a9"
+        }
+      ],
+      "stops": [
+        "st_67uozc",
+        "st_bhwhg4",
+        "st_foyjxw",
+        "st_x5jej9",
+        "st_udjczi",
+        "st_dg9j3c"
+      ],
+      "stopsAuto": true,
+      "frequency": {
+        "morning": 6,
+        "day": 4,
+        "evening": 6,
+        "night": 2
+      },
+      "bothDirections": true,
+      "id": "sv_lg4gdz",
+      "cars": 8
+    },
+    {
+      "segments": [
+        {
+          "lineId": "ln_cqe4de",
+          "from": "st_dg9j3c",
+          "to": "st_9l2gq9",
+          "typeId": "ty_ixt3ez"
+        }
+      ],
+      "stops": [
+        "st_dg9j3c",
+        "st_jnjel8",
+        "st_904j1p",
+        "st_558u2c",
+        "st_j4pshe",
+        "st_9l2gq9"
+      ],
+      "stopsAuto": true,
+      "frequency": {
+        "morning": 6,
+        "day": 4,
+        "evening": 6,
+        "night": 2
+      },
+      "bothDirections": true,
+      "id": "sv_i4ofez",
+      "cars": 8
+    },
+    {
+      "segments": [
+        {
+          "lineId": "ln_cqe4de",
+          "from": "st_dg9j3c",
+          "to": "st_9l2gq9",
+          "typeId": "ty_yy4nwh"
+        }
+      ],
+      "stops": [
+        "st_dg9j3c",
+        "st_9l2gq9"
+      ],
+      "stopsAuto": true,
+      "frequency": {
+        "morning": 2,
+        "day": 2,
+        "evening": 2,
+        "night": 1
+      },
+      "bothDirections": true,
+      "id": "sv_nxavic",
+      "name": "みなとエアポート",
+      "cars": 6
+    },
+    {
+      "segments": [
+        {
+          "lineId": "ln_iukdc9",
+          "from": "st_67uozc",
+          "to": "st_leov4r",
+          "typeId": "ty_xenztz"
+        }
+      ],
+      "stops": [
+        "st_67uozc",
+        "st_ghy43e",
+        "st_j4336x",
+        "st_kflrjn",
+        "st_4wtgpg",
+        "st_leov4r"
+      ],
+      "stopsAuto": true,
+      "frequency": {
+        "morning": 6,
+        "day": 4,
+        "evening": 6,
+        "night": 2
+      },
+      "bothDirections": true,
+      "id": "sv_grmcbb",
+      "cars": 6
+    },
+    {
+      "segments": [
+        {
+          "lineId": "ln_iukdc9",
+          "from": "st_leov4r",
+          "to": "st_67uozc",
+          "typeId": "ty_k65ilc"
+        },
+        {
+          "lineId": "ln_cjagbe",
+          "from": "st_67uozc",
+          "to": "st_dg9j3c",
+          "typeId": "ty_h8z1a9"
+        },
+        {
+          "lineId": "ln_cqe4de",
+          "from": "st_dg9j3c",
+          "to": "st_9l2gq9",
+          "typeId": "ty_zrc6xi"
+        }
+      ],
+      "stops": [
+        "st_leov4r",
+        "st_4wtgpg",
+        "st_ghy43e",
+        "st_67uozc",
+        "st_bhwhg4",
+        "st_foyjxw",
+        "st_x5jej9",
+        "st_udjczi",
+        "st_dg9j3c",
+        "st_904j1p",
+        "st_9l2gq9"
+      ],
+      "stopsAuto": true,
+      "frequency": {
+        "morning": 4,
+        "day": 3,
+        "evening": 4,
+        "night": 2
+      },
+      "bothDirections": true,
+      "id": "sv_rdx0ps",
+      "cars": 8
+    }
+  ],
   "rollingStock": [],
   "fareTables": [],
   "style": {

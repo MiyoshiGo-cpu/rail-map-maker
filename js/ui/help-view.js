@@ -13,13 +13,14 @@ export function openHelp() {
     ['Delete', 'help.key.delete'], ['Ctrl+Z', 'editor.undo'], ['Ctrl+Y / Ctrl+Shift+Z', 'editor.redo'],
     ['Ctrl+A', 'help.key.selectAll'], ['Ctrl+D', 'help.key.duplicate'], ['↑ ↓ ← →', 'help.key.arrows'],
     ['Enter', 'tool.line.finish'], ['Esc', 'help.key.escape'], ['F', 'canvas.fit'], ['+ / −', 'help.key.zoom'],
-    ['Ctrl+F', 'search.title'], ['Ctrl+S', 'backup.export'],
+    ['Ctrl+F', 'search.title'], ['Ctrl+S', 'backup.export'], ['1', 'views.schematic'], ['3', 'views.stopChart'],
   ];
   openSheet({
     title: t('help.title'),
     wide: true,
     body: [
       group(t('help.basicsTitle'), paras('help.basics')),
+      group(t('help.servicesTitle'), paras('help.services')),
       group(t('help.touchTitle'), paras('help.touch')),
       group(t('help.keysTitle'), [
         h('dl', { class: 'help-keys' }, keys.flatMap(([k, label]) => [h('dt', {}, h('kbd', {}, k)), h('dd', {}, t(label))])),
