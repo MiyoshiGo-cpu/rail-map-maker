@@ -12,7 +12,7 @@ export function makeContext(state) {
   let taken = null;
   return {
     region,
-    mapT: mapTranslator(state.locale ? state.locale.mapLanguage : 'ja'),
+    mapT: mapTranslator(state.locale ? state.locale.mapLanguage : region.locale.mapLanguage),
     /** @param {string} prefix */
     newId(prefix) {
       if (!taken) taken = collectIds(state);

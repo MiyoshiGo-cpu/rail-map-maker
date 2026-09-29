@@ -193,7 +193,8 @@ export function createStationPanel(ctx, stationId) {
         : [h('li', { class: 'panel-note' }, t('station.noLines'))]));
     },
     focusName() {
-      name.focus();
+      // シートがせり上がる途中でも、ページをスクロールさせない
+      name.focus({ preventScroll: true });
       name.select();
     },
   };

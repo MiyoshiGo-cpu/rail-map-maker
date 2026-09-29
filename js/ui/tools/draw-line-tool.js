@@ -122,8 +122,9 @@ export function createDrawLineTool(ed) {
     },
     /** @param {any} p @param {{ x: number, y: number }} w */
     onTap(p, w) {
-      const hit = ed.hitTest(p, w, (tg) => tg.type === 'station' || tg.type === 'label' || tg.type === 'section');
-      if (hit && (hit.type === 'station' || hit.type === 'label')) {
+      // 駅名の札は当たり判定に使わない（札の下の空いた格子点に駅を作れるように）
+      const hit = ed.hitTest(p, w, (tg) => tg.type === 'station' || tg.type === 'section');
+      if (hit && hit.type === 'station') {
         add({ stationId: hit.id });
         return;
       }
@@ -147,7 +148,7 @@ export function createDrawLineTool(ed) {
       const d = es.get().drawing;
       if (!d) return false;
       const line = currentLine();
-      const hit = ed.hitTest(p, w, (tg) => tg.type === 'station' || tg.type === 'label');
+      const hit = ed.hitTest(p, w, (tg) => tg.type === 'station');
       const id = hit ? hit.id : ed.stationAt(snapToGrid(w.x, w.y));
       if (line && id && id === endStation(line, d.atStart)) finish();
       return true;

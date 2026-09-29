@@ -79,15 +79,25 @@ export function createCanvasView(opt) {
   }
 
   function zoomBy(factor) {
+    currentSize();
     setView(zoomAt(view, size, size.width / 2, size.height / 2, factor));
   }
 
   function fitAll() {
+    currentSize();
     const insets = opt.getInsets ? opt.getInsets() : undefined;
     setView(fitBounds(opt.getBounds(), size, { padding: Math.min(48, size.width / 8), insets }));
   }
 
-  const world = (p) => screenToWorld(view, size, p.x, p.y);
+  /** 大きさをまだ測っていなければ（最初の描画の前など）、その場で測る */
+  function currentSize() {
+    if (size.width <= 1 || size.height <= 1) {
+      const r = el.getBoundingClientRect();
+      if (r.width > 1 && r.height > 1) size = { width: r.width, height: r.height };
+    }
+    return size;
+  }
+  const world = (p) => screenToWorld(view, currentSize(), p.x, p.y);
 
   // 大きさの追従
   const ro = new ResizeObserver(() => {
@@ -155,12 +165,13 @@ export function createCanvasView(opt) {
       layers.push(fn);
     },
     getView: () => view,
-    getSize: () => size,
+    getSize: () => currentSize(),
     setView,
     zoomBy,
     fitAll,
     /** 世界座標の点が画面の中に入るように動かす（入っていれば何もしない） */
     reveal(wx, wy) {
+      currentSize();
       const s = { x: (wx - view.cx) * view.zoom + size.width / 2, y: (wy - view.cy) * view.zoom + size.height / 2 };
       const m = 48;
       if (s.x < m || s.y < m || s.x > size.width - m || s.y > size.height - m) setView({ ...view, cx: wx, cy: wy });

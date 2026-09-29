@@ -10,7 +10,8 @@ export function createPlaceStationTool(ed) {
     cursor: 'crosshair',
     /** @param {any} p @param {{ x: number, y: number }} w */
     onTap(p, w) {
-      const hit = ed.hitTest(p, w, (tg) => tg.type === 'station' || tg.type === 'label');
+      // 駅名の札の上でも、そこが空いた格子点なら駅を置く（札では駅を選ばない）
+      const hit = ed.hitTest(p, w, (tg) => tg.type === 'station');
       if (hit) {
         ed.select({ type: 'stations', ids: [hit.id] });
         return;

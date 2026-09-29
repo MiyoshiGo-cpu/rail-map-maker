@@ -115,6 +115,9 @@ button { touch-action: manipulation; }
 
 .editor {
   height: 100dvh;
+  /* 下に隠したボトムシートがページの外にはみ出して、入力欄にフォーカスしたときにページごとスクロールしないよう切り取る
+     （clip はスクロールできる箱にならないので、プログラムからもスクロールされない） */
+  overflow: clip;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) var(--panel-w);
   grid-template-rows: auto auto minmax(0, 1fr) auto;

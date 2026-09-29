@@ -1,7 +1,7 @@
 // 表（PC のデータ表）。行は鍵で使い回し、入力中の欄を書き換えない。
 // 見出しを押すと並べ替え、行の入力欄以外を押すと onActivate を呼ぶ。
 import { h } from './dom.js';
-import { t } from '../i18n/i18n.js';
+import { t, getUiLang } from '../i18n/i18n.js';
 
 /**
  * @typedef {object} Cell
@@ -77,7 +77,7 @@ export function createGrid(opt) {
   function sorted(list) {
     const col = opt.columns.find((c) => c.key === sortKey);
     if (!col || !col.sortValue) return list;
-    const collator = new Intl.Collator(document.documentElement.lang || 'ja', { numeric: true });
+    const collator = new Intl.Collator(getUiLang(), { numeric: true });
     return [...list].sort((a, b) => {
       const va = col.sortValue(a);
       const vb = col.sortValue(b);
