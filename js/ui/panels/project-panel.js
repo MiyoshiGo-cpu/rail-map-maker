@@ -3,6 +3,7 @@ import { h } from '../dom.js';
 import { t } from '../../i18n/i18n.js';
 import { field, textInput } from '../form.js';
 import { toast } from '../toast.js';
+import { getRegion } from '../../core/regions/index.js';
 
 /**
  * @param {{ store: any }} ctx
@@ -22,12 +23,14 @@ export function createProjectPanel(ctx) {
   });
   const author = textInput({ onChange: (v) => store.dispatch({ type: 'project/update', fields: { author: v.trim() } }) });
   const counts = h('p', { class: 'panel-note' });
+  const worldNote = h('p', { class: 'panel-note', hidden: true });
   const el = h('div', {},
     h('div', { class: 'panel-head' }, h('h2', { class: 'panel-title' }, t('panel.project.title'))),
     h('div', { class: 'panel-section' },
       field(t('newProject.name'), name),
       field(t('newProject.author'), author),
       counts,
+      worldNote,
       h('p', { class: 'panel-note' }, t('panel.project.settingsHint')),
     ),
   );
@@ -38,6 +41,18 @@ export function createProjectPanel(ctx) {
       name.setValue(p.name);
       author.setValue(p.author || '');
       counts.textContent = t('plist.counts', { stations: p.stations.length, lines: p.lines.length });
+      // 架空の地形の概要（形・広さ・都市と県の数）
+      const w = p.world;
+      worldNote.hidden = w.mode !== 'fictional';
+      if (w.mode === 'fictional') {
+        worldNote.textContent = t('terrain.summary', {
+          shape: t('terrain.shape.' + w.gen.shape),
+          km: w.gen.size * w.gen.cellKm,
+          cities: w.cities.length,
+          admin1: t(getRegion(p.locale.region).adminLabelKeys.admin1),
+          regions: w.regions.length,
+        });
+      }
     },
   };
 }

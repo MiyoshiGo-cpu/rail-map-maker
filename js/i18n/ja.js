@@ -1,13 +1,16 @@
 // 日本語カタログ。キーは「画面.役割」の英語。値の {name} は差し込み。
-// 600行を超えないよう、長めの文は ja-help.js、フェーズ2の文言は ja-services.js、フェーズ3の文言は ja-export.js に分けてここで結合する。
+// 600行を超えないよう、長めの文は ja-help.js、フェーズ2の文言は ja-services.js、フェーズ3の文言は ja-export.js、
+// フェーズ4の文言は ja-geo.js に分けてここで結合する。
 import help from './ja-help.js';
 import services from './ja-services.js';
 import exportCatalog from './ja-export.js';
+import geo from './ja-geo.js';
 
 export default {
   ...help,
   ...services,
   ...exportCatalog,
+  ...geo,
 
   // アプリ全体
   'app.title': '架空路線図メーカー',

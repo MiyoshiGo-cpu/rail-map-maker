@@ -35,4 +35,5 @@ export const files = [
   'signboard.test.js',
   'terrain.test.js',
   'world.test.js',
+  'geo-layout.test.js',
 ];

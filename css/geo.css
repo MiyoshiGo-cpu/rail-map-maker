@@ -1,0 +1,22 @@
+/* フェーズ4：架空の地形・地理ビュー（components.css を600行未満に保つため分けた） */
+
+/* ---------- 地形を作る画面 ---------- */
+
+.terrain-preview-wrap { display: flex; justify-content: center; margin: 4px 0 8px; }
+.terrain-preview {
+  width: min(256px, 70vw);
+  height: auto;
+  aspect-ratio: 1;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: #B2D7F0;
+  transition: opacity .15s;
+}
+.terrain-preview.is-loading { opacity: .6; }
+.terrain-slider .field-label { display: flex; justify-content: space-between; gap: 8px; }
+.terrain-value { font-weight: 700; }
+.terrain-range { width: 100%; min-height: 32px; accent-color: var(--accent); }
+.terrain-progress { width: 100%; height: 10px; margin-top: 8px; accent-color: var(--accent); }
+@media (prefers-reduced-motion: reduce) {
+  .terrain-preview { transition: none; }
+}

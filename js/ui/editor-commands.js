@@ -12,6 +12,7 @@ import { openHelp } from './help-view.js';
 import { openExportSheet } from './export-view.js';
 import { exportTarget } from './exporter.js';
 import { preparePrint, cleanupPrint } from './print.js';
+import { openTerrainDialog } from './terrain-dialog.js';
 
 const MOBILE = '(max-width: 899.98px)';
 
@@ -123,12 +124,29 @@ export function createEditorCommands(ctx) {
     });
   }
 
+  /** 路線図だけのプロジェクトに架空の地形を付ける（今ある駅は、路線図の配置から地理の位置を仮に決める） */
+  async function addTerrain() {
+    const p = store.getState();
+    const res = await openTerrainDialog({
+      title: t('terrain.addTitle'),
+      regionId: p.locale.region,
+      romaji: p.settings.romaji,
+      stations: p.stations.map((s) => ({ id: s.id, schematic: s.schematic })),
+    });
+    if (!res) return;
+    checkpoint('terrain');
+    store.dispatch({ type: 'world/set', world: res.world, stationGeo: res.stationGeo });
+    toast(t('terrain.done', { sec: (res.ms / 1000).toFixed(1) }));
+  }
+
   /** プロジェクト名のメニューと「その他」のメニュー */
   function menuItems() {
+    const noWorld = store.getState().world.mode === 'none';
     return [
       { label: t('editor.export'), onSelect: openExport },
       { label: t('search.title'), onSelect: search },
       { label: t('check.title'), onSelect: () => es.set({ drawer: 'check' }) },
+      ...(noWorld ? [{ label: t('terrain.addTitle'), onSelect: addTerrain }] : []),
       { separator: true },
       { label: t('settings.title'), onSelect: settings },
       { label: t('help.title'), onSelect: openHelp },
@@ -145,6 +163,7 @@ export function createEditorCommands(ctx) {
     search,
     settings,
     menuItems,
+    addTerrain,
     dispose() {
       window.removeEventListener('beforeprint', onBeforePrint);
       clearInterval(timer);

@@ -14,6 +14,7 @@ import { exportFilename, serializeProject, saveTextFile, parseProjectText, pickT
 import { InvalidFileError, NewerVersionError } from '../core/migrate.js';
 import { openRestorePoints } from './restore-view.js';
 import { generateDebugProject } from '../core/debug-data.js';
+import { openTerrainDialog } from './terrain-dialog.js';
 
 const SAMPLE_URL = 'samples/sample-metro.railmap.json';
 /** ?debug=1 のときだけ、性能確認用のデータを作るボタンを出す（隠しコマンド） */
@@ -45,13 +46,18 @@ export function createProjectList(opt) {
     ),
   );
 
-  /** サンプルを新しいプロジェクトとして追加して開く */
-  async function addSample() {
+  /** サンプルを新しいプロジェクトとして読み込む（まだ保存しない） */
+  async function loadSample() {
     const res = await fetch(SAMPLE_URL);
     if (!res.ok) throw new Error(`sample ${res.status}`);
     const p = parseProjectText(await res.text());
     const now = new Date().toISOString();
-    const copy = { ...p, id: newId(ID_PREFIX.project), createdAt: now, updatedAt: now, meta: {} };
+    return { ...p, id: newId(ID_PREFIX.project), createdAt: now, updatedAt: now, meta: {} };
+  }
+
+  /** サンプルを新しいプロジェクトとして追加する */
+  async function addSample() {
+    const copy = await loadSample();
     await putProject(copy);
     return copy;
   }
@@ -136,12 +142,14 @@ export function createProjectList(opt) {
     const author = /** @type {HTMLInputElement} */ (h('input', { class: 'input', type: 'text', autocomplete: 'off' }));
     const err = h('p', { class: 'field-error', hidden: true });
     const templateEmpty = /** @type {HTMLInputElement} */ (h('input', { type: 'radio', name: 'template', value: 'empty', checked: true }));
+    const worldFictional = /** @type {HTMLInputElement} */ (h('input', { type: 'radio', name: 'world', value: 'fictional' }));
     const body = [
       h('label', { class: 'field' }, h('span', { class: 'field-label' }, t('newProject.name')), name, err),
       h('label', { class: 'field' }, h('span', { class: 'field-label' }, t('newProject.author')), author),
       h('fieldset', { class: 'field fieldset' },
         h('legend', { class: 'field-label' }, t('newProject.world')),
         h('label', { class: 'check' }, h('input', { type: 'radio', name: 'world', value: 'none', checked: true }), t('newProject.world.none')),
+        h('label', { class: 'check' }, worldFictional, t('newProject.world.fictional')),
       ),
       h('fieldset', { class: 'field fieldset' },
         h('legend', { class: 'field-label' }, t('newProject.template')),
@@ -168,19 +176,31 @@ export function createProjectList(opt) {
     });
     if (v !== 'ok') return;
     // テンプレートがサンプルなら、サンプルの中身に名前と作者を入れて作る
+    let p;
     if (!templateEmpty.checked) {
       try {
-        const s = await addSample();
-        const renamed = { ...s, name: name.value.trim(), author: author.value.trim() || undefined };
-        await putProject(renamed);
-        opt.onOpen(renamed.id);
+        const s = await loadSample();
+        p = { ...s, name: name.value.trim(), author: author.value.trim() || undefined };
       } catch (e) {
         console.error(e);
         toast(t('plist.sampleFailed'), { kind: 'error' });
+        return;
       }
-      return;
+    } else {
+      p = createProject({ name: name.value.trim(), author: author.value.trim() || undefined, regionId: region.id });
     }
-    const p = createProject({ name: name.value.trim(), author: author.value.trim() || undefined, regionId: region.id });
+    // 架空の地形なら、地形を作ってから始める（やめたらプロジェクトも作らない）
+    if (worldFictional.checked) {
+      const res = await openTerrainDialog({
+        title: t('terrain.newTitle'),
+        regionId: p.locale.region,
+        romaji: p.settings.romaji,
+        stations: p.stations.map((s) => ({ id: s.id, schematic: s.schematic })),
+      });
+      if (!res) return;
+      p = { ...p, world: res.world, stations: p.stations.map((s) => (res.stationGeo[s.id] ? { ...s, geo: res.stationGeo[s.id] } : s)) };
+      toast(t('terrain.done', { sec: (res.ms / 1000).toFixed(1) }));
+    }
     try {
       await putProject(p);
     } catch (e) {
