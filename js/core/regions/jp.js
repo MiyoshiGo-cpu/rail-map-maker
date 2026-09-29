@@ -1,6 +1,8 @@
 // 地域パック jp：日本の鉄道の慣習。日本固有の値はこのファイルだけに書く（SPEC §2.6）
 // 画面に出す名前はカタログのキーで持ち、プロジェクトのデータになる名前（種別名など）は地図の言語（日本語）で持つ。
 
+import placeNames from './jp-placenames.js';
+
 /** @typedef {import('../schema.js').RegionPack} RegionPack */
 
 /** @type {RegionPack} */
@@ -176,6 +178,10 @@ const jp = {
       values: { lineWidth: 6, lineGap: 2, cornerRadius: 8, stationRadius: 5, fontFamily: 'gothic', fontSize: 12, showSubNames: true, showNumbering: true, stationStroke: 'line', background: '#1B2530', ink: '#E6EBF0', paper: '#1B2530', colorMode: 'bright', stationSymbol: 'circle' },
     },
   ],
+
+  // 架空の地形（§6.7・§6.8）：地名の要素と、都市の規模の区切り（人口）
+  placeNames,
+  cityKindThresholds: { metropolis: 1000000, city: 50000, town: 10000 },
 
   // 途中駅の停車時間の既定（rank の上限ごと）
   dwellSecByRank: [

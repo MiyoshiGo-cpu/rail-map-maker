@@ -34,4 +34,5 @@ export const files = [
   'backend-svg.test.js',
   'signboard.test.js',
   'terrain.test.js',
+  'world.test.js',
 ];
