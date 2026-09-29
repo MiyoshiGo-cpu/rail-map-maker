@@ -53,7 +53,7 @@
 
 ## 進捗
 
-- [ ] フェーズ1：路線図エディタの土台
+- [x] フェーズ1：路線図エディタの土台（2026-09-29 完了）
 - [ ] フェーズ2：種別・運行系統・直通運転
 - [ ] フェーズ3：見た目と書き出し
 - [ ] フェーズ4：架空地形と地理ビュー
@@ -67,8 +67,9 @@
 
 作業の区切りごとに書き換える。どこまで進んだか、次にやること、未解決の問題を3〜8行で書き、セッションが変わってもここを読めば続きから再開できるようにする。
 
-- フェーズ1の17ステップのうち、17 の公開以外はすべて済み。完了条件13個のうち12個を実際の操作で確認済み（残りは「GitHub Pages で公開し、iPhone の Safari とホーム画面で起動」）。SPEC §10 に 1.2 として補足を追記済み。
-- 次：ユーザーの「pushして」を待つ → `git push -u origin main` → GitHub の Settings → Pages で main / (root) を選んでもらう → 公開URL（https://miyoshigo-cpu.github.io/rail-map-maker/）を PC と iPhone の Safari・ホーム画面で確認 → 完了条件13を確認できたら「進捗」のフェーズ1にチェック。
+- フェーズ1は完了（2026-09-29）。GitHub Pages で公開し、PC と iPhone（Safari・ホーム画面）で動作を確認済み。完了条件13個をすべて確認（iPhone 実機での駅200・路線20の操作感だけは未計測）。
+- 公開後に iPhone で直したこと：入力欄での自動拡大とページの拡大、ホーム画面版の上部の白い靄と画面の高さ（決定事項ログの 2026-09-29 の最後の3行）。ホーム画面版は画面の高さから時計の表示の分を引いた高さまでしか描かれない。
+- 次：フェーズ2（種別・運行系統・直通運転。SPEC §7）の計画を出して承認を待つ。コードはまだ書かない。
 - 性能：駅200・路線20で、パン・ズームの描画1回が中央値0.8〜3.5ms（3倍の画素数）、ラベル込みの表示リスト作成が約9ms。iPhone は同じネットワークで http://192.168.0.181:8000/ から開ける（ユーザー確認済み）。
 - 描画：core/schematic.js → core/parallel.js → render/scene-schematic.js（連絡線・駅記号・labels.js のラベル）→ render/backend-canvas.js。操作：ui/editor.js（約540行）＋ editor-header.js・editor-commands.js・editor-state.js・tools/・panels/・data-view.js・check-view.js。
 - CSS は app.css・components.css（約555行、これ以上足さない）・table.css。カタログは ja.js（約490行）＋ ja-help.js。
