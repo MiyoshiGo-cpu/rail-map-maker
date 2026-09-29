@@ -99,11 +99,11 @@
 作業の区切りごとに書き換える。どこまで進んだか、次にやること、未解決の問題を3〜8行で書き、セッションが変わってもここを読めば続きから再開できるようにする。
 
 - フェーズ1は完了（2026-09-29）。完了条件13個をすべて確認し、公開版を PC と iPhone（Safari・ホーム画面）で確認済み。未計測なのは iPhone 実機での駅200・路線20の操作感だけ（任意）。
-- フェーズ2は計画を承認済み（2026-09-29。下の「フェーズ2の計画」）。ステップ0〜2（準備・営業キロ・種別）が終わり、区切り1として main に反映した。iPhone での確認待ち。次はステップ3（系統の計算）。
+- フェーズ2は計画を承認済み（2026-09-29。下の「フェーズ2の計画」）。区切り1（営業キロ・種別）と区切り2（系統の計算・画面・直通チェック・路線図での強調。ステップ3〜6）を main に反映した。区切り2の iPhone 確認待ち。次はステップ7（停車駅案内図の中身）。
 - 性能（PC）：駅200・路線20で、パン・ズームの描画1回が中央値0.8〜3.5ms（3倍の画素数）、ラベル込みの表示リスト作成が約9ms。
-- 描画：core/schematic.js → core/parallel.js → render/scene-schematic.js（連絡線・駅記号・labels.js のラベル）→ render/backend-canvas.js。操作：ui/editor.js（約540行）＋ editor-header.js・editor-commands.js・editor-state.js・tools/・panels/・data-view.js・check-view.js。起動と画面の切り替え・iPhone 向けの処理は js/main.js。
-- 型は core/schema.js、既定値と補完は defaults.js、アクションは core/actions/、保存は js/storage/。CSS は app.css・components.css・table.css・services.css（フェーズ2）、カタログは js/i18n/ja.js（約490行）＋ ja-help.js ＋ ja-services.js（フェーズ2）。営業キロは core/distance.js、種別は core/actions/service-types.js・ui/panels/service-type-panel.js・ui/data-tabs-services.js。
-- 確認用：`?debug=1` で window.rmmDebug（store・es・canvasView・getScene・commands）と、一覧の「性能確認用のデータを作る」。テストは Node 159件・ブラウザ（/tests/）154件、`node tools/check-i18n.js` は0件。
+- 描画：core/schematic.js → core/parallel.js → render/scene-schematic.js（連絡線・駅記号・labels.js のラベル）→ render/backend-canvas.js。操作：ui/editor.js（約530行）＋ editor-header.js・editor-commands.js・editor-state.js・tools/・panels/・data-view.js・check-view.js。起動と画面の切り替え・iPhone 向けの処理は js/main.js。
+- 型は core/schema.js、既定値と補完は defaults.js、アクションは core/actions/、保存は js/storage/。CSS は app.css・components.css・table.css・services.css（フェーズ2）、カタログは js/i18n/ja.js（約490行）＋ ja-help.js ＋ ja-services.js（フェーズ2）。営業キロは core/distance.js、種別は core/actions/service-types.js・ui/panels/service-type-panel.js・ui/data-tabs-services.js。系統：経路の展開・停車駅・直通の判定は core/services.js、経路の候補は core/network.js、所要時間は core/runtime.js、アクションと後始末は core/actions/services.js、チェックは core/validate-services.js。画面は ui/panels/service-panel.js・service-new-panel.js・ui/route-picker.js・service-ui.js・pending-pick.js（地図のタップで駅を選ぶ）・service-overlay.js（路線図の強調）。
+- 確認用：`?debug=1` で window.rmmDebug（store・es・canvasView・getScene・commands）と、一覧の「性能確認用のデータを作る」。テストは Node 180件・ブラウザ（/tests/）175件（tests/helpers.js の throughNetwork が直通の路線網の見本）、`node tools/check-i18n.js` は0件。
 
 ### 直近で対応した問題（2026-09-29、すべて解決済み）
 
@@ -186,3 +186,6 @@
 - 2026-09-29 駅・路線を消したときの系統：端の駅が消えたら同じ路線の隣の駅まで縮める。路線を消したらその区間を外し、区間が無くなった系統は消す（トーストで知らせる）。それ以外でつながらなくなったらチェックのエラーにする。
 - 2026-09-29 ショートカットのビュー切替は SPEC の順番（1 路線図・2 地理・3 案内図・4 駅名標）のまま、できたビューだけ有効にする。
 - 2026-09-29 クラウドでのブラウザ確認は `tools/browser-check.js`（入っている Chromium を画面なしで動かし、DevTools Protocol で画面写真・コンソールエラー・tests/ の結果を取る）。
+- 2026-09-29 系統の停車駅：stopsAuto の間は種別のルールからその都度計算し、Service.stops には系統を編集した時点の停車駅を見本として入れる（駅のランクを変えても stops は古いまま。表示と計算はいつも計算し直した値を使う）。信号場・貨物駅・車両基地には全駅停車でも止まらない。停車駅の数は同じ駅を1つと数える（環状線を一周する系統）。
+- 2026-09-29 経路の候補：路線をまたぐたびに 2km 相当の重みを足した最短経路を基本に、使った路線を1本ずつ外して別の経路を探す（最大5件）。環状線を通る区間は逆回りも候補に出す。廃止の路線は使わない。最初の区間も、選んだ種別と事業者が違えば、その路線の事業者の近い種別にする。
+- 2026-09-29 直通チェックは、つなぎ目だけでなく経路に沿って軌間・電化方式が変わる所をすべて見る（区間ごとの上書きも含む）。軌間の null（対象外）どうしは同じとみなす。
