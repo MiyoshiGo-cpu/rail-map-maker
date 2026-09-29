@@ -13,4 +13,5 @@ export const files = [
   'autosave.test.js',
   'viewport.test.js',
   'octilinear.test.js',
+  'parallel.test.js',
 ];

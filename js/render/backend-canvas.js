@@ -152,7 +152,8 @@ function drawPathItem(ctx, it) {
   ctx.lineWidth = it.width;
   ctx.stroke();
   if (it.inner) {
-    ctx.setLineDash([]);
+    // 破線の区間では中央の細線も同じ破線にする
+    ctx.setLineDash(it.dash || []);
     ctx.strokeStyle = it.inner.color;
     ctx.lineWidth = it.inner.width;
     ctx.stroke();

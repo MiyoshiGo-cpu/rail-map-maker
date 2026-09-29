@@ -64,9 +64,17 @@ export function drawOverlay(ctx, o) {
       ctx.rotate(ang);
       ctx.roundRect(-r, -r, len + r * 2, r * 2, r);
       ctx.restore();
+    } else if (st.kind === 'rrect') {
+      const m = px(4);
+      ctx.save();
+      ctx.translate(st.x, st.y);
+      ctx.roundRect(-st.w / 2 - m, -st.h / 2 - m, st.w + m * 2, st.h + m * 2, (st.r || 0) + m);
+      ctx.restore();
+    } else if (st.kind === 'circle') {
+      ctx.arc(st.x, st.y, st.r + px(4), 0, Math.PI * 2);
     } else {
-      const r = (st.r || Math.max(st.w || 0, st.h || 0) / 2) + px(4);
-      ctx.arc(st.x, st.y, r, 0, Math.PI * 2);
+      const b = st.bbox;
+      ctx.arc((b.minX + b.maxX) / 2, (b.minY + b.maxY) / 2, Math.hypot(b.maxX - b.minX, b.maxY - b.minY) / 2 + px(3), 0, Math.PI * 2);
     }
     ctx.strokeStyle = color;
     ctx.lineWidth = px(3);
