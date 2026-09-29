@@ -1,14 +1,19 @@
 # CLAUDE.md
 
+このファイルだけ読めば、どの環境（Windows PC の Claude Code・クラウドの claude.ai/code）からでも続きを再開できるようにしておく。会話の履歴は引き継がれない前提で書く。
+
 ## このプロジェクト
 
-架空鉄道の路線図エディタ兼シミュレーター「架空路線図メーカー」。iPhone と Windows PC のブラウザで使う静的サイトで、GitHub Pages で公開する。ゆくゆくは海外版（英語UI、海外の地図と鉄道の慣習）にも広げる（フェーズ8・9）。仕様の正本は **SPEC.md**。
+架空鉄道の路線図エディタ兼シミュレーター「架空路線図メーカー」。iPhone と Windows PC のブラウザで使う静的サイト（ビルド不要・外部ライブラリなし）で、GitHub Pages で公開している。ゆくゆくは海外版（英語UI、海外の地図と鉄道の慣習）にも広げる（フェーズ8・9）。仕様の正本は **SPEC.md**（各フェーズの作るものと完了条件は §7）。
+
+全体は9フェーズ（下の「進捗」）。フェーズ1で路線図エディタの土台を作り、公開した。
 
 ## 作業を始めるとき
 
-1. このファイルの「現在の状況」を読む。
+1. このファイルの「現在の状況」「次にやること」「直近で対応した問題」を読む。
 2. SPEC.md の §2（技術方針。特に §2.6 の多言語化と地域パック）、§3（データモデル）、§8（落とし穴）と、今のフェーズの節（§7）を読む。
-3. 新しいフェーズやまとまった作業を始める前に、計画（作るファイル・手順・曖昧な点への質問・リスク）を出して承認を待つ。
+3. 「作業環境」の表で、今の環境でのコマンドを確かめる（クラウドでは `py` が無いなど）。
+4. 新しいフェーズやまとまった作業を始める前に、計画（作るファイル・手順・曖昧な点への質問・リスク）を出して承認を待つ。
 
 ## 守ること
 
@@ -25,13 +30,25 @@
 
 ## 開発の進め方
 
-- 作業は小さなステップに分ける。ステップごとに：実装 → テスト（tests/index.html と `npm test`。Node 24 では `node --test tests/` のフォルダ指定が動かないため、中身は `node --test "tests/*.test.js"`）→ `node tools/check-i18n.js` → ブラウザで確認（幅390px と 1280px、コンソールエラー0）→ コミット。
-- ローカルサーバーは `py tools/serve.py`（`python -m http.server` と同じでキャッシュしない版。このPCでは `python` コマンドが動かず `py` を使う）。
+- 作業は小さなステップに分ける。ステップごとに：実装 → テスト（`npm test` と、ブラウザで tests/index.html）→ `node tools/check-i18n.js` → ブラウザで確認（幅390px と 1280px、コンソールエラー0）→ コミット → 報告。
 - コミットメッセージは日本語で、先頭に種類を付ける（feat: / fix: / refactor: / test: / docs: / chore:）。
-- 1ファイルが600行を超えそうなら分ける。
+- 1ファイルが600行を超えそうなら分ける（components.css は約555行なので、これ以上足さず table.css などに書く）。
 - 型は JSDoc で書く。識別子は英語（SPEC.md §3.4 の対応表に合わせる）、コメントは日本語で短く。
 - UI の文言は SPEC.md §4.6 に従う。
-- 開発PCは Windows。
+- git の作者は、このリポジトリでは MiyoshiGo-cpu／`292715769+MiyoshiGo-cpu@users.noreply.github.com`（GitHub の非公開アドレス）。新しい環境で未設定なら `git config user.name` と `git config user.email` をこの値にする。
+
+## 作業環境
+
+| | Windows PC（Claude Code デスクトップ） | クラウド（claude.ai/code、Linux） |
+|---|---|---|
+| ローカルサーバー | `py tools/serve.py`（`python` は動かない。`.claude/launch.json` と `npm run serve` も `py`） | `python3 tools/serve.py`（`py` は無い） |
+| テスト | `npm test`（中身は `node --test "tests/*.test.js"`。Node 24 ではフォルダ指定 `node --test tests/` が動かない） | 同じ。Node が古くて引用符つきの glob が効かなければ `node --test tests/*.test.js` |
+| 画面の確認 | アプリ内ブラウザで http://localhost:8000/ （隠れていると描画・タイマーが止まり、スクリーンショットが古いことがある） | ブラウザが使えなければ、テストと検査で確かめ、画面は公開版で私に見てもらう |
+| iPhone の確認 | 同じルーターにつながった iPhone から http://192.168.0.181:8000/ （PC の IP。変わることがある） | 公開版（下の「公開」）で確認してもらう |
+| push | Git Credential Manager でサインイン済み | GitHub 連携で push。作業ブランチに push した場合は、main に取り込むまで公開されない |
+
+- `serve.py` は `python -m http.server` と同じで、キャッシュさせない版（編集がすぐ反映される）。
+- Write ツールで `\u` のエスケープが実際の文字に変わることがある。render/・ui/ に文字の表を置くときは Python で書き込む。
 
 ## 報告のしかた
 
@@ -45,15 +62,28 @@
   4. 次にやること
 - 判断が必要なときは、選択肢とおすすめを示してから質問する。
 
-## 公開
+## 公開（GitHub Pages）
 
-- リモート：https://github.com/MiyoshiGo-cpu/rail-map-maker.git （main ブランチのルートを GitHub Pages で公開）
+- リモート：https://github.com/MiyoshiGo-cpu/rail-map-maker.git
+- **main ブランチのルート（/）** を GitHub Pages で公開している（Settings → Pages：Deploy from a branch・main・/ (root)。設定済み）。`.nojekyll` を置いている。
 - 公開URL：https://miyoshigo-cpu.github.io/rail-map-maker/
-- GitHub の設定画面での操作は私が行う。必要になったら手順を教えてください。
+- 反映の流れ：main に push → GitHub が1〜2分で公開 → 公開版のファイルに変更が入ったかを確かめる（例：`curl -s "https://miyoshigo-cpu.github.io/rail-map-maker/js/main.js?v=$RANDOM" | grep 探す文字列`）。
+- GitHub Pages はファイルを最大10分キャッシュさせる（Cache-Control: max-age=600）。
+- クラウドで作業ブランチや PR を使う場合は、main にマージされるまで公開版は変わらない。マージや GitHub の設定画面の操作は私が行う。必要になったら手順を教えてください。
+
+## iPhone での確認手順
+
+1. push 後、上の方法で公開版に反映されたことを確かめてから、私に確認を頼む。
+2. 私にお願いする操作：
+   - ホーム画面版は、アプリを完全に終了（画面の下から上にスワイプ → アプリを上にはじく）→ **10分ほど待って** からアイコンで起動する（古いファイルが残るため）。
+   - Safari 版は、再読み込みする（古ければ10分待つ）。
+3. Safari 版とホーム画面版は動きが違う（画面の高さ・上端の表示、保存場所も別）。表示の問題は両方で確かめる。
+4. 画面写真を貼ってもらって判断する。原因が分からないときは、一時的に数値（screen・innerHeight・clientHeight・safe-area など）を画面に出す表示を入れて写真を撮ってもらい、確認後に消す（2026-09-29 にこの方法で解決した）。
+5. 大きな路線図の操作感は、Safari で `?debug=1` を付けて開き、一覧の「性能確認用のデータを作る」で試せる。
 
 ## 進捗
 
-- [x] フェーズ1：路線図エディタの土台（2026-09-29 完了）
+- [x] フェーズ1：路線図エディタの土台（2026-09-29 完了・公開済み）
 - [ ] フェーズ2：種別・運行系統・直通運転
 - [ ] フェーズ3：見た目と書き出し
 - [ ] フェーズ4：架空地形と地理ビュー
@@ -67,21 +97,35 @@
 
 作業の区切りごとに書き換える。どこまで進んだか、次にやること、未解決の問題を3〜8行で書き、セッションが変わってもここを読めば続きから再開できるようにする。
 
-- フェーズ1は完了（2026-09-29）。GitHub Pages で公開し、PC と iPhone（Safari・ホーム画面）で動作を確認済み。完了条件13個をすべて確認（iPhone 実機での駅200・路線20の操作感だけは未計測）。
-- 公開後に iPhone で直したこと：入力欄での自動拡大とページの拡大、ホーム画面版の上部の白い靄と画面の高さ（決定事項ログの 2026-09-29 の最後の3行）。ホーム画面版は画面の高さから時計の表示の分を引いた高さまでしか描かれない。
-- 次：フェーズ2（種別・運行系統・直通運転。SPEC §7）の計画を出して承認を待つ。コードはまだ書かない。
-- 性能：駅200・路線20で、パン・ズームの描画1回が中央値0.8〜3.5ms（3倍の画素数）、ラベル込みの表示リスト作成が約9ms。iPhone は同じネットワークで http://192.168.0.181:8000/ から開ける（ユーザー確認済み）。
-- 描画：core/schematic.js → core/parallel.js → render/scene-schematic.js（連絡線・駅記号・labels.js のラベル）→ render/backend-canvas.js。操作：ui/editor.js（約540行）＋ editor-header.js・editor-commands.js・editor-state.js・tools/・panels/・data-view.js・check-view.js。
-- CSS は app.css・components.css（約555行、これ以上足さない）・table.css。カタログは ja.js（約490行）＋ ja-help.js。
-- 確認用：`?debug=1` で window.rmmDebug（store・es・canvasView・getScene・commands）と、一覧の「性能確認用のデータを作る」。アプリ内ブラウザは隠れていると描画・タイマーが止まり、スクリーンショットが古い画面のことがある。
-- 起動：`py tools/serve.py` → http://localhost:8000/、テスト：`npm test`（Node 145件）と /tests/（ブラウザ 140件）、検査：`node tools/check-i18n.js`。
+- フェーズ1は完了（2026-09-29）。完了条件13個をすべて確認し、公開版を PC と iPhone（Safari・ホーム画面）で確認済み。未計測なのは iPhone 実機での駅200・路線20の操作感だけ（任意）。
+- フェーズ2はまだ始めていない（計画も未作成）。
+- 性能（PC）：駅200・路線20で、パン・ズームの描画1回が中央値0.8〜3.5ms（3倍の画素数）、ラベル込みの表示リスト作成が約9ms。
+- 描画：core/schematic.js → core/parallel.js → render/scene-schematic.js（連絡線・駅記号・labels.js のラベル）→ render/backend-canvas.js。操作：ui/editor.js（約540行）＋ editor-header.js・editor-commands.js・editor-state.js・tools/・panels/・data-view.js・check-view.js。起動と画面の切り替え・iPhone 向けの処理は js/main.js。
+- 型は core/schema.js、既定値と補完は defaults.js、アクションは core/actions/、保存は js/storage/。CSS は app.css・components.css・table.css、カタログは js/i18n/ja.js（約490行）＋ ja-help.js。
+- 確認用：`?debug=1` で window.rmmDebug（store・es・canvasView・getScene・commands）と、一覧の「性能確認用のデータを作る」。テストは Node 145件・ブラウザ（/tests/）140件、`node tools/check-i18n.js` は0件。
+
+### 直近で対応した問題（2026-09-29、すべて解決済み）
+
+| 問題 | 原因 | 対処 |
+|---|---|---|
+| iPhone で画面全体が拡大され、戻せなくなる | 入力欄の文字が16px未満だと Safari がフォーカス時に自動で拡大する。アプリがページのピンチを止めていたので戻せなかった | viewport に maximum-scale=1、全要素に touch-action: manipulation、2本指の touchmove を止める。万一拡大されたら止めるのをやめてピンチで戻せるようにした（js/main.js・css/app.css） |
+| ホーム画面版で上部に白い靄がかかる | iPhone が画面上端を、ページの地の色（body の背景・白）でぼかす | html・body の背景をヘッダーと同じ紺（--sign）にした。見える部分は各画面が白で塗る |
+| ホーム画面版で下に隙間／上が太い／下のボタンが切れる | ホーム画面版は「画面の高さ − 時計の表示の高さ」までしか描かれない（実機：screen 852・clientHeight 793・上のセーフエリア 59）。アプリを画面より高くすると上端に余白が二重に付く | 高さは clientHeight を --app-h に入れて使う。この差があるときは html に ios-short-viewport を付け、下のセーフエリアの余白（--safe-b）を0にした。画面の一番下に紺の帯（約59pt）が残るのは iPhone 側の制限 |
+| 総点検で見つかった不具合（駅名の札の上に駅を置けない、名前の入力でページがずれる、測る前の座標の変換） | — | 直してコミット済み |
+
+### 次にやること（この順番で）
+
+1. （任意）iPhone で大きな路線図の操作感を確かめてもらう（「iPhone での確認手順」の5）。
+2. フェーズ2「種別・運行系統・直通運転」の計画を立てて出す。コードはまだ書かない。SPEC §7 フェーズ2 の作るもの7項目と完了条件5つ、関連する §3（種別・系統のデータ型）・§5.5（停車駅案内図）・§6.3〜6.5（営業キロ・所要時間・直通チェック）を読んで、作るファイル・小さなステップの順番（止まって確認する区切りも決める）・曖昧な点への質問・リスク・確認方法をまとめ、承認を待つ。
+3. 承認後、ステップごとに実装 → テスト → check-i18n → ブラウザ確認 → コミット → 報告。区切りでは止まって確認を待つ。
+4. 完了条件を総点検 → 「pushして」をもらって公開 → iPhone で確認 → 「進捗」にチェックし、このファイルを更新。
 
 ## 決定事項ログ
 
 仕様に書かれていない細かい判断をしたら、日付と内容を1行ずつ追記する。
 
-- 2026-09-28 開発用サーバーは `py tools/serve.py`（キャッシュさせない。`python` コマンドがこのPCで動かないため `py`）。テストは `npm test`。
-- 2026-09-28 git の作者は MiyoshiGo-cpu／GitHub の非公開アドレス（このリポジトリだけに設定）。
+- 2026-09-28 開発用サーバーは `tools/serve.py`（キャッシュさせない）。Windows PC では `python` コマンドが動かないため `py tools/serve.py`、クラウドでは `python3`。テストは `npm test`。
+- 2026-09-28 git の作者は MiyoshiGo-cpu／GitHub の非公開アドレス 292715769+MiyoshiGo-cpu@users.noreply.github.com（このリポジトリだけに設定）。
 - 2026-09-28 schema.js が長くなるため、既定値を作る関数と読み込み時の補完は defaults.js に分けた。
 - 2026-09-28 Undo/Redo はパッチ（set/insert/remove）と逆パッチで記録。表示位置・メタ情報は履歴に入れない（silent）。ドラッグ中はプレビューし、指を離したときに1手として確定。
 - 2026-09-28 チェック（§6.6）のフェーズ1対象：駅2つ未満の路線・存在しないID・駅番号の重複・駅名/よみが空・どの路線にも属さない駅・近くの同名駅・使われていない事業者。色の近さはフェーズ3、駅間の極端さと営業キロの概算はフェーズ2。
