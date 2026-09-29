@@ -17,11 +17,13 @@ import { listProjectMeta, getProject, putProject, deleteProject } from '../stora
  */
 export function createProjectList(opt) {
   const listEl = h('div', { class: 'plist-items' });
+  // 上部の「新しいプロジェクト」。プロジェクトが無いあいだは、画面中央の案内のボタンだけにするので隠す
+  const headerNewBtn = h('button', { class: 'btn btn-sign', type: 'button', hidden: true, on: { click: () => newProject() } },
+    icon('plus'), h('span', {}, t('plist.new')));
   const el = h('div', { class: 'plist' },
     h('header', { class: 'plist-header on-sign' },
       h('h1', { class: 'plist-title' }, t('app.title')),
-      h('button', { class: 'btn btn-sign', type: 'button', on: { click: () => newProject() } },
-        icon('plus'), h('span', {}, t('plist.new'))),
+      headerNewBtn,
     ),
     h('main', { class: 'plist-body' },
       h('div', { class: 'plist-inner' }, listEl),
@@ -37,6 +39,7 @@ export function createProjectList(opt) {
       replaceChildren(listEl, h('p', { class: 'plist-empty' }, t('storage.unavailable')));
       return;
     }
+    headerNewBtn.hidden = metas.length === 0;
     if (metas.length === 0) {
       replaceChildren(listEl,
         h('div', { class: 'plist-empty' },
