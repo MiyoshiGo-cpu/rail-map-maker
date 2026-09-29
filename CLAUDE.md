@@ -101,7 +101,7 @@
 - フェーズ1は完了（2026-09-29）。完了条件13個をすべて確認し、公開版を PC と iPhone（Safari・ホーム画面）で確認済み。未計測なのは iPhone 実機での駅200・路線20の操作感だけ（任意）。
 - フェーズ2は完了（2026-09-29）。計画のステップ0〜10をすべて終え、完了条件5つを確かめ、公開版を iPhone で確認してもらった。
 - フェーズ3は完了（2026-09-29）。計画のステップ1〜9をすべて終え、完了条件5つを確かめた（4つは Chromium で：PNG と SVG の画素比較、1,600万画素の案内、駅名標の前後の駅のテスト、A4 横の PDF が1ページ。iPhone での PNG の保存は確認してもらった）。
-- 次はフェーズ4（架空地形と地理ビュー）。計画を出して承認待ち。
+- フェーズ4（架空地形と地理ビュー）は計画を承認済み（2026-09-29。下の「フェーズ4の計画」）。ステップ1から進める。
 - 性能（PC）：駅200・路線20で、パン・ズームの描画1回が中央値0.8〜3.5ms（3倍の画素数）、ラベル込みの表示リスト作成が約9ms。
 - 描画：core/schematic.js → core/parallel.js → render/scene-schematic.js（連絡線・駅記号・labels.js のラベル）→ render/backend-canvas.js。操作：ui/editor.js（約555行。これ以上は editor-views.js などに分ける）＋ editor-header.js・editor-commands.js・editor-state.js・tools/・panels/・data-view.js・check-view.js。起動と画面の切り替え・iPhone 向けの処理は js/main.js。
 - 型は core/schema.js、既定値と補完は defaults.js、アクションは core/actions/、保存は js/storage/。CSS は app.css・components.css・table.css・services.css（フェーズ2）、カタログは js/i18n/ja.js（約490行）＋ ja-help.js ＋ ja-services.js（フェーズ2）。営業キロは core/distance.js、種別は core/actions/service-types.js・ui/panels/service-type-panel.js・ui/data-tabs-services.js。系統：経路の展開・停車駅・直通の判定は core/services.js、経路の候補は core/network.js、所要時間は core/runtime.js、アクションと後始末は core/actions/services.js、チェックは core/validate-services.js。画面は ui/panels/service-panel.js・service-new-panel.js・ui/route-picker.js・service-ui.js・pending-pick.js（地図のタップで駅を選ぶ）・service-overlay.js（路線図の強調）。停車駅案内図は core/stopchart.js（中身）→ render/scene-stopchart.js（表示リスト。横・縦）→ ui/stopchart-view.js（ビュー）、ビューの切り替えは ui/editor-views.js。スタイル：プリセットは地域パック（jp.js の stylePresets）、適用は core/map-style.js、色づかい（inkOf・paperOf・tone・lineAppearance）は render/styles.js、設定の欄は ui/style-settings.js。パレットは ui/color-palette.js（色は jp.js の linePalette）、色の差は core/color.js の colorDistance（CIEDE2000）。凡例とタイトルは render/scene-legend.js（設定の欄は ui/legend-settings.js）、駅の記号は render/station-symbol.js。駅名標は core/signboard.js（中身）→ render/scene-signboard.js（3つのテンプレート）→ ui/signboard-view.js（ビュー）。案内図と駅名標のビューは ui/editor-views.js の createOtherViews でまとめて作る。書き出し：シートは ui/export-view.js、絵と PNG は ui/exporter.js、大きさの上限は core/export-size.js、SVG は render/backend-svg.js、印刷は ui/print.js（印刷用 CSS は css/export.css）。カタログはフェーズ3の分を js/i18n/ja-export.js、CSS は css/export.css。
@@ -118,10 +118,33 @@
 
 ### 次にやること（この順番で）
 
-1. フェーズ4（架空地形と地理ビュー。SPEC §7 と §6.7・§6.8・§5.4）の計画の承認をもらい、ステップ順に進める。
+1. 下の「フェーズ4の計画」をステップ順に進める。ステップごとに実装 → テスト → check-i18n → ブラウザ確認 → コミット。区切りでは main に反映し、iPhone での確認手順を伝えて、確認を待つ。
 2. （任意）iPhone で大きな路線図の操作感を確かめてもらう（「iPhone での確認手順」の5）。
 
-### フェーズ3の計画（2026-09-29 承認）
+### フェーズ4の計画（2026-09-29 承認）
+
+| # | ステップ | 主なファイル |
+|---|---|---|
+| 1 | 地形の生成（中身）：シンプレックスノイズの fBm・尾根型・ドメインワーピング、形のマスク4種（島・列島・大陸の沿岸・内陸）、陸地の割合から海面を決める。決定性のテスト（ハッシュ）と速さの計測 | core/terrain/noise.js・generate.js・codec.js |
+| 2 | 水系（窪地埋め・流下方向・流量・川・湖）、都市（配置・Zipf の人口）、県（ボロノイ・県庁所在地）、日本風の地名（要素は地域パック） | core/terrain/hydrology.js・cities.js・regions.js、core/placenames.js |
+| 3 | 生成の画面：新規作成の「地形」に「架空の地形」、既存には「地形を追加」。パラメータ・小さいプレビュー・本生成（Worker・進み具合）。「地形を追加」では路線図の配置から地理座標を仮に作る | js/workers/terrain-worker.js、ui/terrain-dialog.js |
+| 区切り1 | main に反映 → iPhone で生成の速さ（中サイズ8秒以内）と画面が固まらないことを確認 | |
+| 4 | 地理ビューの表示（ヘッダーに「地理」、キー 2）：段彩と陰影、川・湖・都市と名前・県境、駅と路線（Catmull-Rom）、駅名、縮尺バーと方位記号 | render/terrain-raster.js・scene-geo.js、ui/geo-view.js |
+| 5 | 地理ビューでの編集：駅を置く・動かす、路線を引く、経由点の追加とドラッグ、削除。営業キロは地理座標から自動 | ui/tools/（地理用）、render/labels.js |
+| 区切り2 | main に反映 → iPhone で表示と編集を確認 | |
+| 6 | 地図記号スタイル（JR は白黒の縞など）と、地理ビューの書き出し（PNG・SVG・印刷。地形の画像も入れる） | render/geo-symbols.js |
+| 7 | トンネル・橋梁の提案（区間に沿って標高と水域を調べ、チェックに出してまとめて当てる） | core/structure-suggest.js |
+| 8 | 地理の配置から路線図を自動で作る（格子・八方向・重なりを避ける。確認ダイアログと復元ポイント） | core/auto-schematic.js |
+| 区切り3 | main に反映 → iPhone で確認 | |
+| 9 | ブラシ（盛る・削る・平らに・なめらかに・陸・海・川・都市。スマホは1本指で塗り2本指で動かす）。差分で保存、再生成のときは編集を捨てるか確認 | core/terrain/brush.js、ui/tools/brush-tool.js |
+| 10 | 駅名候補の提案（最寄りの都市名、都市名＋方角、「新」＋都市名、都市名＋「口」、近くの地名＋「前」） | core/station-names.js |
+| 11 | 総点検：完了条件4つ、サンプル、SPEC §10・README・ヘルプ・CLAUDE.md | |
+| 区切り4 | main に反映 → iPhone で最終確認 → フェーズ4完了 | |
+
+- 承認時に決めたこと：サンプル「湾岸都市圏」に地形（小サイズ）を付ける。地形の形の既定は列島。片方のビューで置いた駅は、もう片方のビューでも近い位置に自動で仮置きする（地理で置いた駅は路線図の近くの空いた格子点へ、路線図で置いた駅は地理の対応する位置へ）。
+- editor.js は約560行なので、地理ビューは別ファイル（ui/geo-view.js など）に分ける。
+
+### フェーズ3の計画（2026-09-29 承認・すべて実施）
 
 | # | ステップ | 主なファイル |
 |---|---|---|
@@ -220,3 +243,4 @@
 - 2026-09-29 凡例とタイトル：MapStyle.legend（show・corner・lines・types・symbols）と MapStyle.title（show・corner・text・showAuthor・date）。既定はどちらも出さない。地図の範囲（線と駅記号に文字の大きさ×3の余白を足したものと駅名）の外に置き、同じ角ならタイトル → 凡例の順に積む。凡例の種別は系統で使っているものだけ、記号は路線図に出ているものだけ。タイトルが空ならプロジェクト名、作者は Project.author、日付は自由に書く（「今日の日付」で「2026年9月29日現在」を入れる）。当たり判定には入れない。
 - 2026-09-29 書き出し：「書き出す」のシート（PNG・SVG・印刷・JSON）。PNG は約1,600万画素かつ1辺16,384px まで。iPhone で共有シートを開けなかったとき（準備に時間がかかり、タップの直後でなくなったとき）は「共有シートを開く」ボタンを出す。SVG の文字は Canvas より0.5px ほど下にずれることがある（書体の測り方の違い。許容）。印刷は SVG を用紙（A4・A3、横・縦、余白10mm）に収め、ブラウザのメニューからの印刷でも同じにする。
 - 2026-09-29 駅名標：MapStyle.signboard（template：band・number・kana、items：reading・en・subName・number・neighbors・multilingual）。表示中の駅・路線はエディタの状態（signStation・signLine）に持ち、保存しない。前後の駅は信号場・貨物駅・車両基地を飛ばす。2〜3文字の駅名は字の間をあけ、長い駅名は文字を小さくして幅に収める。前後の駅を押すとその駅に移る。駅名標の帯のため、角丸の四角で角ごとの半径（corners）を使えるようにした。
+- 2026-09-29 フェーズ4の方針（計画の承認時に決めた）：サンプルに小サイズの地形を付ける。地形の形の既定は列島。片方のビューで置いた駅は、もう片方のビューでも近い位置に自動で仮置きする。標高は SPEC どおり Int16 の base64 で保存する（中サイズで約0.7MB 増える）。
