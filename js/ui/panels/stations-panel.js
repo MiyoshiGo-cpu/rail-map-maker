@@ -3,7 +3,7 @@ import { h } from '../dom.js';
 import { t } from '../../i18n/i18n.js';
 
 /**
- * @param {{ align: (mode: 'horizontal'|'vertical'|'diagonal'|'even') => void, deleteSelection: () => void }} ctx
+ * @param {{ align: (mode: 'horizontal'|'vertical'|'diagonal'|'even') => void, deleteSelection: () => void, makeInterchange: (ids: string[]) => void, es: any }} ctx
  */
 export function createStationsPanel(ctx) {
   const title = h('h2', { class: 'panel-title' });
@@ -20,7 +20,13 @@ export function createStationsPanel(ctx) {
       ),
     ),
     h('div', { class: 'panel-section' },
-      h('div', { class: 'panel-actions' }, btn(t('stations.delete'), () => ctx.deleteSelection(), 'btn-small')),
+      h('div', { class: 'panel-actions' },
+        btn(t('interchange.make'), () => {
+          const sel = ctx.es.get().selection;
+          if (sel.type === 'stations') ctx.makeInterchange(sel.ids);
+        }, 'btn-small'),
+        btn(t('stations.delete'), () => ctx.deleteSelection(), 'btn-small'),
+      ),
     ),
   );
   return {

@@ -95,6 +95,7 @@ export function createEditor(opt) {
       hover: null,
       rangeMode: false,
       marquee: null,
+      pending: null,
     });
 
     // ---------- 保存 ----------
@@ -222,6 +223,7 @@ export function createEditor(opt) {
         if (!target) es.set({ selection: NO_SELECTION });
         else if (target.type === 'station' || target.type === 'label') es.set({ selection: { type: 'stations', ids: [target.id] } });
         else if (target.type === 'section') es.set({ selection: { type: 'section', lineId: target.lineId, index: target.index } });
+        else if (target.type === 'interchange') es.set({ selection: { type: 'interchange', id: target.id } });
       },
       focusStationName() {
         panels.focusStationName();
@@ -257,6 +259,7 @@ export function createEditor(opt) {
         return [
           { label: t('station.branch'), onSelect: () => { setTool('line'); tools.line.branchFrom(stationId); } },
           { label: t('label.position'), onSelect: () => labelPosMenu(stationId) },
+          { label: t('interchange.addFromStation'), onSelect: () => es.set({ pending: { kind: 'interchange', stationId } }) },
           { separator: true },
           { label: t('station.delete'), danger: true, onSelect: () => toolCtx.deleteStations([stationId]) },
         ];
@@ -269,8 +272,27 @@ export function createEditor(opt) {
       delete: createDeleteTool(toolCtx),
     };
     const currentTool = () => tools[es.get().tool] || tools.select;
+    /** 乗換グループにする駅を選んでもらっているとき、タップした駅をグループに入れる */
+    function pickPending(p, w) {
+      const pend = es.get().pending;
+      const hit = toolCtx.hitTest(p, w, (tg) => tg.type === 'station' || tg.type === 'label');
+      if (!hit) {
+        toast(t('interchange.pickMiss'));
+        return;
+      }
+      const ic = pend.interchangeId && store.getState().interchanges.find((x) => x.id === pend.interchangeId);
+      const ids = ic ? [...ic.stationIds, hit.id] : [pend.stationId, hit.id];
+      if (new Set(ids).size < 2 || (ic && ic.stationIds.includes(hit.id))) {
+        toast(t('interchange.pickOther'));
+        return;
+      }
+      const id = store.dispatch({ type: 'interchange/add', stationIds: ids });
+      es.set({ pending: null, selection: id ? { type: 'interchange', id } : NO_SELECTION });
+      if (id) toast(t('interchange.added'));
+    }
+
     canvasView.setInput({
-      onTap: (p, w) => currentTool().onTap?.(p, w),
+      onTap: (p, w) => (es.get().pending ? pickPending(p, w) : currentTool().onTap?.(p, w)),
       onDoubleTap: (p, w) => currentTool().onDoubleTap?.(p, w) || false,
       onLongPress: (p, w) => currentTool().onLongPress?.(p, w),
       onDragStart: (p, w) => currentTool().onDragStart?.(p, w) || null,
@@ -330,7 +352,11 @@ export function createEditor(opt) {
     /** 選んでいるものを削除する（Delete キー） */
     function deleteSelection() {
       const sel = es.get().selection;
-      if (sel.type === 'stations') toolCtx.deleteStations(sel.ids);
+      if (sel.type === 'interchange') {
+        store.dispatch({ type: 'interchange/delete', interchangeId: sel.id });
+        es.set({ selection: NO_SELECTION });
+        toast(t('interchange.deleted'));
+      } else if (sel.type === 'stations') toolCtx.deleteStations(sel.ids);
       else if (sel.type === 'section') {
         store.dispatch({ type: 'line/cutSection', lineId: sel.lineId, sectionIndex: sel.index });
         es.set({ selection: NO_SELECTION });
@@ -353,6 +379,13 @@ export function createEditor(opt) {
       onDeleteLine: (lineId) => toolCtx.deleteLine(lineId),
       align,
       deleteSelection,
+      makeInterchange: (ids) => {
+        const id = store.dispatch({ type: 'interchange/add', stationIds: ids });
+        if (id) {
+          es.set({ selection: { type: 'interchange', id } });
+          toast(t('interchange.added'));
+        }
+      },
     });
 
     replaceChildren(el,
@@ -385,7 +418,8 @@ export function createEditor(opt) {
       },
       escape() {
         const s = es.get();
-        if (s.rangeMode || s.marquee) es.set({ rangeMode: false, marquee: null });
+        if (s.pending) es.set({ pending: null });
+        else if (s.rangeMode || s.marquee) es.set({ rangeMode: false, marquee: null });
         else if (s.selection.type !== 'none') es.set({ selection: NO_SELECTION });
       },
       fit: () => canvasView.fitAll(),
@@ -435,6 +469,10 @@ export function createEditor(opt) {
         es.set({ drawing: null });
         return true;
       }
+      if (sel.type === 'interchange' && !p.interchanges.some((x) => x.id === sel.id)) {
+        es.set({ selection: NO_SELECTION });
+        return true;
+      }
       if (s.lineChoice !== 'new' && !hasLine(s.lineChoice)) {
         es.set({ lineChoice: 'new' });
         return true;
@@ -457,7 +495,8 @@ export function createEditor(opt) {
       el.style.setProperty('--accent', accent);
       el.style.setProperty('--accent-text', readableTextColor(accent));
       canvasView.setCursor(currentTool().cursor || 'default');
-      canvasView.setHint(p.stations.length ? null : t(s.tool === 'station' ? 'hint.placeStation' : 'hint.empty'));
+      if (s.pending) canvasView.setHint(t('interchange.pickHint'));
+      else canvasView.setHint(p.stations.length ? null : t(s.tool === 'station' ? 'hint.placeStation' : 'hint.empty'));
       panels.update(p);
       canvasView.requestRender();
     }

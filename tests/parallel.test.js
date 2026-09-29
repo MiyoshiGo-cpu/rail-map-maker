@@ -101,3 +101,18 @@ test('幾何：一直線に並んだ点の両端', () => {
   assert.deepEqual([e.a.y, e.b.y].sort((a, b) => a - b), [-3, 5]);
   assert.equal(collinearExtent([{ x: 0, y: 0 }, { x: 5, y: 0 }, { x: 2, y: 3 }]), null);
 });
+
+test('乗換グループ：離れた2駅は連絡線で結ばれ、3駅なら2本。連絡線を描かない設定もある', () => {
+  const store = newStore();
+  const a = store.dispatch({ type: 'station/add', x: 0, y: 0 });
+  const b = store.dispatch({ type: 'station/add', x: 3, y: 0 });
+  const c = store.dispatch({ type: 'station/add', x: 3, y: 4 });
+  const count = () => buildSchematicScene(store.getState(), { measure: () => 10 }).items
+    .filter((it) => it.target && it.target.type === 'interchange').length;
+  const ic = store.dispatch({ type: 'interchange/add', stationIds: [a, b] });
+  assert.equal(count(), 1);
+  store.dispatch({ type: 'interchange/add', stationIds: [b, c] });
+  assert.equal(count(), 2);
+  store.dispatch({ type: 'interchange/update', interchangeId: ic, fields: { showConnector: false } });
+  assert.equal(count(), 0);
+});

@@ -386,3 +386,7 @@ button { touch-action: manipulation; }
 @media (min-width: 900px) {
   .mobile-only { display: none !important; }
 }
+
+/* 乗換グループの駅の一覧 */
+.ic-list { list-style: none; margin: 0 0 8px; padding: 0; }
+.ic-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 40px; border-bottom: 1px solid var(--rule); }

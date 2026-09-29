@@ -81,6 +81,17 @@ export function drawOverlay(ctx, o) {
     ctx.stroke();
   };
   if (sel.type === 'stations') for (const id of sel.ids) ring(id, accent);
+  // 乗換グループ：所属する駅に輪を付ける
+  if (sel.type === 'interchange') {
+    const ic = p.interchanges.find((x) => x.id === sel.id);
+    if (ic) for (const id of ic.stationIds) ring(id, accent);
+  }
+  // 乗換グループにする駅を選んでいる途中：元の駅
+  if (es.pending) {
+    const ids = es.pending.stationId ? [es.pending.stationId]
+      : (p.interchanges.find((x) => x.id === es.pending.interchangeId)?.stationIds || []);
+    for (const id of ids) ring(id, accent);
+  }
 
   // 路線を引いている途中：端の駅と、指している点までの予告線
   if (es.tool === 'line' && es.drawing) {

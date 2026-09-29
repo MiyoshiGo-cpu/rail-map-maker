@@ -119,6 +119,9 @@ export function buildSchematicScene(p, opt) {
     stationItems.set(st.id, items[0]);
   }
 
+  // ---------- 乗換グループの連絡線（§5.2：白地に黒縁の太い線で駅の記号を結ぶ） ----------
+  const connectorItems = buildConnectors(p, stationItems, style);
+
   // ---------- 駅名 ----------
   const operatorOf = new Map(p.operators.map((o) => [o.id, o]));
   const labels = layoutLabels(p, {
@@ -126,7 +129,7 @@ export function buildSchematicScene(p, opt) {
     level: opt.level ?? 0,
     symbols: stationItems,
     passes,
-    obstacles: [...lineItems, ...symbolItems],
+    obstacles: [...lineItems, ...connectorItems, ...symbolItems],
     // 駅番号のバッジ（表示の設定がオンのとき）。形は事業者の設定、縁は路線の色
     badgesOf: (id) => (style.showNumbering
       ? stationNumbers(p, id).map((n) => ({
@@ -139,10 +142,59 @@ export function buildSchematicScene(p, opt) {
   });
   const labelItems = labels.items;
 
-  const items = [...lineItems, ...symbolItems, ...labelItems];
+  const items = [...lineItems, ...connectorItems, ...symbolItems, ...labelItems];
   const index = createSpatialIndex();
   for (const it of items) index.insert(it);
   return { items, index, sectionItems, stationItems, geom, bundles, labelInfo: labels.info, level: opt.level ?? 0 };
+}
+
+/** 駅の記号の中心 */
+export function symbolCenter(it) {
+  if (it.kind === 'capsule') return { x: (it.x1 + it.x2) / 2, y: (it.y1 + it.y2) / 2 };
+  if (it.kind === 'circle' || it.kind === 'rrect') return { x: it.x, y: it.y };
+  return { x: (it.bbox.minX + it.bbox.maxX) / 2, y: (it.bbox.minY + it.bbox.maxY) / 2 };
+}
+
+/**
+ * 乗換グループの連絡線。3駅以上なら、短い順につないで全体を結ぶ（最小全域木）
+ * @param {Project} p
+ * @param {Map<string, any>} stationItems
+ * @param {import('../core/schema.js').MapStyle} style
+ */
+function buildConnectors(p, stationItems, style) {
+  const out = [];
+  const inner = Math.max(3, style.stationRadius * 1.1);
+  const casing = inner + 3.5;
+  for (const ic of p.interchanges) {
+    if (!ic.showConnector) continue;
+    const pts = ic.stationIds.map((id) => stationItems.get(id)).filter(Boolean).map(symbolCenter);
+    if (pts.length < 2) continue;
+    // Prim 法：つながった点から最も近い点を順に足す
+    const used = [0];
+    const edges = [];
+    while (used.length < pts.length) {
+      let best = null;
+      for (const i of used) {
+        for (let j = 0; j < pts.length; j++) {
+          if (used.includes(j)) continue;
+          const d = Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y);
+          if (!best || d < best.d) best = { i, j, d };
+        }
+      }
+      used.push(best.j);
+      edges.push([pts[best.i], pts[best.j]]);
+    }
+    const target = { type: 'interchange', id: ic.id };
+    for (const [a, b] of edges) {
+      const bbox = {
+        minX: Math.min(a.x, b.x) - casing / 2, minY: Math.min(a.y, b.y) - casing / 2,
+        maxX: Math.max(a.x, b.x) + casing / 2, maxY: Math.max(a.y, b.y) + casing / 2,
+      };
+      out.push({ kind: 'path', pts: [a.x, a.y, b.x, b.y], radius: 0, width: casing, color: MAP_INK, cap: 'round', target, bbox });
+      out.push({ kind: 'path', pts: [a.x, a.y, b.x, b.y], radius: 0, width: inner, color: MAP_PAPER, cap: 'round', bbox });
+    }
+  }
+  return out;
 }
 
 /**

@@ -20,6 +20,11 @@ export function createStationPanel(ctx, stationId) {
 
   const title = h('h2', { class: 'panel-title' });
   const lineChips = h('ul', { class: 'chip-list' });
+  // 乗換グループ
+  const icInfo = h('p', { class: 'panel-note' });
+  const icOpen = h('button', { class: 'btn btn-small', type: 'button' }, t('interchange.open'));
+  const icAdd = h('button', { class: 'btn btn-small', type: 'button', on: { click: () => es.set({ pending: { kind: 'interchange', stationId } }) } }, t('interchange.addFromStation'));
+  const icLeave = h('button', { class: 'btn btn-small', type: 'button' }, t('interchange.leave'));
 
   // ---------- 基本 ----------
   const name = textInput({ onChange: (v) => set({ name: v.trim() }) });
@@ -74,6 +79,7 @@ export function createStationPanel(ctx, stationId) {
   const el = h('div', {},
     h('div', { class: 'panel-head' }, title),
     h('div', { class: 'panel-section' }, lineChips),
+    group(t('interchange.groupTitle'), [icInfo, h('div', { class: 'panel-actions' }, icOpen, icAdd, icLeave)]),
     group(t('panel.basic'), [
       field(t('station.name'), name),
       field(t('station.reading'), reading, { hint: t('station.readingHint') }),
@@ -164,6 +170,17 @@ export function createStationPanel(ctx, stationId) {
       lReset.disabled = !lb.dx && !lb.dy;
 
       const lines = p.lines.filter((l) => l.stops.some((s) => s.stationId === stationId)).sort((a, b) => a.order - b.order);
+      const ic = p.interchanges.find((x) => x.stationIds.includes(stationId));
+      if (ic) {
+        const others = ic.stationIds.filter((id) => id !== stationId).map((id) => p.stations.find((s) => s.id === id)?.name || t('station.unnamed'));
+        icInfo.textContent = t('interchange.memberOf', { names: others.join(t('common.listSep')), minutes: ic.walkMinutes });
+        icOpen.onclick = () => es.set({ selection: { type: 'interchange', id: ic.id } });
+        icLeave.onclick = () => store.dispatch({ type: 'interchange/removeStation', interchangeId: ic.id, stationId });
+      } else {
+        icInfo.textContent = t('interchange.none');
+      }
+      icOpen.hidden = !ic;
+      icLeave.hidden = !ic;
       // 1つの駅は通る路線の数だけ番号を持つ（§6.2）
       const codes = new Map(stationNumbers(p, stationId).map((x) => [x.line.id, x.code]));
       lineChips.replaceChildren(...(lines.length

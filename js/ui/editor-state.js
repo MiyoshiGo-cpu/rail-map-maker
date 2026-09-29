@@ -18,6 +18,7 @@
  * @property {{ x: number, y: number } | null} hover マウスが指している格子点
  * @property {boolean} rangeMode スマホの範囲選択
  * @property {{ x0: number, y0: number, x1: number, y1: number } | null} marquee 範囲選択中の四角（世界座標）
+ * @property {{ kind: 'interchange', stationId?: string, interchangeId?: string } | null} pending 次にタップする駅を待っている操作
  */
 
 /** @param {EditorState} initial */

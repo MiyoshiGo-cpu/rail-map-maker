@@ -9,6 +9,7 @@ import { createLinePanel } from './panels/line-panel.js';
 import { createSectionPanel } from './panels/section-panel.js';
 import { createOperatorPanel } from './panels/operator-panel.js';
 import { createLineToolPanel } from './panels/line-tool-panel.js';
+import { createInterchangePanel } from './panels/interchange-panel.js';
 
 const STAGES = ['peek', 'half', 'full'];
 const PEEK = 64;
@@ -109,6 +110,7 @@ export function createPanelHost(ctx) {
     if (sel.type === 'line') return `line:${sel.lineId}`;
     if (sel.type === 'section') return `section:${sel.lineId}:${sel.index}`;
     if (sel.type === 'operator') return `operator:${sel.id}`;
+    if (sel.type === 'interchange') return `interchange:${sel.id}`;
     return 'project';
   }
 
@@ -121,6 +123,7 @@ export function createPanelHost(ctx) {
       case 'line': return createLinePanel(ctx, a);
       case 'section': return createSectionPanel(ctx, a, Number(b));
       case 'operator': return createOperatorPanel(ctx, a);
+      case 'interchange': return createInterchangePanel(ctx, a);
       default: return createProjectPanel(ctx);
     }
   }
