@@ -32,6 +32,7 @@ import { attachShortcuts } from './keyboard.js';
 import { createPlaceStationTool } from './tools/place-station-tool.js';
 import { createDrawLineTool } from './tools/draw-line-tool.js';
 import { pickPending, pendingHint } from './pending-pick.js';
+import { drawServiceHighlight } from './service-overlay.js';
 
 /** 当たり判定の半径（画面の px。§4.4） */
 const HIT_RADIUS = { touch: 22, mouse: 8, pen: 12 };
@@ -216,8 +217,11 @@ export function createEditor(opt) {
     canvasView.addLayer((ctx, view, size) => {
       const scene = getScene();
       const o = { project: store.getState(), scene, es: es.get(), zoom: view.zoom, accent };
+      const visible = visibleWorldRect(view, size);
       drawUnderlay(ctx, o);
-      drawItems(ctx, scene.items, visibleWorldRect(view, size));
+      drawItems(ctx, scene.items, visible);
+      // 系統を選んでいるときは、経路と停車駅を強調する
+      if (o.es.selection.type === 'service') drawServiceHighlight(ctx, { ...o, serviceId: o.es.selection.id, visible });
       drawOverlay(ctx, o);
     });
 
