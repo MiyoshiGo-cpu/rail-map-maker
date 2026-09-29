@@ -11,9 +11,23 @@ initUiLang();
 document.title = t('app.title');
 requestPersist();
 
-// Safari のピンチによるページ全体の拡大を止める（キャンバスの操作は自前で扱う）
+// Safari のピンチによるページ全体の拡大を止める（キャンバスの操作は自前で扱う）。
+// 何かの拍子に拡大されてしまったときは止めず、2本指で元の大きさに戻せるようにする。
+const vv = window.visualViewport;
+const pageZoomed = () => !!vv && vv.scale > 1.01;
 for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) {
-  document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
+  document.addEventListener(ev, (e) => {
+    if (!pageZoomed()) e.preventDefault();
+  }, { passive: false });
+}
+document.addEventListener('touchmove', (e) => {
+  if (e.touches.length > 1 && !pageZoomed()) e.preventDefault();
+}, { passive: false });
+if (vv) {
+  // 拡大中はキャンバスでもページのピンチを通す（css の .page-zoomed）
+  vv.addEventListener('resize', () => {
+    document.documentElement.classList.toggle('page-zoomed', pageZoomed());
+  });
 }
 
 /** @type {{ dispose: () => any } | null} */

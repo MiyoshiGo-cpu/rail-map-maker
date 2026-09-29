@@ -78,7 +78,8 @@ button, input, select, textarea {
   color: inherit;
 }
 
-button { touch-action: manipulation; }
+/* ダブルタップでページが拡大されないようにする（キャンバスなどは各クラスで none） */
+:where(html, body, body *) { touch-action: manipulation; }
 
 :focus-visible {
   outline: 3px solid var(--accent);
@@ -173,6 +174,8 @@ button { touch-action: manipulation; }
   user-select: none;
   -webkit-touch-callout: none;
 }
+/* ページが拡大されてしまったときは、キャンバスの上でもピンチで戻せるようにする（main.js） */
+.page-zoomed .ed-canvas { touch-action: manipulation; }
 
 .ed-panel {
   grid-area: panel;
