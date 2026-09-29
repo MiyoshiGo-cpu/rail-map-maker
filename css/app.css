@@ -33,6 +33,8 @@
   --safe-r: env(safe-area-inset-right, 0px);
   --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-l: env(safe-area-inset-left, 0px);
+  /* 画面の高さ。ホーム画面から起動したときは main.js が実際の高さに置き換える */
+  --app-h: 100dvh;
 
   --ease: 180ms cubic-bezier(.2, .7, .3, 1);
   color-scheme: light dark;
@@ -69,8 +71,8 @@ html, body {
 }
 
 /* ページの地の色はヘッダーと同じ紺にする。iPhone は画面上端（時計や電池の表示の下）を
-   この色でぼかすため、白だとヘッダーに白い靄がかかる。見える部分は body と各画面が白で塗る */
-html { background: var(--sign); }
+   この色でぼかすため、白だとヘッダーに白い靄がかかる。見える部分は各画面（一覧・エディタ）が白で塗る */
+html, body { background: var(--sign); }
 
 body {
   overflow: hidden;           /* 画面全体はスクロールさせない（各領域でスクロール） */
@@ -105,7 +107,7 @@ button, input, select, textarea {
 }
 
 #app {
-  height: 100dvh;
+  height: var(--app-h);
   width: 100%;
 }
 
@@ -119,7 +121,7 @@ button, input, select, textarea {
 /* ---------- エディタのレイアウト ---------- */
 
 .editor {
-  height: 100dvh;
+  height: var(--app-h);
   /* 下に隠したボトムシートがページの外にはみ出して、入力欄にフォーカスしたときにページごとスクロールしないよう切り取る
      （clip はスクロールできる箱にならないので、プログラムからもスクロールされない） */
   overflow: clip;
@@ -252,7 +254,7 @@ button, input, select, textarea {
     box-shadow: 0 -2px 12px rgba(0, 0, 0, .14);
     transform: translateY(calc(var(--sheet-full) - var(--sheet-visible)));
     transition: transform var(--ease);
-    --sheet-full: calc(100dvh - var(--header-h) - var(--safe-t) - var(--toolbar-h) - var(--safe-b) - 12px);
+    --sheet-full: calc(var(--app-h) - var(--header-h) - var(--safe-t) - var(--toolbar-h) - var(--safe-b) - 12px);
     --sheet-visible: 64px;
     padding-left: var(--safe-l);
     padding-right: var(--safe-r);
@@ -300,7 +302,7 @@ button, input, select, textarea {
 /* ---------- プロジェクト一覧 ---------- */
 
 .plist {
-  height: 100dvh;
+  height: var(--app-h);
   display: flex;
   flex-direction: column;
   background: var(--paper);

@@ -30,6 +30,17 @@ if (vv) {
   });
 }
 
+// ホーム画面から起動した iPhone では 100dvh が時計の表示の分だけ短くなり、下に隙間ができる。
+// アドレスバーが無いので、実際の高さを --app-h に入れて使う（css の #app など）
+const standalone = matchMedia('(display-mode: standalone)').matches || /** @type {any} */ (navigator).standalone === true;
+if (standalone) {
+  const setAppHeight = () => {
+    document.documentElement.style.setProperty('--app-h', `${document.documentElement.clientHeight}px`);
+  };
+  setAppHeight();
+  addEventListener('resize', setAppHeight);
+}
+
 /** @type {{ dispose: () => any } | null} */
 let current = null;
 let routing = Promise.resolve();
