@@ -1,5 +1,6 @@
 // 文言の取り出し（t）と、数値・日付・距離の整形
 import ja from './ja.js';
+import { KM_PER_MILE } from '../core/units.js';
 
 /** @type {Record<string, Record<string, string>>} */
 const catalogs = { ja };
@@ -145,7 +146,7 @@ export function formatDate(date, lang = uiLang, opts = { dateStyle: 'medium', ti
   return new Intl.DateTimeFormat(lang, opts).format(d);
 }
 
-export const KM_PER_MILE = 1.609344;
+export { KM_PER_MILE };
 
 /**
  * 距離を表示用に整える（内部は常に km。表示は0.1単位）

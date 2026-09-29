@@ -1,0 +1,179 @@
+/* データ表（表・カード・駅の並び） */
+
+.ed-data { overflow: hidden; }
+
+.data-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--rule);
+}
+.data-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.data-tabs .badge-btn {
+  flex-direction: row;
+  min-height: 36px;
+  padding: 2px 12px;
+  font-size: var(--fs-14);
+}
+.data-filter {
+  flex: 1 1 160px;
+  min-width: 0;
+  max-width: 320px;
+  min-height: 36px;
+  padding: 4px 10px;
+}
+.data-head .icon-btn { margin-left: auto; color: var(--ink); }
+.data-head .icon-btn:hover { background: var(--surface); }
+
+.data-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+/* ---------- 表（PC） ---------- */
+
+.grid-wrap { min-width: 100%; }
+.grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-14);
+}
+.grid th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--surface);
+  color: var(--ink-sub);
+  font-size: var(--fs-12);
+  font-weight: 700;
+  text-align: left;
+  white-space: nowrap;
+}
+.grid td {
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: middle;
+}
+.grid tbody tr { cursor: pointer; }
+.grid tbody tr:hover { background: var(--surface); }
+.grid tbody tr.is-selected { box-shadow: inset 4px 0 0 var(--accent); background: var(--surface); }
+.grid .num { text-align: right; font-variant-numeric: tabular-nums; }
+.grid .col-narrow { width: 48px; }
+.grid .col-short { width: 88px; }
+.grid .col-order { width: 112px; }
+.grid-sort {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.grid th[aria-sort="ascending"] .grid-sort::after { content: " \25B2"; }
+.grid th[aria-sort="descending"] .grid-sort::after { content: " \25BC"; }
+.grid-input.input, .grid-input.select, .grid .grid-input {
+  min-height: 34px;
+  padding: 3px 8px;
+  font-size: var(--fs-14);
+}
+.grid-color {
+  width: 34px;
+  height: 30px;
+  padding: 1px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--paper);
+}
+.grid-check { width: 20px; height: 20px; accent-color: var(--accent); }
+.grid-actions { display: flex; gap: 6px; white-space: nowrap; }
+.order-cell { display: flex; align-items: center; gap: 2px; }
+.icon-btn-small { width: 32px; height: 32px; color: var(--ink); }
+.icon-btn-small:hover { background: var(--surface); }
+.icon-btn-small svg { width: 18px; height: 18px; }
+.drag-grip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 36px;
+  color: var(--ink-sub);
+  cursor: grab;
+  touch-action: none;
+}
+.drag-grip svg { width: 18px; height: 18px; }
+.is-dragging { position: relative; z-index: 2; opacity: .85; background: var(--paper); box-shadow: 0 4px 12px rgba(0, 0, 0, .18); }
+.drop-before { box-shadow: inset 0 3px 0 var(--accent); }
+.swatch {
+  display: inline-block;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, .15);
+}
+
+/* ---------- カード（スマホ） ---------- */
+
+.card-list { list-style: none; margin: 0; padding: 8px 12px 16px; display: flex; flex-direction: column; gap: 6px; }
+.card {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--paper);
+}
+.card.is-selected { border-color: var(--accent); box-shadow: inset 4px 0 0 var(--accent); }
+.card-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 8px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.card-text { min-width: 0; display: flex; flex-direction: column; }
+.card-title { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-sub { color: var(--ink-sub); font-size: var(--fs-12); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-extra { display: flex; align-items: center; gap: 2px; padding-right: 4px; }
+
+/* ---------- 駅の並び ---------- */
+
+.stops-wrap { padding: 8px 12px 16px; }
+.stops-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.stops-title { margin: 0; font-size: var(--fs-16); }
+.stops-editor { list-style: none; margin: 0; padding: 0; max-width: 760px; }
+.stop-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-height: 48px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper);
+}
+.stop-row .stop-name { flex: 1 1 8em; min-width: 0; text-align: left; }
+.stop-row .stop-km { width: 6.5em; min-height: 36px; padding: 4px 8px; }
+.stop-interval { min-width: 7em; color: var(--ink-sub); font-size: var(--fs-12); }
+.stop-buttons { display: flex; align-items: center; gap: 2px; margin-left: auto; }
+
+@media (max-width: 899.98px) {
+  .data-head { padding: 8px 12px; }
+  .data-filter { max-width: none; order: 3; flex-basis: 100%; }
+}

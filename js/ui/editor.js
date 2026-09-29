@@ -23,6 +23,7 @@ import { drawOverlay, drawUnderlay } from './overlay.js';
 import { createPanelHost } from './panel-host.js';
 import { createSelectTool, moveStationsSafely } from './tools/select-tool.js';
 import { createDeleteTool } from './tools/delete-tool.js';
+import { createDataView } from './data-view.js';
 import { attachShortcuts } from './keyboard.js';
 import { createPlaceStationTool } from './tools/place-station-tool.js';
 import { createDrawLineTool } from './tools/draw-line-tool.js';
@@ -96,6 +97,7 @@ export function createEditor(opt) {
       rangeMode: false,
       marquee: null,
       pending: null,
+      dataOpen: false,
     });
 
     // ---------- 保存 ----------
@@ -143,6 +145,14 @@ export function createEditor(opt) {
       { id: 'delete', icon: 'delete', label: t('tool.delete'), title: t('tool.delete.title'), pcOnly: true },
     ];
     const toolButtons = new Map();
+    // データ表を開く・閉じる（ツールではないので押した状態は別に持つ）
+    const dataBtn = h('button', {
+      class: 'badge-btn data-toggle',
+      type: 'button',
+      title: t('tool.data.title'),
+      'aria-pressed': 'false',
+      on: { click: () => es.set({ dataOpen: !es.get().dataOpen }) },
+    }, icon('data'), h('span', { class: 'badge-label' }, t('tool.data')));
     const toolsNav = h('nav', { class: 'ed-tools', 'aria-label': t('tool.label') },
       toolDefs.map((d) => {
         const b = h('button', {
@@ -155,6 +165,7 @@ export function createEditor(opt) {
         toolButtons.set(d.id, b);
         return b;
       }),
+      dataBtn,
     );
 
     // ---------- キャンバスと表示リスト ----------
@@ -388,12 +399,27 @@ export function createEditor(opt) {
       },
     });
 
+    // ---------- データ表 ----------
+    const dataView = createDataView({
+      store,
+      es,
+      close: () => es.set({ dataOpen: false }),
+      activate(sel, opt = {}) {
+        es.set({ selection: sel });
+        if (opt.reveal) canvasView.reveal(opt.reveal.x * GRID, opt.reveal.y * GRID);
+        // スマホでは表を閉じて、詳細のシートを見せる
+        if (window.matchMedia('(max-width: 899.98px)').matches) es.set({ dataOpen: false });
+      },
+    });
+    cleanups.push(() => dataView.dispose());
+
     replaceChildren(el,
       header,
       h('div', { class: 'ed-banner' }),
       toolsNav,
       h('main', { class: 'ed-stage' }, canvasView.el),
       panels.el,
+      dataView.el,
     );
 
     // ---------- キーボード（§4.5） ----------
@@ -490,6 +516,9 @@ export function createEditor(opt) {
       redoBtn.disabled = !store.canRedo();
       for (const [id, b] of toolButtons) b.setAttribute('aria-pressed', String(s.tool === id));
       rangeBtn.hidden = s.tool !== 'select';
+      dataBtn.setAttribute('aria-pressed', String(!!s.dataOpen));
+      dataView.el.hidden = !s.dataOpen;
+      if (s.dataOpen) dataView.update();
       rangeBtn.setAttribute('aria-pressed', String(!!s.rangeMode));
       accent = accentColor();
       el.style.setProperty('--accent', accent);

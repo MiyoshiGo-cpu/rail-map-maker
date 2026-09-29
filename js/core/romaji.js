@@ -52,7 +52,7 @@ const VOWELS = 'aiueo';
 
 /** カタカナをひらがなにする（長音記号はそのまま） */
 export function toHiragana(s) {
-  return s.normalize('NFKC').replace(/[ァ-ヶ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60));
+  return s.normalize('NFKC').replace(/[\u30A1-\u30F6]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60));
 }
 
 /**

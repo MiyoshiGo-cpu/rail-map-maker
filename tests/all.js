@@ -18,4 +18,5 @@ export const files = [
   'romaji.test.js',
   'labels.test.js',
   'numbering.test.js',
+  'search.test.js',
 ];
