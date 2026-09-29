@@ -36,7 +36,7 @@ export function runSeconds(dM, v, a, b) {
  * @property {number} totalSec 余裕率を掛けたあとの所要時間
  * @property {number} km 営業キロ（始発から終着まで）
  * @property {number} scheduledSpeed 表定速度（km/h）
- * @property {number} stopCount 停車駅の数（始発・終着を含む）
+ * @property {number} stopCount 停車駅の数（始発・終着を含む。同じ駅は1つと数える）
  * @property {RuntimeLeg[]} legs
  * @property {number[]} depart 経路の位置ごとの、始発からの時間（秒。余裕率込み。通過駅は通過する時刻の見込み）
  */
@@ -116,7 +116,8 @@ export function serviceRuntime(p, sv, opt = {}) {
     totalSec,
     km,
     scheduledSpeed: totalSec > 0 ? km / (totalSec / 3600) : 0,
-    stopCount: stops.length,
+    // 環状線を一周する系統は始発と終着が同じ駅なので、駅の数で数える
+    stopCount: new Set(stops.map((k) => path.stations[k])).size,
     legs,
     depart: depart.map((x) => x * margin),
   };

@@ -6,7 +6,8 @@
  *   | { type: 'section', lineId: string, index: number }
  *   | { type: 'interchange', id: string }
  *   | { type: 'operator', id: string }
- *   | { type: 'serviceType', id: string }} Selection
+ *   | { type: 'serviceType', id: string }
+ *   | { type: 'service', id: string }} Selection
  */
 
 /**
@@ -19,8 +20,18 @@
  * @property {{ x: number, y: number } | null} hover マウスが指している格子点
  * @property {boolean} rangeMode スマホの範囲選択
  * @property {{ x0: number, y0: number, x1: number, y1: number } | null} marquee 範囲選択中の四角（世界座標）
- * @property {{ kind: 'interchange', stationId?: string, interchangeId?: string } | null} pending 次にタップする駅を待っている操作
+ * @property {{ kind: 'interchange', stationId?: string, interchangeId?: string } | { kind: 'routeEnd', which: 'from'|'to' } | null} pending 次にタップする駅を待っている操作
+ * @property {RouteDraft | null} routeDraft 系統の経路を選んでいる途中（serviceId が null なら新しい系統）
  * @property {null|'data'|'check'} drawer 開いている一覧（データ表かチェック）
+ */
+
+/**
+ * @typedef {object} RouteDraft
+ * @property {string | null} serviceId 経路を組み直す系統（新しく作るなら null）
+ * @property {string} from 始発駅
+ * @property {string} to 終着駅
+ * @property {string[]} via 経由する路線
+ * @property {string} typeId 新しい系統の種別
  */
 
 /** @param {EditorState} initial */
@@ -58,6 +69,11 @@ export function accentFor(p, s) {
   if (s.drawing) return lineColor(s.drawing.lineId) || DEFAULT_ACCENT;
   if (s.selection.type === 'line' || s.selection.type === 'section') return lineColor(s.selection.lineId) || DEFAULT_ACCENT;
   if (s.selection.type === 'serviceType') return p.serviceTypes.find((x) => x.id === s.selection.id)?.color || DEFAULT_ACCENT;
+  if (s.selection.type === 'service') {
+    const sv = p.services.find((x) => x.id === s.selection.id);
+    const first = sv && sv.segments[0];
+    return (sv && sv.color) || (first && p.serviceTypes.find((x) => x.id === first.typeId)?.color) || DEFAULT_ACCENT;
+  }
   if (s.selection.type === 'stations' && s.selection.ids.length) {
     const id = s.selection.ids[0];
     const line = [...p.lines].sort((a, b) => a.order - b.order).find((l) => l.stops.some((x) => x.stationId === id));
@@ -87,6 +103,14 @@ export function repairFor(p, s) {
   if (sel.type === 'interchange' && !p.interchanges.some((x) => x.id === sel.id)) return { selection: NO_SELECTION };
   if (sel.type === 'operator' && !p.operators.some((x) => x.id === sel.id)) return { selection: NO_SELECTION };
   if (sel.type === 'serviceType' && !p.serviceTypes.some((x) => x.id === sel.id)) return { selection: NO_SELECTION };
+  if (sel.type === 'service' && !p.services.some((x) => x.id === sel.id)) return { selection: NO_SELECTION };
+  const d = s.routeDraft;
+  if (d) {
+    if (d.serviceId && !p.services.some((x) => x.id === d.serviceId)) return { routeDraft: null };
+    const has = (id) => p.stations.some((st) => st.id === id);
+    if ((d.from && !has(d.from)) || (d.to && !has(d.to))) return { routeDraft: { ...d, from: has(d.from) ? d.from : '', to: has(d.to) ? d.to : '' } };
+    if (d.via.some((id) => !hasLine(id))) return { routeDraft: { ...d, via: d.via.filter(hasLine) } };
+  }
   if (s.drawing && !hasLine(s.drawing.lineId)) return { drawing: null };
   if (s.lineChoice !== 'new' && !hasLine(s.lineChoice)) return { lineChoice: 'new' };
   return null;

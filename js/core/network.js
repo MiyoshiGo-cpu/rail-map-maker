@@ -2,7 +2,7 @@
 // 経路は同じ駅（同じ Station.id）でしか路線をまたがない。乗換グループで結んだ別の駅は線路がつながっていない扱い（§6.5）。
 import { sectionCount } from './defaults.js';
 import { allLineKm } from './distance.js';
-import { loopClockwise, loopDirOf } from './services.js';
+import { loopClockwise, loopDirOf, expandSegment } from './services.js';
 
 /** @typedef {import('./schema.js').Project} Project */
 
@@ -209,13 +209,28 @@ export function findRoutes(p, from, to, opt = {}) {
     const edges = shortest(adj, from, to, via, banned);
     if (!edges || revisits(from, edges)) continue;
     const c = toCandidate(p, from, edges);
-    const sig = c.segments.map((s) => `${s.lineId}:${s.from}>${s.to}`).join('|');
+    const sig = c.segments.map((s) => `${s.lineId}:${s.from}>${s.to}:${s.loopDir || ''}`).join('|');
     if (!found.has(sig)) found.set(sig, { c, edges });
     // 使った路線を1本ずつ使わないことにして、別の経路を探す（経由に指定した路線は外さない）
     for (const lineId of new Set(c.lineIds)) {
       if (via.includes(lineId)) continue;
       queue.push(new Set([...banned, lineId]));
     }
+  }
+  // 環状線を通る区間は、逆回りの経路も候補にする
+  const kms = allLineKm(p);
+  const lineById = new Map(p.lines.map((l) => [l.id, l]));
+  for (const { c } of [...found.values()]) {
+    c.segments.forEach((seg, i) => {
+      const line = lineById.get(seg.lineId);
+      if (!line.isLoop || !seg.loopDir || seg.from === seg.to) return;
+      const cw = loopClockwise(p, line);
+      const flipped = { ...seg, loopDir: seg.loopDir === 'cw' ? 'ccw' : 'cw' };
+      const km = (x) => expandSegment(line, x, cw).sections.reduce((sum, k) => sum + kms.get(line.id).sections[k].km, 0);
+      const segments = c.segments.map((x, j) => (j === i ? flipped : x));
+      const sig = segments.map((s) => `${s.lineId}:${s.from}>${s.to}:${s.loopDir || ''}`).join('|');
+      if (!found.has(sig)) found.set(sig, { c: { segments, km: c.km - km(seg) + km(flipped), lineIds: c.lineIds }, edges: [] });
+    });
   }
   return [...found.values()]
     .map((x) => x.c)

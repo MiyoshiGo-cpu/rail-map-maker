@@ -11,6 +11,8 @@ import { createOperatorPanel } from './panels/operator-panel.js';
 import { createLineToolPanel } from './panels/line-tool-panel.js';
 import { createInterchangePanel } from './panels/interchange-panel.js';
 import { createServiceTypePanel } from './panels/service-type-panel.js';
+import { createServicePanel } from './panels/service-panel.js';
+import { createServiceNewPanel } from './panels/service-new-panel.js';
 
 const STAGES = ['peek', 'half', 'full'];
 const PEEK = 64;
@@ -105,6 +107,7 @@ export function createPanelHost(ctx) {
   function keyOf() {
     const s = ctx.es.get();
     if (s.tool === 'line') return 'lineTool';
+    if (s.routeDraft && !s.routeDraft.serviceId) return 'serviceNew';
     const sel = s.selection;
     if (sel.type === 'stations' && sel.ids.length === 1) return `station:${sel.ids[0]}`;
     if (sel.type === 'stations' && sel.ids.length > 1) return 'stations';
@@ -113,6 +116,7 @@ export function createPanelHost(ctx) {
     if (sel.type === 'operator') return `operator:${sel.id}`;
     if (sel.type === 'interchange') return `interchange:${sel.id}`;
     if (sel.type === 'serviceType') return `serviceType:${sel.id}`;
+    if (sel.type === 'service') return `service:${sel.id}`;
     return 'project';
   }
 
@@ -127,6 +131,8 @@ export function createPanelHost(ctx) {
       case 'operator': return createOperatorPanel(ctx, a);
       case 'interchange': return createInterchangePanel(ctx, a);
       case 'serviceType': return createServiceTypePanel(ctx, a);
+      case 'service': return createServicePanel(ctx, a);
+      case 'serviceNew': return createServiceNewPanel(ctx);
       default: return createProjectPanel(ctx);
     }
   }

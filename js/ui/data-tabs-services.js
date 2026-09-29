@@ -1,11 +1,15 @@
-// データ表のフェーズ2のタブ（種別）：行の作り方、PC の列、スマホのカード
+// データ表のフェーズ2のタブ（種別・系統）：行の作り方、PC の列、スマホのカード
 import { h } from './dom.js';
 import { icon } from './icons.js';
-import { t } from '../i18n/i18n.js';
+import { t, formatDuration, formatNumber } from '../i18n/i18n.js';
 import { STOP_RULES, SEATINGS } from '../core/schema.js';
 import { matchesAny } from '../core/search.js';
 import { readableTextColor } from '../core/color.js';
 import { typesOfOperator } from '../core/actions/service-types.js';
+import { expandService, stopFlags } from '../core/services.js';
+import { serviceRuntime } from '../core/runtime.js';
+import { allLineKm } from '../core/distance.js';
+import { serviceLabel, serviceColor, isThrough, routeText } from './service-ui.js';
 import { textInput, selectInput, numberInput, enumOptions } from './form.js';
 import { inputCell } from './data-tabs.js';
 import { cells } from './grid.js';
@@ -109,4 +113,73 @@ export const SERVICE_TABS = {
   },
 };
 
-export const SERVICE_TAB_ORDER = ['serviceTypes'];
+/** 系統の行：経路・所要時間などをまとめて計算しておく */
+function serviceRows(p, q) {
+  const kms = allLineKm(p);
+  const stName = (id) => p.stations.find((s) => s.id === id)?.name || '';
+  return p.services.map((sv) => {
+    const path = expandService(p, sv);
+    const flags = stopFlags(p, sv, path);
+    const rt = serviceRuntime(p, sv, { path, flags, kms });
+    const first = sv.segments[0];
+    const last = sv.segments[sv.segments.length - 1];
+    return {
+      sv,
+      label: serviceLabel(p, sv),
+      color: serviceColor(p, sv),
+      from: first ? stName(first.from) : '',
+      to: last ? stName(last.to) : '',
+      route: routeText(p, sv.segments),
+      types: [...new Set(sv.segments.map((seg) => p.serviceTypes.find((x) => x.id === seg.typeId)?.name || ''))].join(t('service.arrow')),
+      through: isThrough(p, sv),
+      rt,
+      ok: path.ok,
+    };
+  }).filter((r) => matchesAny(q, [r.sv.name, r.label, r.from, r.to, r.route, r.types]));
+}
+
+/** 所要時間の表示（計算できなければ「—」） */
+const timeText = (r) => (r.rt ? formatDuration(r.rt.totalSec) : t('service.noValue'));
+const speedText = (r) => (r.rt ? formatNumber(r.rt.scheduledSpeed, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : t('service.noValue'));
+
+SERVICE_TABS.services = {
+  label: 'data.tab.services',
+  empty: 'data.noServices',
+  rows: serviceRows,
+  rowKey: (r) => r.sv.id,
+  selectedKey: (sel) => (sel.type === 'service' ? sel.id : null),
+  columns(ctx) {
+    const set = (row, fields) => ctx.store.dispatch({ type: 'service/update', serviceId: row.sv.id, fields });
+    return [
+      { key: 'color', label: t('common.color'), className: 'col-narrow', create: () => cells.swatch((r) => r.color) },
+      {
+        key: 'name', label: t('service.name'), sortValue: (r) => r.sv.name || '',
+        create: (row) => { let cur = row; return inputCell(() => textInput({ onChange: (v) => set(cur, { name: v.trim() || undefined }) }), (r) => { cur = r; return r.sv.name || ''; }); },
+      },
+      { key: 'types', label: t('data.col.types'), sortValue: (r) => r.types, create: () => cells.text((r) => r.types) },
+      { key: 'from', label: t('route.from'), sortValue: (r) => r.from, create: () => cells.text((r) => r.from) },
+      { key: 'to', label: t('route.to'), sortValue: (r) => r.to, create: () => cells.text((r) => r.to) },
+      { key: 'route', label: t('data.col.route'), sortValue: (r) => r.route, create: () => cells.text((r) => (r.ok ? r.route : t('service.brokenShort'))) },
+      { key: 'through', label: t('service.through'), sortValue: (r) => (r.through ? 1 : 0), create: () => cells.text((r) => (r.through ? t('service.through') : '')) },
+      { key: 'stops', label: t('data.col.stopCount'), className: 'num', sortValue: (r) => (r.rt ? r.rt.stopCount : -1), create: () => cells.text((r) => (r.rt ? String(r.rt.stopCount) : t('service.noValue'))) },
+      { key: 'time', label: t('data.col.time'), className: 'num', sortValue: (r) => (r.rt ? r.rt.totalSec : -1), create: () => cells.text(timeText) },
+      { key: 'speed', label: t('data.col.speed'), className: 'num', sortValue: (r) => (r.rt ? r.rt.scheduledSpeed : -1), create: () => cells.text(speedText) },
+      {
+        key: 'day', label: t('data.col.dayFrequency'), className: 'num col-short', sortValue: (r) => r.sv.frequency.day,
+        create: (row) => { let cur = row; return inputCell(() => numberInput({ step: 1, min: 0, max: 60, onChange: (v) => { if (v !== null && v >= 0) set(cur, { frequency: { ...cur.sv.frequency, day: Math.round(v) } }); } }), (r) => { cur = r; return r.sv.frequency.day; }); },
+      },
+      {
+        key: 'cars', label: t('service.cars'), className: 'num col-short', sortValue: (r) => r.sv.cars || 0,
+        create: (row) => { let cur = row; return inputCell(() => numberInput({ step: 1, min: 1, max: 20, onChange: (v) => set(cur, { cars: v === null ? undefined : Math.max(1, Math.round(v)) }) }), (r) => { cur = r; return r.sv.cars ?? null; }); },
+      },
+    ];
+  },
+  card: (r) => ({
+    color: r.color,
+    title: r.label,
+    sub: [r.ok ? r.route : t('service.brokenShort'), r.through ? t('service.through') : '', r.rt ? formatDuration(r.rt.totalSec) : ''].filter(Boolean).join(t('common.dot')),
+  }),
+  activate: (r, ctx) => ctx.activate({ type: 'service', id: r.sv.id }),
+};
+
+export const SERVICE_TAB_ORDER = ['serviceTypes', 'services'];

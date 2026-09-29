@@ -5,6 +5,8 @@ import { LINE_KINDS, ELECTRIFICATIONS, COLLECTIONS, TRACKS, STRUCTURES, LINE_STA
 import { field, textInput, textArea, selectInput, numberInput, checkInput, colorInput, group, enumOptions, gaugeInput } from '../form.js';
 import { stopNumbers, fullCode, duplicateNumbers } from '../../core/numbering.js';
 import { lineKm } from '../../core/distance.js';
+import { typesOfOperator } from '../../core/actions/service-types.js';
+import { serviceLabel, serviceColor } from '../service-ui.js';
 
 const NEW_OPERATOR = '__new__';
 
@@ -115,6 +117,28 @@ export function createLinePanel(ctx, lineId) {
   // ---------- 駅の一覧 ----------
   const stopList = h('ol', { class: 'stop-list' });
 
+  // ---------- この路線の系統 ----------
+  const serviceList = h('ul', { class: 'chip-list' });
+  const addService = h('button', {
+    class: 'btn btn-small',
+    type: 'button',
+    on: {
+      click: () => {
+        // 起点から終点まで（環状線なら一周）、事業者のいちばん遅い種別で作り始める
+        const l = cur();
+        const first = l.stops[0];
+        const last = l.stops[l.stops.length - 1];
+        const slow = typesOfOperator(store.getState().serviceTypes, l.operatorId)[0];
+        es.set({
+          tool: 'select',
+          drawing: null,
+          selection: { type: 'none' },
+          routeDraft: { serviceId: null, from: first ? first.stationId : '', to: (l.isLoop ? first : last)?.stationId || '', via: [lineId], typeId: slow ? slow.type.id : '' },
+        });
+      },
+    },
+  }, t('service.addForLine'));
+
   const el = h('div', {},
     h('div', { class: 'panel-head' }, title),
     h('div', { class: 'panel-section' }, kmInfo),
@@ -153,6 +177,7 @@ export function createLinePanel(ctx, lineId) {
       field(t('common.note'), note),
     ], { collapsible: true }),
     group(t('line.stops'), [stopList], { collapsible: true }),
+    group(t('line.services'), [serviceList, h('div', { class: 'panel-actions' }, addService)]),
     h('div', { class: 'panel-section' },
       h('div', { class: 'panel-actions' },
         h('button', {
@@ -222,6 +247,16 @@ export function createLinePanel(ctx, lineId) {
       tracks.setValue(String(d.tracks));
       maxSpeed.setValue(d.maxSpeed);
       structure.setValue(d.structure);
+
+      const services = p.services.filter((sv) => sv.segments.some((seg) => seg.lineId === lineId));
+      serviceList.replaceChildren(...(services.length
+        ? services.map((sv) => h('li', {}, h('button', {
+          class: 'chip',
+          type: 'button',
+          style: { '--chip': serviceColor(p, sv) },
+          on: { click: () => es.set({ selection: { type: 'service', id: sv.id } }) },
+        }, serviceLabel(p, sv))))
+        : [h('li', { class: 'panel-note' }, t('line.noServices'))]));
 
       const byId = new Map(p.stations.map((s) => [s.id, s]));
       const numbers = stopNumbers(line);

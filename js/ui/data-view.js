@@ -89,6 +89,18 @@ export function createDataView(ctx) {
       },
     },
   }, icon('plus'), t('data.addType'));
+  // 系統を追加：パネルで始発駅・終着駅・種別を選んで作る
+  const addService = h('button', {
+    class: 'btn btn-small',
+    type: 'button',
+    on: {
+      click: () => {
+        es.set({ tool: 'select', drawing: null, selection: { type: 'none' }, routeDraft: { serviceId: null, from: '', to: '', via: [], typeId: '' } });
+        // スマホでは表を閉じて、パネルを見せる
+        if (mq.matches) ctx.close();
+      },
+    },
+  }, icon('plus'), t('data.addService'));
   const body = h('div', { class: 'data-body' });
   const el = h('section', { class: 'ed-data', 'aria-label': t('data.title') },
     h('div', { class: 'data-head' },
@@ -96,6 +108,7 @@ export function createDataView(ctx) {
       filter,
       addOperator,
       addType,
+      addService,
       h('button', { class: 'icon-btn on-paper-btn', type: 'button', 'aria-label': t('common.close'), title: t('common.close'), on: { click: () => ctx.close() } }, icon('close')),
     ),
     body,
@@ -207,6 +220,7 @@ export function createDataView(ctx) {
     for (const [k, b] of tabButtons) b.setAttribute('aria-selected', String(k === tab));
     addOperator.hidden = tab !== 'operators';
     addType.hidden = tab !== 'serviceTypes';
+    addService.hidden = tab !== 'services';
     filter.hidden = !!stopsLine;
     if (stopsLine) {
       stops = createStopsEditor({

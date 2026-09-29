@@ -29,6 +29,10 @@ test('経路の自動作成：直通（私鉄A線 → 地下鉄B線 → 私鉄C�
   // 同じ名前が無ければ、rank が基準以下でいちばん近い種別
   assert.equal(defaultTypeFor(store.getState(), lineB, type(opA, '快速急行')), type(opB, '急行'));
   assert.equal(defaultTypeFor(store.getState(), lineB, type(opA, '準急')), type(opB, '各駅停車'));
+  // 最初の区間がほかの事業者の路線なら、最初の区間もその事業者の種別にする
+  const [inB] = findRoutes(store.getState(), S.J1, S.J2);
+  const id2 = d({ type: 'service/add', route: inB.segments, typeId: type(opA, '急行') });
+  assert.equal(store.getState().services.find((x) => x.id === id2).segments[0].typeId, type(opB, '急行'));
 });
 
 test('停車駅：種別のルール（主要駅・乗換駅）と、事業者が変わるつなぎ目・始発・終着', () => {
@@ -101,8 +105,11 @@ test('環状線：向き（cw・ccw）を付け、始発と終着が同じなら
   const p = store.getState();
   assert.equal(loopClockwise(p, p.lines[0]), true);
   // 0 → 3 は逆回り（ccw）の1駅間が近い
-  const [r] = findRoutes(p, ids[0], ids[3]);
+  const [r, r2] = findRoutes(p, ids[0], ids[3]);
   assert.deepEqual(r.segments, [{ lineId, from: ids[0], to: ids[3], loopDir: 'ccw' }]);
+  // 逆回り（遠回り）も候補に出す
+  assert.deepEqual(r2.segments, [{ lineId, from: ids[0], to: ids[3], loopDir: 'cw' }]);
+  assert.ok(Math.abs(r2.km - 3 * r.km) < 1e-9);
   const loops = findRoutes(p, ids[1], ids[1]);
   assert.deepEqual(loops.map((x) => x.segments[0].loopDir), ['cw', 'ccw']);
   const opId = p.operators[0].id;

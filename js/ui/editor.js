@@ -31,6 +31,7 @@ import { needsBackupReminder, isSnoozed, snooze } from '../storage/backup.js';
 import { attachShortcuts } from './keyboard.js';
 import { createPlaceStationTool } from './tools/place-station-tool.js';
 import { createDrawLineTool } from './tools/draw-line-tool.js';
+import { pickPending, pendingHint } from './pending-pick.js';
 
 /** 当たり判定の半径（画面の px。§4.4） */
 const HIT_RADIUS = { touch: 22, mouse: 8, pen: 12 };
@@ -100,6 +101,7 @@ export function createEditor(opt) {
       rangeMode: false,
       marquee: null,
       pending: null,
+      routeDraft: null,
       drawer: null,
     });
 
@@ -263,17 +265,19 @@ export function createEditor(opt) {
         if (!ids.length) return;
         // まとめて消す前に復元ポイントを作る（§2.4）
         if (ids.length >= 2) commands.checkpoint('bulkDelete');
-        store.dispatch({ type: 'station/delete', ids });
+        const removed = store.dispatch({ type: 'station/delete', ids });
         es.set({ selection: NO_SELECTION });
         toast(ids.length === 1 ? t('station.deleted') : t('station.deletedMany', { count: ids.length }));
+        if (removed) toast(t('service.removedWith', { count: removed }));
       },
       deleteLine(lineId) {
         const line = store.getState().lines.find((l) => l.id === lineId);
         if (!line) return;
         commands.checkpoint('deleteLine');
-        store.dispatch({ type: 'line/delete', lineId });
+        const removed = store.dispatch({ type: 'line/delete', lineId });
         es.set({ selection: NO_SELECTION, drawing: null });
         toast(t('line.deleted', { name: line.displayName || line.name }));
+        if (removed) toast(t('service.removedWith', { count: removed }));
       },
       stationMenuItems(stationId) {
         return [
@@ -292,27 +296,8 @@ export function createEditor(opt) {
       delete: createDeleteTool(toolCtx),
     };
     const currentTool = () => tools[es.get().tool] || tools.select;
-    /** 乗換グループにする駅を選んでもらっているとき、タップした駅をグループに入れる */
-    function pickPending(p, w) {
-      const pend = es.get().pending;
-      const hit = toolCtx.hitTest(p, w, (tg) => tg.type === 'station' || tg.type === 'label');
-      if (!hit) {
-        toast(t('interchange.pickMiss'));
-        return;
-      }
-      const ic = pend.interchangeId && store.getState().interchanges.find((x) => x.id === pend.interchangeId);
-      const ids = ic ? [...ic.stationIds, hit.id] : [pend.stationId, hit.id];
-      if (new Set(ids).size < 2 || (ic && ic.stationIds.includes(hit.id))) {
-        toast(t('interchange.pickOther'));
-        return;
-      }
-      const id = store.dispatch({ type: 'interchange/add', stationIds: ids });
-      es.set({ pending: null, selection: id ? { type: 'interchange', id } : NO_SELECTION });
-      if (id) toast(t('interchange.added'));
-    }
-
     canvasView.setInput({
-      onTap: (p, w) => (es.get().pending ? pickPending(p, w) : currentTool().onTap?.(p, w)),
+      onTap: (p, w) => (es.get().pending ? pickPending({ store, es, hitTest: toolCtx.hitTest, toast }, p, w) : currentTool().onTap?.(p, w)),
       onDoubleTap: (p, w) => currentTool().onDoubleTap?.(p, w) || false,
       onLongPress: (p, w) => currentTool().onLongPress?.(p, w),
       onDragStart: (p, w) => currentTool().onDragStart?.(p, w) || null,
@@ -460,6 +445,7 @@ export function createEditor(opt) {
       escape() {
         const s = es.get();
         if (s.pending) es.set({ pending: null });
+        else if (s.routeDraft) es.set({ routeDraft: null });
         else if (s.rangeMode || s.marquee) es.set({ rangeMode: false, marquee: null });
         else if (s.selection.type !== 'none') es.set({ selection: NO_SELECTION });
       },
@@ -500,7 +486,7 @@ export function createEditor(opt) {
       el.style.setProperty('--accent', accent);
       el.style.setProperty('--accent-text', readableTextColor(accent));
       canvasView.setCursor(currentTool().cursor || 'default');
-      if (s.pending) canvasView.setHint(t('interchange.pickHint'));
+      if (s.pending) canvasView.setHint(pendingHint(s.pending));
       else canvasView.setHint(p.stations.length ? null : t(s.tool === 'station' ? 'hint.placeStation' : 'hint.empty'));
       panels.update(p);
       canvasView.requestRender();

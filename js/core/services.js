@@ -258,14 +258,14 @@ export function defaultTypeFor(p, lineId, baseTypeId) {
  * 経路（種別なしの区間の列）に種別を付ける。前の区間の種別を引き継げる路線はそれを使う
  * @param {Project} p
  * @param {Omit<ServiceSegment, 'typeId'>[]} route
- * @param {string} baseTypeId 最初の区間の種別
+ * @param {string} baseTypeId 基準の種別（ほかの事業者の路線では、その事業者の近い種別にする）
  * @param {ServiceSegment[]} [previous] 経路を組み直す前の区間（同じ路線なら種別を引き継ぐ）
  * @returns {ServiceSegment[]}
  */
 export function assignTypes(p, route, baseTypeId, previous = []) {
   return route.map((seg, i) => {
     const old = previous.find((x) => x.lineId === seg.lineId);
-    const typeId = old ? old.typeId : i === 0 ? baseTypeId : defaultTypeFor(p, seg.lineId, baseTypeId);
+    const typeId = old ? old.typeId : defaultTypeFor(p, seg.lineId, baseTypeId);
     const out = { lineId: seg.lineId, from: seg.from, to: seg.to, typeId };
     if (seg.loopDir) out.loopDir = seg.loopDir;
     return out;

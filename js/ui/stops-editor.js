@@ -7,6 +7,7 @@ import { kmToUnit, unitToKm, round1 } from '../core/units.js';
 import { lineKm } from '../core/distance.js';
 import { numberInput } from './form.js';
 import { enableRowDrag } from './row-drag.js';
+import { toast } from './toast.js';
 
 /**
  * @param {{ store: any, es: any, back: () => void, activateStation: (id: string) => void }} ctx
@@ -82,7 +83,12 @@ export function createStopsEditor(ctx, lineId) {
           h('button', {
             class: 'btn btn-small',
             type: 'button',
-            on: { click: () => store.dispatch({ type: 'line/removeStop', lineId, index: i }) },
+            on: {
+              click: () => {
+                const removed = store.dispatch({ type: 'line/removeStop', lineId, index: i });
+                if (removed) toast(t('service.removedWith', { count: removed }));
+              },
+            },
           }, t('data.removeStop')),
         ),
       );

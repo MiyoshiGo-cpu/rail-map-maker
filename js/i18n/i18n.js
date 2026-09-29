@@ -146,6 +146,21 @@ export function formatDate(date, lang = uiLang, opts = { dateStyle: 'medium', ti
   return new Intl.DateTimeFormat(lang, opts).format(d);
 }
 
+/**
+ * 秒を「12分30秒」「1時間5分」のように整える（1時間以上は分まで）
+ * @param {number} sec
+ * @param {string} [lang]
+ */
+export function formatDuration(sec, lang = uiLang) {
+  const total = Math.max(0, Math.round(sec));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  if (h > 0) return translate(lang, 'time.hm', { h, m });
+  if (m > 0) return translate(lang, 'time.ms', { m, s });
+  return translate(lang, 'time.s', { s });
+}
+
 export { KM_PER_MILE };
 
 /**
