@@ -1,6 +1,6 @@
 import { test, assert } from './harness.js';
 import { buildSchematicScene } from '../js/render/scene-schematic.js';
-import { labelLevel, buildBlock } from '../js/render/labels.js';
+import { labelLevel, buildBlock, verticalGlyph } from '../js/render/labels.js';
 import { newStore } from './helpers.js';
 
 // 文字幅は「文字数 × 文字の大きさ」とみなす仮の測り方
@@ -103,4 +103,19 @@ test('ラベル：駅名が空でも、駅番号を付けていればバッジ�
   assert.deepEqual(labels.map((l) => l.runs.filter((r) => r.kind === 'badge').map((r) => r.prefix + r.number)[0]).sort(), ['AB01', 'AB02', 'AB03']);
   assert.equal(labels[0].runs.filter((r) => r.kind === 'text').length, 0);
   void ids;
+});
+
+test('ラベル：縦書きでは、伸ばす記号は回し、小さい文字と句読点は右上に寄せる', () => {
+  assert.equal(verticalGlyph('ー').rot, Math.PI / 2);
+  const small = verticalGlyph('ょ');
+  assert.equal(small.rot, 0);
+  assert.ok(small.dx > 0 && small.dy < 0);
+  assert.ok(verticalGlyph('、').dx > small.dx);
+  assert.deepEqual(verticalGlyph('駅'), { rot: 0, dx: 0, dy: 0 });
+  const store = newStore();
+  const id = store.dispatch({ type: 'station/add', x: 0, y: 0, fields: { name: 'きょう', reading: '' } });
+  const st = store.getState().stations.find((x) => x.id === id);
+  const block = buildBlock(st, { style: store.getState().style, subLanguages: [], measure, level: 0, align: 'left', vertical: true });
+  const [ki, yo] = block.runs.filter((r) => r.kind === 'text');
+  assert.ok(yo.x > ki.x);
 });

@@ -14,6 +14,23 @@ const UNIT = {
 };
 /** 縦書きで横に倒して書く文字（長音・ダッシュ・波ダッシュ・かっこ） */
 export const ROTATE_IN_VERTICAL = new Set(['\u30FC', '\u2015', '\u2014', '\u2010', '-', '\u301C', '\uFF5E', '~', '(', ')', '\uFF08', '\uFF09', '[', ']', '\u300C', '\u300D']);
+
+/** 縦書きで右上に寄せる小さい文字（ぁぃぅぇぉっゃゅょゎ・カタカナも） */
+const SMALL_KANA_VERTICAL = new Set(['\u3041', '\u3043', '\u3045', '\u3047', '\u3049', '\u3063', '\u3083', '\u3085', '\u3087', '\u308E', '\u30A1', '\u30A3', '\u30A5', '\u30A7', '\u30A9', '\u30C3', '\u30E3', '\u30E5', '\u30E7', '\u30EE', '\u30F5', '\u30F6']);
+/** 縦書きで右上に置く句読点 */
+const PUNCT_VERTICAL = new Set(['\u3001', '\u3002', '\uFF0C', '\uFF0E']);
+
+/**
+ * 縦書きの1文字の置き方：回すか、右上へどれだけ寄せるか（文字の大きさに対する割合）
+ * @param {string} ch
+ * @returns {{ rot: number, dx: number, dy: number }}
+ */
+export function verticalGlyph(ch) {
+  if (ROTATE_IN_VERTICAL.has(ch)) return { rot: Math.PI / 2, dx: 0, dy: 0 };
+  if (SMALL_KANA_VERTICAL.has(ch)) return { rot: 0, dx: 0.12, dy: -0.12 };
+  if (PUNCT_VERTICAL.has(ch)) return { rot: 0, dx: 0.6, dy: -0.6 };
+  return { rot: 0, dx: 0, dy: 0 };
+}
 const MAJOR_RANKS = new Set(['terminal', 'major']);
 const RANK_ORDER = { terminal: 0, major: 1, normal: 2, unstaffed: 3, temporary: 3, freight: 4, depot: 4, signal: 5 };
 
@@ -118,7 +135,8 @@ function verticalRuns(o) {
   const step = size * 1.05;
   let y = 0;
   for (const ch of chars) {
-    runs.push({ kind: 'text', text: ch, font, color: inkOf(o.style), x: size / 2, y: y + step / 2, align: 'center', rot: ROTATE_IN_VERTICAL.has(ch) ? Math.PI / 2 : 0 });
+    const g = verticalGlyph(ch);
+    runs.push({ kind: 'text', text: ch, font, color: inkOf(o.style), x: size / 2 + g.dx * size, y: y + step / 2 + g.dy * size, align: 'center', rot: g.rot });
     y += step;
   }
   let x = size + 2;

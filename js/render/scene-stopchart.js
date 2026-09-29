@@ -2,7 +2,7 @@
 // 停車は●、通過は線だけ。他社線の区間は背景を薄く塗り分け、直通先は端に矢印と「〇〇線直通」を描く。
 import { mapFont, inkOf, paperOf, subInkOf, tone } from './styles.js';
 import { mix, readableTextColor } from '../core/color.js';
-import { ROTATE_IN_VERTICAL } from './labels.js';
+import { verticalGlyph } from './labels.js';
 import { formatDuration } from '../i18n/i18n.js';
 
 /** @typedef {import('../core/stopchart.js').StopChart} StopChart */
@@ -54,7 +54,8 @@ function sceneBuilder() {
     vtext(text, x, y, font, size, color) {
       let cy = y;
       for (const ch of [...text]) {
-        add({ kind: 'text', text: ch, x, y: cy + size / 2, font, color, align: 'center', baseline: 'middle', angle: ROTATE_IN_VERTICAL.has(ch) ? Math.PI / 2 : 0, bbox: { minX: x - size / 2, minY: cy, maxX: x + size / 2, maxY: cy + size } });
+        const g = verticalGlyph(ch);
+        add({ kind: 'text', text: ch, x: x + g.dx * size, y: cy + size / 2 + g.dy * size, font, color, align: 'center', baseline: 'middle', angle: g.rot, bbox: { minX: x - size / 2, minY: cy, maxX: x + size / 2, maxY: cy + size } });
         cy += size * 1.05;
       }
       return cy - y;
