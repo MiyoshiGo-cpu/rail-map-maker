@@ -31,4 +31,5 @@ export const files = [
   'color.test.js',
   'legend.test.js',
   'export-size.test.js',
+  'backend-svg.test.js',
 ];

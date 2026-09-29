@@ -1,12 +1,13 @@
 // 「書き出す」のシート（§5.9）：今表示しているビューを、選んだ形式で書き出す。
 // PNG は倍率（1〜4倍）と背景の透過を選ぶ。約1,600万画素を超えるときは案内を出し、倍率を下げて書き出せるようにする。
+// SVG は同じ表示リストから作る（文字は文字のまま）。
 // iPhone では共有シートを開く（写真に保存するときは「画像を保存」）。JSON（バックアップ）もここから書き出せる。
 import { h } from './dom.js';
 import { t, formatNumber } from '../i18n/i18n.js';
 import { openSheet } from './dialog.js';
 import { field, selectInput, checkInput } from './form.js';
 import { toast } from './toast.js';
-import { exportTarget, renderPng } from './exporter.js';
+import { exportTarget, renderPng, renderSvgBlob } from './exporter.js';
 import { exportSize, fittingScale, EXPORT_SCALES, DEFAULT_EXPORT_SCALE } from '../core/export-size.js';
 import { exportFilename, saveBlobFile } from '../storage/file-io.js';
 
@@ -31,7 +32,7 @@ export function openExportSheet(ctx) {
   const btn = (label, onClick, cls = 'btn') => h('button', { class: cls, type: 'button', on: { click: onClick } }, label);
 
   const format = selectInput({
-    options: ['png', 'json'].map((v) => ({ value: v, label: t('export.format.' + v) })),
+    options: ['png', 'svg', 'json'].map((v) => ({ value: v, label: t('export.format.' + v) })),
     value: prefs.format,
     onChange: (v) => {
       prefs.format = v;
@@ -57,19 +58,23 @@ export function openExportSheet(ctx) {
   const includeTitle = checkInput({ label: t('export.includeTitle'), onChange: (v) => setShow('title', v) });
   const includeLegend = checkInput({ label: t('export.includeLegend'), onChange: (v) => setShow('legend', v) });
   const sizeNote = h('p', { class: 'panel-note' });
+  const nothing = h('p', { class: 'panel-warn' }, t('export.nothing'));
   const reduceBtn = btn('', () => run(fittingScale(target.bounds)));
   const warn = h('div', { class: 'panel-warn', role: 'alert' }, h('p', {}, t('export.tooLarge')), h('div', { class: 'panel-actions' }, reduceBtn));
   const runBtn = btn(t('export.run'), () => run(prefs.scale), 'btn btn-primary');
   const shareBtn = btn(t('export.share'), () => pending && deliver(pending.name, pending.blob), 'btn btn-primary');
   const ready = h('div', { class: 'panel-warn export-ready', hidden: true }, h('p', {}, t('export.ready')), h('div', { class: 'panel-actions' }, shareBtn));
 
-  const pngBox = h('div', {},
-    field(t('export.scale'), scale),
+  // iPhone では共有シートで渡す（PNG は写真に、SVG はファイルに保存できる）
+  const hint = (key) => (coarse ? h('p', { class: 'panel-note' }, t(key)) : null);
+  const pngBox = h('div', {}, field(t('export.scale'), scale), sizeNote, warn, hint('export.shareHint'));
+  const svgBox = h('div', {}, h('p', { class: 'panel-note' }, t('export.svgNote')), hint('export.shareHintFile'));
+  const imageBox = h('div', {},
     transparent,
     view === 'schematic' ? h('div', {}, includeTitle, includeLegend) : null,
-    sizeNote,
-    warn,
-    coarse ? h('p', { class: 'panel-note' }, t('export.shareHint')) : null,
+    nothing,
+    pngBox,
+    svgBox,
   );
   const jsonBox = h('div', {}, h('p', { class: 'panel-note' }, t('export.jsonNote')));
 
@@ -79,7 +84,7 @@ export function openExportSheet(ctx) {
       h('div', { class: 'panel-section' },
         h('p', { class: 'panel-note' }, t('export.targetNote', { view: t('views.' + view) })),
         field(t('export.format'), format),
-        pngBox,
+        imageBox,
         jsonBox,
         ready,
         h('div', { class: 'panel-actions' }, runBtn),
@@ -88,23 +93,22 @@ export function openExportSheet(ctx) {
   });
 
   function refresh() {
-    const png = prefs.format === 'png';
-    pngBox.hidden = !png;
-    jsonBox.hidden = png;
+    const f = prefs.format;
+    imageBox.hidden = f === 'json';
+    jsonBox.hidden = f !== 'json';
     ready.hidden = !pending;
-    if (!png) {
+    if (f === 'json') {
       runBtn.disabled = false;
       return;
     }
     const s = store.getState().style;
     includeTitle.setValue(s.title.show);
     includeLegend.setValue(s.legend.show);
-    if (!target) {
-      sizeNote.textContent = t('export.nothing');
-      warn.hidden = true;
-      runBtn.disabled = true;
-      return;
-    }
+    nothing.hidden = !!target;
+    pngBox.hidden = f !== 'png' || !target;
+    svgBox.hidden = f !== 'svg' || !target;
+    runBtn.disabled = !target;
+    if (!target || f !== 'png') return;
     const size = exportSize(target.bounds, prefs.scale);
     sizeNote.textContent = t('export.size', {
       w: formatNumber(size.width),
@@ -127,8 +131,12 @@ export function openExportSheet(ctx) {
     reduceBtn.disabled = true;
     runBtn.textContent = t('export.running');
     try {
-      const blob = await renderPng(target, { scale: s, transparent: prefs.transparent });
-      await deliver(exportFilename(store.getState().name, new Date(), '.png'), blob);
+      const p = store.getState();
+      const svg = prefs.format === 'svg';
+      const blob = svg
+        ? renderSvgBlob(target, { transparent: prefs.transparent, title: p.name })
+        : await renderPng(target, { scale: s, transparent: prefs.transparent });
+      await deliver(exportFilename(p.name, new Date(), svg ? '.svg' : '.png'), blob);
     } catch (e) {
       console.error(e);
       toast(t('editor.exportFailed'), { kind: 'error' });

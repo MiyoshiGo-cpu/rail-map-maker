@@ -1,8 +1,9 @@
-// 書き出しの中身（§5.9）：今表示しているビューの絵（表示リストと範囲）を作り、PNG にする。
+// 書き出しの中身（§5.9）：今表示しているビューの絵（表示リストと範囲）を作り、PNG か SVG にする。
 // 書き出す絵には格子を入れず、駅名はズームに関係なくすべて出す。作業用の canvas は使い終えたら解放する。
 import { buildSchematicScene } from '../render/scene-schematic.js';
 import { unionBoxes } from '../render/scene-legend.js';
 import { drawItems, createMeasure } from '../render/backend-canvas.js';
+import { renderSvg } from '../render/backend-svg.js';
 import { exportSize, EXPORT_MARGIN } from '../core/export-size.js';
 import { mapTranslator } from '../i18n/i18n.js';
 
@@ -64,4 +65,15 @@ export async function renderPng(target, opt) {
     canvas.width = 0;
     canvas.height = 0;
   }
+}
+
+/**
+ * SVG にする（大きさの上限はない）
+ * @param {ExportTarget} target
+ * @param {{ transparent: boolean, title?: string }} opt
+ * @returns {Blob}
+ */
+export function renderSvgBlob(target, opt) {
+  const text = renderSvg(target.items, { bounds: target.bounds, margin: EXPORT_MARGIN, background: target.background, transparent: opt.transparent, title: opt.title });
+  return new Blob([text], { type: 'image/svg+xml' });
 }
