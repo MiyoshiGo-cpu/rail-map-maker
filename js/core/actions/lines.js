@@ -6,6 +6,7 @@ import * as L from '../lines.js';
 import { addOperatorTo } from './operators.js';
 import { addStationTo } from './stations.js';
 import { autoNumbers, numberForEnd, branchNumber } from '../numbering.js';
+import { shrinkServices, dropLineFromServices, moveSegmentsToLine } from './services.js';
 
 /** @typedef {import('../patch.js').Tx} Tx */
 /** @typedef {import('./context.js').ActionContext} Ctx */
@@ -197,9 +198,12 @@ export const lineReducers = {
     });
   },
 
-  /** 路線から駅を外す（駅そのものは残す） { lineId, index } */
+  /** 路線から駅を外す（駅そのものは残す） { lineId, index } → 一緒に消えた系統の数 */
   'line/removeStop'(tx, { lineId, index }) {
+    const line = tx.find('lines', lineId);
+    const removed = shrinkServices(tx, new Map([[lineId, new Set([line.stops[index].stationId])]]));
     updateLine(tx, lineId, (l) => L.removeStop(l, index));
+    return removed;
   },
 
   /** 駅の順番を変える { lineId, from, to } */
@@ -237,6 +241,8 @@ export const lineReducers = {
     tx.set(['lines', i], first);
     if (!second) return null;
     const id = ctx.newId(ID_PREFIX.line);
+    // 2本目だけを通る系統の区間は、新しい路線に付け替える
+    moveSegmentsToLine(tx, lineId, id, new Set(L.stationIdsOf(second)), new Set(L.stationIdsOf(first)));
     tx.push(['lines'], {
       ...second,
       id,
@@ -246,11 +252,13 @@ export const lineReducers = {
     return id;
   },
 
-  /** { lineId } */
+  /** { lineId } → 一緒に消えた系統の数（通っていた区間は系統から外す） */
   'line/delete'(tx, { lineId }) {
     const i = tx.indexOf('lines', lineId);
-    if (i < 0) return;
+    if (i < 0) return 0;
+    const removed = dropLineFromServices(tx, lineId);
     tx.remove(['lines'], i);
+    return removed;
   },
 
   /** 路線を複製する { lineId } → 新しい ID */

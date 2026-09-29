@@ -231,6 +231,24 @@ export function serviceTypeFromPreset(region, x) {
   };
 }
 
+/** 1時間あたりの本数の既定（片道） */
+export const DEFAULT_FREQUENCY = { morning: 6, day: 4, evening: 6, night: 2 };
+
+/**
+ * @param {Partial<import('./schema.js').Service> & { id: string }} fields
+ * @returns {import('./schema.js').Service}
+ */
+export function createService(fields) {
+  return {
+    segments: [],
+    stops: [],
+    stopsAuto: true,
+    frequency: { ...DEFAULT_FREQUENCY },
+    bothDirections: true,
+    ...fields,
+  };
+}
+
 /** 駅間の数（環状なら駅の数） */
 export function sectionCount(line) {
   const n = line.stops.length;
@@ -270,7 +288,12 @@ export function normalizeProject(p) {
     meta: isObj(p.meta) ? p.meta : {},
     updatedAt: p.updatedAt || base.updatedAt,
   };
-  for (const key of ['services', 'rollingStock', 'fareTables']) out[key] = arr(p[key]);
+  for (const key of ['rollingStock', 'fareTables']) out[key] = arr(p[key]);
+  out.services = arr(p.services).map((x) => {
+    const sv = createService({ ...x, segments: arr(x.segments), stops: arr(x.stops) });
+    sv.frequency = { ...DEFAULT_FREQUENCY, ...(isObj(x.frequency) ? x.frequency : {}) };
+    return sv;
+  });
   out.serviceTypes = arr(p.serviceTypes).map((x) => {
     const st = createServiceType(region, { ...x, name: x.name ?? '' });
     st.names = isObj(x.names) ? x.names : {};

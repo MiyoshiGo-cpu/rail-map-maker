@@ -7,6 +7,7 @@ import { stationReducers } from './stations.js';
 import { lineReducers } from './lines.js';
 import { interchangeReducers } from './interchanges.js';
 import { serviceTypeReducers } from './service-types.js';
+import { serviceReducers } from './services.js';
 
 export const reducers = {
   ...projectReducers,
@@ -15,6 +16,7 @@ export const reducers = {
   ...lineReducers,
   ...interchangeReducers,
   ...serviceTypeReducers,
+  ...serviceReducers,
 };
 
 /**

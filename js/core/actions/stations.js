@@ -3,6 +3,7 @@ import { ID_PREFIX } from '../schema.js';
 import { createStation } from '../defaults.js';
 import { removeStop } from '../lines.js';
 import { romanize } from '../romaji.js';
+import { shrinkServices } from './services.js';
 
 /** @typedef {import('../patch.js').Tx} Tx */
 /** @typedef {import('./context.js').ActionContext} Ctx */
@@ -44,12 +45,20 @@ export function addStationTo(tx, ctx, pos, fields = {}) {
 }
 
 /**
- * 駅を消す。通っていた路線は前後の駅でつなぎ直し、乗換グループからも外す
+ * 駅を消す。通っていた路線は前後の駅でつなぎ直し、乗換グループからも外す。
+ * 系統は、消える駅を端にしている区間を隣の駅まで縮める（区間が無くなった系統は消す）
  * @param {Tx} tx
  * @param {string[]} ids
+ * @returns {number} 消した系統の数
  */
 export function deleteStationsFrom(tx, ids) {
   const del = new Set(ids);
+  // 系統（路線を書き換える前に、元の駅の並びで縮める）
+  const byLine = new Map();
+  for (const line of tx.state.lines) {
+    if (line.stops.some((s) => del.has(s.stationId))) byLine.set(line.id, del);
+  }
+  const removedServices = shrinkServices(tx, byLine);
   // 路線
   tx.state.lines.forEach((line, li) => {
     if (!line.stops.some((s) => del.has(s.stationId))) return;
@@ -67,7 +76,7 @@ export function deleteStationsFrom(tx, ids) {
     if (rest.length < 2) tx.remove(['interchanges'], i);
     else tx.set(['interchanges', i, 'stationIds'], rest);
   }
-  // 運行系統の停車駅（フェーズ2で経路の扱いを決める）
+  // 運行系統の停車駅
   tx.state.services.forEach((sv, i) => {
     if (sv.stops.some((id) => del.has(id))) tx.set(['services', i, 'stops'], sv.stops.filter((id) => !del.has(id)));
   });
@@ -75,6 +84,7 @@ export function deleteStationsFrom(tx, ids) {
   for (let i = tx.state.stations.length - 1; i >= 0; i--) {
     if (del.has(tx.state.stations[i].id)) tx.remove(['stations'], i);
   }
+  return removedServices;
 }
 
 /** @type {Record<string, (tx: Tx, a: any, ctx: Ctx) => any>} */
@@ -119,9 +129,9 @@ export const stationReducers = {
     });
   },
 
-  /** { ids } */
+  /** { ids } → 一緒に消えた系統の数 */
   'station/delete'(tx, { ids }) {
-    deleteStationsFrom(tx, ids);
+    return deleteStationsFrom(tx, ids);
   },
 
   /** 駅を複製して (dx, dy) ずらした位置に置く { ids, dx, dy } → 新しい ID の配列 */

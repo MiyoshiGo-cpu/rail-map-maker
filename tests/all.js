@@ -23,4 +23,6 @@ export const files = [
   'sample.test.js',
   'distance.test.js',
   'service-types.test.js',
+  'services.test.js',
+  'runtime.test.js',
 ];
