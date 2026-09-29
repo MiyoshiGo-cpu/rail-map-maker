@@ -68,6 +68,10 @@ html, body {
   text-size-adjust: 100%;
 }
 
+/* ページの地の色はヘッダーと同じ紺にする。iPhone は画面上端（時計や電池の表示の下）を
+   この色でぼかすため、白だとヘッダーに白い靄がかかる。見える部分は body と各画面が白で塗る */
+html { background: var(--sign); }
+
 body {
   overflow: hidden;           /* 画面全体はスクロールさせない（各領域でスクロール） */
   overscroll-behavior: none;
