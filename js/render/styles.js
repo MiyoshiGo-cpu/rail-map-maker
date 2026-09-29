@@ -1,15 +1,52 @@
-// 描画の見た目（線の描き分け・書体）。値の元は Project.style（MapStyle）
+// 描画の見た目（線の描き分け・書体・色づかい）。値の元は Project.style（MapStyle）
 // 長さはすべて世界座標の px（ズーム1基準）。
+import { mix, toGray } from '../core/color.js';
 
 /** 地図に描く文字の書体（OS 標準） */
 const FONT_STACKS = {
   gothic: '"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "YuGothic", "Meiryo", system-ui, sans-serif',
   mincho: '"Hiragino Mincho ProN", "Yu Mincho", "YuMincho", serif',
-  maru: '"Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif',
+  maru: '"Hiragino Maru Gothic ProN", "HGMaruGothicMPRO", "Yu Gothic", "Meiryo", sans-serif',
 };
 
 export const MAP_INK = '#1F2933';
 export const MAP_PAPER = '#FFFFFF';
+
+/** 文字と駅の縁の色 @param {import('../core/schema.js').MapStyle} style */
+export const inkOf = (style) => style.ink || MAP_INK;
+/** 駅の地と、文字の縁取りの色 @param {import('../core/schema.js').MapStyle} style */
+export const paperOf = (style) => style.paper || MAP_PAPER;
+/** 副表記など、少し薄い文字の色 @param {import('../core/schema.js').MapStyle} style */
+export const subInkOf = (style) => mix(inkOf(style), style.background || MAP_PAPER, 0.3);
+
+/**
+ * 色づかいに合わせた色（モノクロなら同じ明るさの灰色、明るくするなら白を混ぜる）
+ * @param {import('../core/schema.js').MapStyle} style
+ * @param {string} color
+ */
+export function tone(style, color) {
+  if (style.colorMode === 'mono') return toGray(color);
+  if (style.colorMode === 'bright') return mix(color, '#FFFFFF', 0.18);
+  return color;
+}
+
+/** モノクロで路線を区別する濃淡と破線（並び順で割り当てる） */
+const MONO_SHADES = ['#222222', '#666666', '#9A9A9A'];
+const MONO_DASHES = [null, [1.8, 0.9], [0.35, 0.9], [2.2, 0.7, 0.35, 0.7]];
+
+/**
+ * 路線の基本の色と破線（状態による描き分けの前）
+ * @param {import('../core/schema.js').MapStyle} style
+ * @param {string} color 路線の色
+ * @param {number} index 路線の並び順（モノクロの区別に使う）
+ * @returns {{ color: string, dash: number[] | null }}
+ */
+export function lineAppearance(style, color, index) {
+  if (style.colorMode !== 'mono') return { color: tone(style, color), dash: null };
+  const i = Math.max(0, index);
+  const d = MONO_DASHES[Math.floor(i / MONO_SHADES.length) % MONO_DASHES.length];
+  return { color: MONO_SHADES[i % MONO_SHADES.length], dash: d ? d.map((x) => x * style.lineWidth) : null };
+}
 const GRAY = '#9AA5B1';
 const FREIGHT_GRAY = '#7B8794';
 
@@ -38,16 +75,18 @@ export function mapFont(style, size, weight = 500) {
  * @param {string} kind
  * @param {string} status
  * @param {string} color
+ * @param {number} [index] 路線の並び順（モノクロの区別に使う）
  * @returns {StrokeStyle}
  */
-export function strokeFor(style, kind, status, color) {
+export function strokeFor(style, kind, status, color, index = 0) {
   const w = style.lineWidth;
+  const base = lineAppearance(style, color, index);
   /** @type {StrokeStyle} */
-  const s = { color, width: w, dash: null, alpha: 1, inner: null, hidden: false };
+  const s = { color: base.color, width: w, dash: base.dash, alpha: 1, inner: null, hidden: false };
   switch (kind) {
     case 'shinkansen':
       s.width = w * 1.3;
-      s.inner = { color: MAP_PAPER, width: Math.max(1, w * 0.3) };
+      s.inner = { color: paperOf(style), width: Math.max(1, w * 0.3) };
       break;
     case 'tram':
       s.width = w * 0.6;

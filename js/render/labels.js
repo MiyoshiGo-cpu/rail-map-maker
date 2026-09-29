@@ -2,7 +2,7 @@
 // 8方向の候補から線の向きに直交する側を優先して、重要な駅から順に重ならない位置へ置く。
 // どこも重なる場合は、重なりが最小の位置にする。手動の方向・微調整・縦書き・±45°・改行にも対応する。
 import { createSpatialIndex } from './spatial-index.js';
-import { mapFont, MAP_INK, MAP_PAPER } from './styles.js';
+import { mapFont, inkOf, paperOf, subInkOf } from './styles.js';
 
 /** @typedef {{ minX: number, minY: number, maxX: number, maxY: number }} Box */
 /** @typedef {(font: string, text: string) => number} Measure */
@@ -12,7 +12,6 @@ const UNIT = {
   E: [1, 0], W: [-1, 0], N: [0, -1], S: [0, 1],
   NE: [Math.SQRT1_2, -Math.SQRT1_2], SE: [Math.SQRT1_2, Math.SQRT1_2], NW: [-Math.SQRT1_2, -Math.SQRT1_2], SW: [-Math.SQRT1_2, Math.SQRT1_2],
 };
-const SUB_COLOR = '#52606D';
 /** 縦書きで横に倒して書く文字（長音・ダッシュ・波ダッシュ・かっこ） */
 export const ROTATE_IN_VERTICAL = new Set(['\u30FC', '\u2015', '\u2014', '\u2010', '-', '\u301C', '\uFF5E', '~', '(', ')', '\uFF08', '\uFF09', '[', ']', '\u300C', '\u300D']);
 const MAJOR_RANKS = new Set(['terminal', 'major']);
@@ -64,7 +63,8 @@ function badgeRuns(badges, style, size, measure) {
 export function buildBlock(st, o) {
   const { style, measure } = o;
   const size = style.fontSize * (st.rank === 'terminal' ? 1.15 : st.rank === 'unstaffed' || st.rank === 'temporary' ? 0.9 : 1);
-  const weight = MAJOR_RANKS.has(st.rank) ? 700 : 600;
+  // 広域のスタイル（目盛りの駅）では、一般駅の駅名を細くして主要駅を目立たせる
+  const weight = MAJOR_RANKS.has(st.rank) ? 700 : style.stationSymbol === 'tick' ? 500 : 600;
   const font = mapFont(style, size, weight);
   const subSize = Math.max(6, size * 0.62);
   const subFont = mapFont(style, subSize, 500);
@@ -118,18 +118,18 @@ function verticalRuns(o) {
   const step = size * 1.05;
   let y = 0;
   for (const ch of chars) {
-    runs.push({ kind: 'text', text: ch, font, color: MAP_INK, x: size / 2, y: y + step / 2, align: 'center', rot: ROTATE_IN_VERTICAL.has(ch) ? Math.PI / 2 : 0 });
+    runs.push({ kind: 'text', text: ch, font, color: inkOf(o.style), x: size / 2, y: y + step / 2, align: 'center', rot: ROTATE_IN_VERTICAL.has(ch) ? Math.PI / 2 : 0 });
     y += step;
   }
   let x = size + 2;
   let hgt = y;
   for (const s of subs) {
     const w = measure(subFont, s);
-    runs.push({ kind: 'text', text: s, font: subFont, color: SUB_COLOR, x: x + subSize * 0.6, y: 0, align: 'left', rot: Math.PI / 2 });
+    runs.push({ kind: 'text', text: s, font: subFont, color: subInkOf(o.style), x: x + subSize * 0.6, y: 0, align: 'left', rot: Math.PI / 2 });
     x += subSize * 1.25;
     hgt = Math.max(hgt, w);
   }
-  icons.forEach((ic, i) => runs.push({ kind: 'icon', icon: ic, x: 0, y: hgt + 2 + i * (iconSize + 2), size: iconSize, color: MAP_INK }));
+  icons.forEach((ic, i) => runs.push({ kind: 'icon', icon: ic, x: 0, y: hgt + 2 + i * (iconSize + 2), size: iconSize, color: inkOf(o.style) }));
   if (icons.length) hgt += 2 + icons.length * (iconSize + 2);
   return { runs, w: x, h: hgt };
 }
@@ -147,18 +147,18 @@ function horizontalRuns(o) {
   let y = 0;
   mainLines.forEach((s, i) => {
     const x0 = xOf(widths[i]);
-    runs.push({ kind: 'text', text: s, font, color: MAP_INK, x: x0, y: y + lineH / 2, align: 'left' });
+    runs.push({ kind: 'text', text: s, font, color: inkOf(o.style), x: x0, y: y + lineH / 2, align: 'left' });
     if (i === 0) {
       let ix = x0 + measure(font, s) + 3;
       for (const ic of icons) {
-        runs.push({ kind: 'icon', icon: ic, x: ix, y: y + (lineH - iconSize) / 2, size: iconSize, color: MAP_INK });
+        runs.push({ kind: 'icon', icon: ic, x: ix, y: y + (lineH - iconSize) / 2, size: iconSize, color: inkOf(o.style) });
         ix += iconSize + 2;
       }
     }
     y += lineH;
   });
   subs.forEach((s, i) => {
-    runs.push({ kind: 'text', text: s, font: subFont, color: SUB_COLOR, x: xOf(subWidths[i]), y: y + subH / 2, align: 'left' });
+    runs.push({ kind: 'text', text: s, font: subFont, color: subInkOf(o.style), x: xOf(subWidths[i]), y: y + subH / 2, align: 'left' });
     y += subH;
   });
   return { runs, w, h: y };
@@ -321,7 +321,7 @@ export function layoutLabels(p, o) {
       ax: best.ax,
       ay: best.ay,
       runs: block.runs,
-      halo: MAP_PAPER,
+      halo: paperOf(style),
       target: { type: 'label', id: st.id },
       bbox: best.box,
     };

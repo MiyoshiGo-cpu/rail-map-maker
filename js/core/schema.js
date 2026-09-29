@@ -21,6 +21,10 @@ export const LABEL_ORIENTATIONS = /** @type {const} */ (['horizontal', 'vertical
 export const BENDS = /** @type {const} */ (['auto', 'diagonalFirst', 'straightFirst']);
 export const PLATFORM_TYPES = /** @type {const} */ (['island', 'side', 'bay', 'mixed']);
 export const FACILITIES = /** @type {const} */ (['airport', 'port', 'busTerminal']);
+export const FONT_FAMILIES = /** @type {const} */ (['gothic', 'mincho', 'maru']);
+export const COLOR_MODES = /** @type {const} */ (['color', 'mono', 'bright']);
+export const STATION_SYMBOLS = /** @type {const} */ (['circle', 'tick']);
+export const STATION_STROKES = /** @type {const} */ (['black', 'line']);
 export const STOP_RULES = /** @type {const} */ (['all', 'majorAndAbove', 'terminalOnly', 'manual']);
 export const SEATINGS = /** @type {const} */ (['free', 'reserved', 'mixed']);
 
@@ -328,6 +332,10 @@ export const DEFAULT_WALK_MINUTES = 5;
  * @property {string} background
  * @property {boolean} showGrid
  * @property {boolean} showAbolished 廃止区間を表示する
+ * @property {string} ink 文字と駅の縁の色
+ * @property {string} paper 駅の地と、文字の縁取りの色
+ * @property {'color'|'mono'|'bright'} colorMode 路線の色づかい（mono は灰色の濃淡と破線で区別、bright は明るくする）
+ * @property {'circle'|'tick'} stationSymbol 一般駅の記号（tick は線の上の短い目盛り）
  */
 
 /**
@@ -406,4 +414,5 @@ export const DEFAULT_WALK_MINUTES = 5;
  * @property {Array<{ id: string, labelKey: string, types: Array<ServiceTypePreset> }>} serviceTypePresets
  * @property {{ byLineKind: Record<string, string>, byCategory: Record<string, string>, fallback: string }} serviceSetDefaults 事業者に合ったプリセット
  * @property {Array<{ maxRank: number, sec: number }>} dwellSecByRank
+ * @property {Array<{ id: string, labelKey: string, values: Partial<MapStyle> }>} stylePresets スタイルプリセット（§5.8）
  */

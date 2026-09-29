@@ -1,9 +1,10 @@
-// 設定（§4.3。フェーズ1は「表示」「英字の規則」「バックアップ」だけ。UIの言語・地図の言語はフェーズ8）
+// 設定（§4.3。「スタイル」「表示」「英字の規則」「バックアップ」。UIの言語・地図の言語はフェーズ8）
 import { h } from './dom.js';
 import { t, formatDate } from '../i18n/i18n.js';
 import { getRegion } from '../core/regions/index.js';
 import { field, selectInput, checkInput, group } from './form.js';
 import { openSheet } from './dialog.js';
+import { createStyleSettings } from './style-settings.js';
 
 /**
  * @param {{ store: any, onExport: () => void }} ctx
@@ -14,6 +15,9 @@ export function openSettings(ctx) {
   const setStyle = (fields) => store.dispatch({ type: 'project/style', fields });
   const setRomaji = (fields) => ctx.onRomaji ? ctx.onRomaji(fields) : store.dispatch({ type: 'project/romaji', fields });
 
+  // スタイル（プリセットと詳細設定）。プリセットで英字・駅番号の表示も変わるので、表示の欄も合わせ直す
+  const styleSettings = createStyleSettings({ store, onChange: () => refreshToggles() });
+
   // 表示
   const toggles = [
     ['showSubNames', 'settings.showSubNames'],
@@ -23,8 +27,13 @@ export function openSettings(ctx) {
   ].map(([key, label]) => {
     const c = checkInput({ label: t(label), onChange: (v) => setStyle({ [key]: v }) });
     c.setValue(p.style[key]);
+    c.dataset.key = key;
     return c;
   });
+  function refreshToggles() {
+    const s = store.getState().style;
+    for (const c of toggles) c.setValue(s[c.dataset.key]);
+  }
 
   // 英字の規則（変えると、自動生成中の駅の英字をまとめて作り直す）
   const r = p.settings.romaji;
@@ -58,6 +67,6 @@ export function openSettings(ctx) {
 
   openSheet({
     title: t('settings.title'),
-    body: [group(t('settings.display'), toggles), romaji, backup],
+    body: [styleSettings.el, group(t('settings.display'), toggles), romaji, backup],
   });
 }

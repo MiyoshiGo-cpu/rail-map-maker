@@ -26,6 +26,10 @@ export function defaultStyle() {
     background: '#FFFFFF',
     showGrid: true,
     showAbolished: false,
+    ink: '#1F2933',
+    paper: '#FFFFFF',
+    colorMode: 'color',
+    stationSymbol: 'circle',
   };
 }
 

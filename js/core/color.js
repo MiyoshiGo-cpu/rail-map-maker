@@ -71,3 +71,31 @@ export function nextColor(palette, used) {
   for (const c of palette) if (count.get(c) < count.get(best)) best = c;
   return best;
 }
+
+/** [r, g, b] を '#RRGGBB' にする */
+export function rgbToHex([r, g, b]) {
+  const c = (v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
+  return ('#' + c(r) + c(g) + c(b)).toUpperCase();
+}
+
+/**
+ * 2つの色を混ぜる（t = 0 なら a、1 なら b）
+ * @param {string} a @param {string} b @param {number} t
+ */
+export function mix(a, b, t) {
+  const x = hexToRgb(a);
+  const y = hexToRgb(b);
+  return rgbToHex(x.map((v, i) => v + (y[i] - v) * t));
+}
+
+/**
+ * 同じ明るさの灰色（モノクロ印刷用）
+ * @param {string} hex
+ */
+export function toGray(hex) {
+  // 相対輝度から、同じ輝度になる sRGB の値に戻す
+  const l = luminance(hex);
+  const s = l <= 0.0031308 ? l * 12.92 : 1.055 * l ** (1 / 2.4) - 0.055;
+  const v = s * 255;
+  return rgbToHex([v, v, v]);
+}

@@ -27,4 +27,5 @@ export const files = [
   'runtime.test.js',
   'through-check.test.js',
   'stopchart.test.js',
+  'map-style.test.js',
 ];

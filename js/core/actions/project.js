@@ -1,5 +1,6 @@
 // プロジェクト全体に関わるアクション
 import { applyRomaji } from './stations.js';
+import { applyStylePreset } from '../map-style.js';
 
 /** @typedef {import('../patch.js').Tx} Tx */
 
@@ -16,6 +17,12 @@ export const projectReducers = {
   /** 見た目の設定を変える { fields } */
   'project/style'(tx, { fields }) {
     tx.merge(['style'], fields);
+  },
+
+  /** スタイルプリセットを選ぶ（詳細設定をまとめて書き換える） { presetId } */
+  'project/stylePreset'(tx, { presetId }) {
+    const next = applyStylePreset(tx.state.style, presetId, tx.state.locale.region);
+    tx.merge(['style'], next);
   },
 
   /** 英字の規則を変え、自動生成中の駅の英字をまとめて作り直す { fields } */

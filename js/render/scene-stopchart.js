@@ -1,14 +1,13 @@
 // 停車駅案内図（§5.5）の表示リスト。横（駅を横に並べ、駅名は縦書き）と縦（駅を縦に並べる。スマホ向け）の2つのレイアウト。
 // 停車は●、通過は線だけ。他社線の区間は背景を薄く塗り分け、直通先は端に矢印と「〇〇線直通」を描く。
-import { mapFont, MAP_INK, MAP_PAPER } from './styles.js';
+import { mapFont, inkOf, paperOf, subInkOf, tone } from './styles.js';
+import { mix, readableTextColor } from '../core/color.js';
 import { ROTATE_IN_VERTICAL } from './labels.js';
 import { formatDuration } from '../i18n/i18n.js';
 
 /** @typedef {import('../core/stopchart.js').StopChart} StopChart */
 /** @typedef {(font: string, text: string) => number} Measure */
 
-const GUIDE = '#E4E7EB';
-const SUB = '#52606D';
 
 /**
  * @typedef {object} ChartScene
@@ -20,16 +19,6 @@ const SUB = '#52606D';
 /** 2つの箱を合わせた箱 */
 function union(a, b) {
   return { minX: Math.min(a.minX, b.minX), minY: Math.min(a.minY, b.minY), maxX: Math.max(a.maxX, b.maxX), maxY: Math.max(a.maxY, b.maxY) };
-}
-
-/** 色を薄くする（背景の塗り分け用）：白と混ぜる */
-function tint(hex, k) {
-  const n = parseInt(hex.slice(1), 16);
-  const mix = (v) => Math.round(v + (255 - v) * (1 - k));
-  const r = mix((n >> 16) & 255);
-  const g = mix((n >> 8) & 255);
-  const b = mix(n & 255);
-  return '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('');
 }
 
 /**
@@ -114,8 +103,21 @@ function prepare(p, chart, opt) {
     return opt.mapT('map.fromTo', { from: stById.get(first.from)?.name || '', to: stById.get(last.to)?.name || '' });
   };
   /** 行の駅間ごとの色と、種別が変わる列 */
-  const hopColor = (row, c) => typeById.get(row.hops[c])?.color || MAP_INK;
-  return { p, chart, opt, style, stById, typeById, lineById, opById, lineName, primaryOp, serviceName, hopColor, measure: opt.measure };
+  // 色づかい（スタイルの文字・地の色、モノクロ・明るく）
+  const bg = style.background || '#FFFFFF';
+  const ink = inkOf(style);
+  const col = (hex) => tone(style, hex);
+  const hopColor = (row, c) => col(typeById.get(row.hops[c])?.color || ink);
+  return {
+    p, chart, opt, style, stById, typeById, lineById, opById, lineName, primaryOp, serviceName, hopColor, measure: opt.measure,
+    ink,
+    paper: paperOf(style),
+    sub: subInkOf(style),
+    guide: mix(ink, bg, 0.88),
+    col,
+    /** 他社線の区間の背景（事業者の色を背景にごく薄く混ぜる） */
+    tint: (hex) => mix(col(hex), bg, 0.9),
+  };
 }
 
 /**
@@ -125,8 +127,9 @@ function prepare(p, chart, opt) {
 function badge(b, ctx, type, x, y, h, text) {
   const font = mapFont(ctx.style, h * 0.62, 700);
   const w = ctx.measure(font, text) + h * 0.7;
-  b.rect(x, y - h / 2, w, h, type ? type.color : MAP_INK, h * 0.22);
-  b.text(text, x + w / 2, y, font, type ? type.textColor : MAP_PAPER, w, h, 'center');
+  const fill = type ? ctx.col(type.color) : ctx.ink;
+  b.rect(x, y - h / 2, w, h, fill, h * 0.22);
+  b.text(text, x + w / 2, y, font, type && ctx.style.colorMode === 'color' ? type.textColor : readableTextColor(fill), w, h, 'center');
   return w;
 }
 
@@ -201,17 +204,17 @@ function horizontalScene(ctx) {
     const right = band.end === n - 1 ? xOf(n - 1) + COL / 2 : xOf(band.end);
     const line = ctx.lineById.get(band.lineId);
     const op = opById.get(band.operatorId);
-    if (band.operatorId !== ctx.primaryOp && op) b.rect(left, 0, right - left, rowsBottom + 6, tint(op.color, 0.1));
-    b.rect(left, bandH - 6, right - left, 5, line ? line.color : MAP_INK);
-    b.text(ctx.lineName(band.lineId), (left + right) / 2, bandH / 2 - 2, mapFont(style, 12, 700), MAP_INK, measure(mapFont(style, 12, 700), ctx.lineName(band.lineId)), 14, 'center');
+    if (band.operatorId !== ctx.primaryOp && op) b.rect(left, 0, right - left, rowsBottom + 6, ctx.tint(op.color));
+    b.rect(left, bandH - 6, right - left, 5, line ? ctx.col(line.color) : ctx.ink);
+    b.text(ctx.lineName(band.lineId), (left + right) / 2, bandH / 2 - 2, mapFont(style, 12, 700), ctx.ink, measure(mapFont(style, 12, 700), ctx.lineName(band.lineId)), 14, 'center');
   }
 
   // 駅名（縦書き）と、行を貫く薄い案内の線
   chart.columns.forEach((c, i) => {
     const st = stById.get(c.stationId);
     const major = st && (st.rank === 'terminal' || st.rank === 'major');
-    b.vtext(st ? st.name : '', xOf(i), nameTop, mapFont(style, nameSize, major ? 700 : 500), nameSize, MAP_INK);
-    b.line([xOf(i), nameBottom + 4, xOf(i), rowsBottom], GUIDE, 1);
+    b.vtext(st ? st.name : '', xOf(i), nameTop, mapFont(style, nameSize, major ? 700 : 500), nameSize, ctx.ink);
+    b.line([xOf(i), nameBottom + 4, xOf(i), rowsBottom], ctx.guide, 1);
   });
 
   /** @type {ChartScene['rowBoxes']} */
@@ -222,7 +225,7 @@ function horizontalScene(ctx) {
     badge(b, ctx, type, 8, row.named ? y - 6 : y, BADGE_H, type ? type.name : '');
     if (row.named) {
       const name = ctx.serviceName(row);
-      b.text(name, 8, y + 12, labelFont, SUB, measure(labelFont, name), 12);
+      b.text(name, 8, y + 12, labelFont, ctx.sub, measure(labelFont, name), 12);
     }
     // 駅間の線（種別の色）
     for (let c = 0; c < n - 1; c++) {
@@ -238,7 +241,7 @@ function horizontalScene(ctx) {
     row.cells.forEach((cell, c) => {
       if (!cell || !cell.stop) return;
       const color = ctx.hopColor(row, row.hops[c] ? c : c - 1);
-      b.dot(xOf(c), y, 7, color, MAP_PAPER, 2);
+      b.dot(xOf(c), y, 7, color, ctx.paper, 2);
     });
     // 直通先：端に矢印と「〇〇線直通」
     for (const e of row.exits) {
@@ -250,12 +253,12 @@ function horizontalScene(ctx) {
         b.line([x, y, x + 12, y], color, 6);
         b.arrow(x + 12, y, 5, 'r', color);
         const edge = e.col === n - 1;
-        b.text(text, edge ? x + 22 : x + 4, edge ? y : y + 14, smallFont, SUB, tw, 12);
+        b.text(text, edge ? x + 22 : x + 4, edge ? y : y + 14, smallFont, ctx.sub, tw, 12);
       } else {
         b.line([x - 12, y, x, y], color, 6);
         b.arrow(x - 12, y, 5, 'l', color);
         const edge = e.col === 0;
-        b.text(text, edge ? x - 22 : x - 4, edge ? y : y + 14, smallFont, SUB, tw, 12, 'right');
+        b.text(text, edge ? x - 22 : x - 4, edge ? y : y + 14, smallFont, ctx.sub, tw, 12, 'right');
       }
     }
     rowBoxes.push({ bbox: { minX: 0, minY: y - ROW / 2, maxX: width, maxY: y + ROW / 2 }, serviceId: row.serviceIds[0] });
@@ -314,16 +317,16 @@ function verticalScene(ctx) {
     const bot = band.end === n - 1 ? yOf(n - 1) + ROWH / 2 : yOf(band.end);
     const line = ctx.lineById.get(band.lineId);
     const op = opById.get(band.operatorId);
-    if (band.operatorId !== ctx.primaryOp && op) b.rect(0, top, width, bot - top, tint(op.color, 0.1));
-    b.rect(barX, top, 8, bot - top, line ? line.color : MAP_INK, 2);
+    if (band.operatorId !== ctx.primaryOp && op) b.rect(0, top, width, bot - top, ctx.tint(op.color));
+    b.rect(barX, top, 8, bot - top, line ? ctx.col(line.color) : ctx.ink, 2);
   }
   // 駅名と、列を貫く薄い案内の線
   chart.columns.forEach((c, i) => {
     const st = stById.get(c.stationId);
     const font = nameFontOf(st && (st.rank === 'terminal' || st.rank === 'major'));
     const name = st ? st.name : '';
-    b.text(name, nameX, yOf(i), font, MAP_INK, measure(font, name), 16);
-    b.line([colX0, yOf(i), width, yOf(i)], GUIDE, 1);
+    b.text(name, nameX, yOf(i), font, ctx.ink, measure(font, name), 16);
+    b.line([colX0, yOf(i), width, yOf(i)], ctx.guide, 1);
   });
 
   /** @type {ChartScene['rowBoxes']} */
@@ -337,7 +340,7 @@ function verticalScene(ctx) {
     if (row.named) {
       const name = ctx.serviceName(row);
       const f = mapFont(style, 10, 500);
-      b.text(name, x, BADGE_H + 12, f, SUB, measure(f, name), 11, 'center');
+      b.text(name, x, BADGE_H + 12, f, ctx.sub, measure(f, name), 11, 'center');
     }
     for (let c = 0; c < n - 1; c++) {
       if (!row.hops[c]) continue;
@@ -349,7 +352,7 @@ function verticalScene(ctx) {
     }
     row.cells.forEach((cell, c) => {
       if (!cell || !cell.stop) return;
-      b.dot(x, yOf(c), 7, ctx.hopColor(row, row.hops[c] ? c : c - 1), MAP_PAPER, 2);
+      b.dot(x, yOf(c), 7, ctx.hopColor(row, row.hops[c] ? c : c - 1), ctx.paper, 2);
     });
     for (const e of row.exits) {
       const y = yOf(e.col);
@@ -358,11 +361,11 @@ function verticalScene(ctx) {
       if (e.side === 'after') {
         b.line([x, y, x, y + 12], color, 6);
         b.arrow(x, y + 12, 5, 'd', color);
-        b.vtext(text, x, y + 22, smallFont, smallSize, SUB);
+        b.vtext(text, x, y + 22, smallFont, smallSize, ctx.sub);
       } else {
         b.line([x, y - 12, x, y], color, 6);
         b.arrow(x, y - 12, 5, 'u', color);
-        b.vtext(text, x, y - 22 - vLen(text), smallFont, smallSize, SUB);
+        b.vtext(text, x, y - 22 - vLen(text), smallFont, smallSize, ctx.sub);
       }
     }
     rowBoxes.push({ bbox: { minX: x - COL / 2, minY: 0, maxX: x + COL / 2, maxY: bottom }, serviceId: row.serviceIds[0] });
@@ -388,7 +391,7 @@ function timesFooter(b, ctx, x, y) {
     const to = stById.get(chart.columns[row.secSpan[1]].stationId)?.name || '';
     const w = badge(b, ctx, type, x, cy, 18, type ? type.name : '');
     const text = opt.mapT('map.sectionTime', { from, to, time: formatDuration(row.sec, ctx.p.locale.mapLanguage) });
-    b.text(text, x + w + 8, cy, font, MAP_INK, measure(font, text), 14);
+    b.text(text, x + w + 8, cy, font, ctx.ink, measure(font, text), 14);
     cy += 24;
   }
   return cy;

@@ -129,6 +129,30 @@ const jp = {
     fallback: 'private',
   },
 
+  // スタイルプリセット（§5.8。地図記号は地理ビューのフェーズ4で足す）。選ぶと詳細設定をまとめて書き換える
+  stylePresets: [
+    {
+      id: 'urban',
+      labelKey: 'stylePreset.urban',
+      values: { lineWidth: 6, lineGap: 2, cornerRadius: 8, stationRadius: 5, fontFamily: 'gothic', fontSize: 12, showSubNames: true, showNumbering: true, stationStroke: 'black', background: '#FFFFFF', ink: '#1F2933', paper: '#FFFFFF', colorMode: 'color', stationSymbol: 'circle' },
+    },
+    {
+      id: 'wide',
+      labelKey: 'stylePreset.wide',
+      values: { lineWidth: 4, lineGap: 1.5, cornerRadius: 6, stationRadius: 4, fontFamily: 'gothic', fontSize: 11, showSubNames: true, showNumbering: false, stationStroke: 'black', background: '#FFFFFF', ink: '#1F2933', paper: '#FFFFFF', colorMode: 'color', stationSymbol: 'tick' },
+    },
+    {
+      id: 'mono',
+      labelKey: 'stylePreset.mono',
+      values: { lineWidth: 5, lineGap: 2, cornerRadius: 6, stationRadius: 5, fontFamily: 'gothic', fontSize: 12, showSubNames: true, showNumbering: true, stationStroke: 'black', background: '#FFFFFF', ink: '#111111', paper: '#FFFFFF', colorMode: 'mono', stationSymbol: 'circle' },
+    },
+    {
+      id: 'night',
+      labelKey: 'stylePreset.night',
+      values: { lineWidth: 6, lineGap: 2, cornerRadius: 8, stationRadius: 5, fontFamily: 'gothic', fontSize: 12, showSubNames: true, showNumbering: true, stationStroke: 'line', background: '#1B2530', ink: '#E6EBF0', paper: '#1B2530', colorMode: 'bright', stationSymbol: 'circle' },
+    },
+  ],
+
   // 途中駅の停車時間の既定（rank の上限ごと）
   dwellSecByRank: [
     { maxRank: 1, sec: 30 },

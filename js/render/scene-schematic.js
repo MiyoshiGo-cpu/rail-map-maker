@@ -6,7 +6,7 @@ import { computeBundles } from '../core/parallel.js';
 import { offsetPolyline, turnSign, collinearExtent, boundsOf } from '../core/geometry.js';
 import { effectiveSectionAttrs } from '../core/lines.js';
 import { createSpatialIndex } from './spatial-index.js';
-import { strokeFor, bundleSpacing, MAP_INK, MAP_PAPER } from './styles.js';
+import { strokeFor, bundleSpacing, inkOf, paperOf, lineAppearance } from './styles.js';
 import { layoutLabels } from './labels.js';
 import { stationNumbers } from '../core/numbering.js';
 
@@ -54,8 +54,9 @@ export function buildSchematicScene(p, opt) {
   };
 
   // ---------- 区間 ----------
-  // 並び順の大きい路線を下に描く
+  // 並び順の大きい路線を下に描く。モノクロでは並び順で濃淡と破線を割り当てる
   const lines = [...p.lines].sort((a, b) => b.order - a.order);
+  const orderIndex = new Map([...p.lines].sort((a, b) => a.order - b.order).map((l, i) => [l.id, i]));
   for (const line of lines) {
     const gs = geom.get(line.id) || [];
     gs.forEach((g, i) => {
@@ -81,7 +82,7 @@ export function buildSchematicScene(p, opt) {
       pb.lineIds.add(line.id);
 
       const attrs = effectiveSectionAttrs(line, i);
-      const s = strokeFor(style, line.kind, attrs.status, line.color);
+      const s = strokeFor(style, line.kind, attrs.status, line.color, orderIndex.get(line.id));
       if (s.hidden) return;
       const pts = [];
       for (const q of shifted) pts.push(q.x, q.y);
@@ -106,15 +107,15 @@ export function buildSchematicScene(p, opt) {
   // ---------- 駅 ----------
   const stationItems = new Map();
   const symbolItems = [];
-  const lineColor = new Map(p.lines.map((l) => [l.id, l.color]));
+  const lineColor = new Map(p.lines.map((l) => [l.id, lineAppearance(style, l.color, orderIndex.get(l.id)).color]));
   const orderOf = new Map(p.lines.map((l) => [l.id, l.order]));
   for (const st of p.stations) {
     if (!st.schematic) continue;
     const center = { x: st.schematic.x * GRID, y: st.schematic.y * GRID };
     const pass = passes.get(st.id);
     const ids = pass ? [...pass.lineIds].sort((a, b) => orderOf.get(a) - orderOf.get(b)) : [];
-    const stroke = style.stationStroke === 'line' && ids.length ? lineColor.get(ids[0]) : MAP_INK;
-    const items = stationSymbol(st, center, pass, ids.length, style, stroke);
+    const stroke = style.stationStroke === 'line' && ids.length ? lineColor.get(ids[0]) : inkOf(style);
+    const items = stationSymbol(st, center, pass, ids.length, style, stroke, ids.length ? lineColor.get(ids[0]) : inkOf(style));
     for (const it of items) symbolItems.push(it);
     stationItems.set(st.id, items[0]);
   }
@@ -135,7 +136,7 @@ export function buildSchematicScene(p, opt) {
       ? stationNumbers(p, id).map((n) => ({
         prefix: n.prefix,
         number: n.number,
-        color: n.line.color,
+        color: lineColor.get(n.line.id) || n.line.color,
         shape: operatorOf.get(n.line.operatorId)?.badgeShape || 'roundSquare',
       }))
       : []),
@@ -190,8 +191,8 @@ function buildConnectors(p, stationItems, style) {
         minX: Math.min(a.x, b.x) - casing / 2, minY: Math.min(a.y, b.y) - casing / 2,
         maxX: Math.max(a.x, b.x) + casing / 2, maxY: Math.max(a.y, b.y) + casing / 2,
       };
-      out.push({ kind: 'path', pts: [a.x, a.y, b.x, b.y], radius: 0, width: casing, color: MAP_INK, cap: 'round', target, bbox });
-      out.push({ kind: 'path', pts: [a.x, a.y, b.x, b.y], radius: 0, width: inner, color: MAP_PAPER, cap: 'round', bbox });
+      out.push({ kind: 'path', pts: [a.x, a.y, b.x, b.y], radius: 0, width: casing, color: inkOf(style), cap: 'round', target, bbox });
+      out.push({ kind: 'path', pts: [a.x, a.y, b.x, b.y], radius: 0, width: inner, color: paperOf(style), cap: 'round', bbox });
     }
   }
   return out;
@@ -205,14 +206,16 @@ function buildConnectors(p, stationItems, style) {
  * @param {number} lineCount
  * @param {import('../core/schema.js').MapStyle} style
  * @param {string} stroke
+ * @param {string} tickColor 目盛り（広域のスタイルの一般駅）の色＝通る路線の色
  * @returns {any[]}
  */
-function stationSymbol(st, center, pass, lineCount, style, stroke) {
+function stationSymbol(st, center, pass, lineCount, style, stroke, tickColor) {
   const target = { type: 'station', id: st.id };
   const base = style.stationRadius;
   const sw = 2; // 縁の太さ
+  const paper = paperOf(style);
   const circle = (c, r, extra = {}) => ({
-    kind: 'circle', x: c.x, y: c.y, r, fill: MAP_PAPER, stroke, lineWidth: sw, target,
+    kind: 'circle', x: c.x, y: c.y, r, fill: paper, stroke, lineWidth: sw, target,
     bbox: { minX: c.x - r - sw, minY: c.y - r - sw, maxX: c.x + r + sw, maxY: c.y + r + sw },
     ...extra,
   });
@@ -237,7 +240,7 @@ function stationSymbol(st, center, pass, lineCount, style, stroke) {
       const s = base * 1.8;
       const c = pts[0] || center;
       return [{
-        kind: 'rrect', x: c.x, y: c.y, w: s, h: s, r: 1, fill: MAP_PAPER, stroke, lineWidth: sw, target,
+        kind: 'rrect', x: c.x, y: c.y, w: s, h: s, r: 1, fill: paper, stroke, lineWidth: sw, target,
         bbox: { minX: c.x - s / 2 - sw, minY: c.y - s / 2 - sw, maxX: c.x + s / 2 + sw, maxY: c.y + s / 2 + sw },
       }];
     }
@@ -249,7 +252,7 @@ function stationSymbol(st, center, pass, lineCount, style, stroke) {
       const s = base * 1.4;
       return [
         {
-          kind: 'rrect', x: q.x, y: q.y, w: s, h: s, r: 1, fill: MAP_PAPER, stroke, lineWidth: sw, target,
+          kind: 'rrect', x: q.x, y: q.y, w: s, h: s, r: 1, fill: paper, stroke, lineWidth: sw, target,
           bbox: { minX: Math.min(c.x, q.x) - s, minY: Math.min(c.y, q.y) - s, maxX: Math.max(c.x, q.x) + s, maxY: Math.max(c.y, q.y) + s },
         },
         {
@@ -260,6 +263,19 @@ function stationSymbol(st, center, pass, lineCount, style, stroke) {
     }
     default:
       break;
+  }
+
+  // 広域のスタイル：1つの路線だけが通る一般駅は、線の片側に出た短い目盛り
+  if (style.stationSymbol === 'tick' && lineCount <= 1 && pts.length && (st.rank === 'normal' || st.rank === 'unstaffed' || st.rank === 'temporary')) {
+    const c = pts[0];
+    const L = style.lineWidth / 2 + Math.max(4, style.lineWidth * 1.4);
+    const w = Math.max(1.5, style.lineWidth * 0.6);
+    const e = { x: c.x + across.x * L, y: c.y + across.y * L };
+    return [{
+      kind: 'path', pts: [c.x, c.y, e.x, e.y], radius: 0, width: w, color: tickColor, cap: 'butt', target,
+      dash: st.rank === 'temporary' ? [w, w * 0.6] : null,
+      bbox: { minX: Math.min(c.x, e.x) - w, minY: Math.min(c.y, e.y) - w, maxX: Math.max(c.x, e.x) + w, maxY: Math.max(c.y, e.y) + w },
+    }];
   }
 
   let r = base;
@@ -275,7 +291,7 @@ function stationSymbol(st, center, pass, lineCount, style, stroke) {
       if (ext.a.x === ext.b.x && ext.a.y === ext.b.y) return [circle(ext.a, rc + 1, { dash })];
       return [{
         kind: 'capsule', x1: ext.a.x, y1: ext.a.y, x2: ext.b.x, y2: ext.b.y, r: rc,
-        fill: MAP_PAPER, stroke, lineWidth: sw, dash, target,
+        fill: paper, stroke, lineWidth: sw, dash, target,
         bbox: {
           minX: Math.min(ext.a.x, ext.b.x) - rc - sw, minY: Math.min(ext.a.y, ext.b.y) - rc - sw,
           maxX: Math.max(ext.a.x, ext.b.x) + rc + sw, maxY: Math.max(ext.a.y, ext.b.y) + rc + sw,
@@ -287,7 +303,7 @@ function stationSymbol(st, center, pass, lineCount, style, stroke) {
     const hgt = b.maxY - b.minY + rc * 2;
     const c = { x: (b.minX + b.maxX) / 2, y: (b.minY + b.maxY) / 2 };
     return [{
-      kind: 'rrect', x: c.x, y: c.y, w, h: hgt, r: rc, fill: MAP_PAPER, stroke, lineWidth: sw, dash, target,
+      kind: 'rrect', x: c.x, y: c.y, w, h: hgt, r: rc, fill: paper, stroke, lineWidth: sw, dash, target,
       bbox: { minX: c.x - w / 2 - sw, minY: c.y - hgt / 2 - sw, maxX: c.x + w / 2 + sw, maxY: c.y + hgt / 2 + sw },
     }];
   }
