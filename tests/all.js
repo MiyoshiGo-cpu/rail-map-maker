@@ -17,4 +17,5 @@ export const files = [
   'align.test.js',
   'romaji.test.js',
   'labels.test.js',
+  'numbering.test.js',
 ];

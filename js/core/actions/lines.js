@@ -5,6 +5,7 @@ import { LINE_PALETTE, nextColor } from '../color.js';
 import * as L from '../lines.js';
 import { addOperatorTo } from './operators.js';
 import { addStationTo } from './stations.js';
+import { autoNumbers, numberForEnd, branchNumber } from '../numbering.js';
 
 /** @typedef {import('../patch.js').Tx} Tx */
 /** @typedef {import('./context.js').ActionContext} Ctx */
@@ -54,6 +55,25 @@ function updateLine(tx, lineId, fn) {
   const next = fn(tx.state.lines[i]);
   tx.set(['lines', i], next);
   return next;
+}
+
+/** 番号を確定して持つ設定か（fixed） */
+const isFixed = (line) => line.numbering.enabled && line.numbering.mode === 'fixed';
+
+/**
+ * 駅ごとの番号の部分を書き換えた路線
+ * @param {Line} line @param {(string|undefined)[]} numbers
+ */
+function withNumbers(line, numbers) {
+  return {
+    ...line,
+    stops: line.stops.map((s, i) => {
+      const next = { ...s };
+      if (numbers[i]) next.number = numbers[i];
+      else delete next.number;
+      return next;
+    }),
+  };
 }
 
 /**
@@ -123,17 +143,58 @@ export const lineReducers = {
     const line = tx.find('lines', a.lineId);
     if (a.stationId && line.stops.some((s) => s.stationId === a.stationId)) return null;
     const stationId = resolveStation(tx, ctx, a);
-    updateLine(tx, a.lineId, (l) => L.appendStop(l, stationId, !!a.atStart));
+    updateLine(tx, a.lineId, (l) => {
+      // 番号を確定している路線なら、端に足した駅には次（起点側なら前）の番号を付ける
+      const extra = isFixed(l) ? { number: numberForEnd(l, !!a.atStart) || undefined } : {};
+      if (!extra.number) delete extra.number;
+      return L.appendStop(l, stationId, !!a.atStart, extra);
+    });
     return stationId;
   },
 
-  /** 駅間に駅を挿入する { lineId, sectionIndex, stationId? | newStation? } → 駅の ID */
+  /**
+   * 駅間に駅を挿入する { lineId, sectionIndex, stationId? | newStation?, numbering? } → 駅の ID。
+   * 番号を確定している路線では numbering で「枝番を振る（branch）」「以降を振り直す（renumber）」「番号なし（none）」を選ぶ
+   */
   'line/insertStop'(tx, a, ctx) {
     const line = tx.find('lines', a.lineId);
     if (a.stationId && line.stops.some((s) => s.stationId === a.stationId)) return null;
     const stationId = resolveStation(tx, ctx, a);
-    updateLine(tx, a.lineId, (l) => L.insertStop(l, a.sectionIndex, stationId));
+    updateLine(tx, a.lineId, (l) => {
+      let next = L.insertStop(l, a.sectionIndex, stationId);
+      if (!isFixed(l)) return next;
+      const mode = a.numbering || 'branch';
+      if (mode === 'renumber') return withNumbers(next, autoNumbers(next));
+      if (mode === 'branch') {
+        const used = new Set(l.stops.map((s) => s.number).filter(Boolean));
+        const prev = l.stops[a.sectionIndex].number;
+        const num = branchNumber(prev, used);
+        next = withNumbers(next, next.stops.map((s, i) => (i === a.sectionIndex + 1 ? num : s.number)));
+      }
+      return next;
+    });
     return stationId;
+  },
+
+  /** 番号を確定する（auto → fixed。いまの連番を各駅に持たせる） { lineId } */
+  'line/fixNumbers'(tx, { lineId }) {
+    updateLine(tx, lineId, (l) => {
+      const next = withNumbers(l, autoNumbers(l));
+      return { ...next, numbering: { ...l.numbering, mode: 'fixed' } };
+    });
+  },
+
+  /** 確定した番号を連番で振り直す（fixed のまま） { lineId } */
+  'line/renumber'(tx, { lineId }) {
+    updateLine(tx, lineId, (l) => withNumbers(l, autoNumbers(l)));
+  },
+
+  /** 確定をやめて常に連番にする（fixed → auto。持っていた番号は消す） { lineId } */
+  'line/unfixNumbers'(tx, { lineId }) {
+    updateLine(tx, lineId, (l) => {
+      const next = withNumbers(l, l.stops.map(() => undefined));
+      return { ...next, numbering: { ...l.numbering, mode: 'auto' } };
+    });
   },
 
   /** 路線から駅を外す（駅そのものは残す） { lineId, index } */

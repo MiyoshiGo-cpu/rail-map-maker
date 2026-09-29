@@ -3,6 +3,7 @@ import { h } from '../dom.js';
 import { t } from '../../i18n/i18n.js';
 import { LINE_KINDS, ELECTRIFICATIONS, COLLECTIONS, TRACKS, STRUCTURES, LINE_STATUSES, UP_DIRECTIONS, GAUGE_CANDIDATES } from '../../core/schema.js';
 import { field, textInput, textArea, selectInput, numberInput, checkInput, colorInput, group, enumOptions, gaugeInput } from '../form.js';
+import { stopNumbers, fullCode, duplicateNumbers } from '../../core/numbering.js';
 
 const NEW_OPERATOR = '__new__';
 
@@ -79,6 +80,12 @@ export function createLinePanel(ctx, lineId) {
   const nStep = numberInput({ step: 1, min: 1, onChange: (v) => { if (v !== null && v >= 1) setNumbering({ step: Math.round(v) }); } });
   const nDigits = numberInput({ step: 1, min: 1, max: 4, onChange: (v) => { if (v !== null && v >= 1) setNumbering({ digits: Math.min(4, Math.round(v)) }); } });
   const nFromEnd = checkInput({ label: t('numbering.fromEnd'), onChange: (v) => setNumbering({ fromEnd: v }) });
+  const nMode = h('p', { class: 'panel-note' });
+  const nDup = h('p', { class: 'panel-warn', hidden: true });
+  const btn = (label, onClick) => h('button', { class: 'btn btn-small', type: 'button', on: { click: onClick } }, label);
+  const nFix = btn(t('numbering.fix'), () => store.dispatch({ type: 'line/fixNumbers', lineId }));
+  const nRenumber = btn(t('numbering.renumber'), () => store.dispatch({ type: 'line/renumber', lineId }));
+  const nUnfix = btn(t('numbering.unfix'), () => store.dispatch({ type: 'line/unfixNumbers', lineId }));
   const numberingBody = h('div', {},
     h('div', { class: 'field-row' },
       field(t('numbering.prefix'), nPrefix),
@@ -90,6 +97,9 @@ export function createLinePanel(ctx, lineId) {
       field(t('numbering.digits'), nDigits),
     ),
     nFromEnd,
+    nMode,
+    nDup,
+    h('div', { class: 'panel-actions' }, nFix, nRenumber, nUnfix),
   );
 
   // ---------- 区間の既定値 ----------
@@ -192,6 +202,14 @@ export function createLinePanel(ctx, lineId) {
       nStep.setValue(n.step);
       nDigits.setValue(n.digits);
       nFromEnd.setValue(n.fromEnd);
+      const fixed = n.mode === 'fixed';
+      nMode.textContent = t(fixed ? 'numbering.modeFixed' : 'numbering.modeAuto');
+      nFix.hidden = fixed;
+      nRenumber.hidden = !fixed;
+      nUnfix.hidden = !fixed;
+      const dups = duplicateNumbers(line);
+      nDup.hidden = !dups.length;
+      nDup.textContent = dups.length ? t('numbering.duplicates', { numbers: dups.join(t('common.listSep')) }) : '';
 
       const d = line.defaults;
       gauge.setValue(d.gauge);
@@ -202,13 +220,29 @@ export function createLinePanel(ctx, lineId) {
       structure.setValue(d.structure);
 
       const byId = new Map(p.stations.map((s) => [s.id, s]));
-      stopList.replaceChildren(...line.stops.map((s) => {
+      const numbers = stopNumbers(line);
+      // 番号を確定しているときは、駅ごとに番号を書き換えられる
+      stopList.replaceChildren(...line.stops.map((s, i) => {
         const st = byId.get(s.stationId);
-        return h('li', {}, h('button', {
-          class: 'link-btn',
-          type: 'button',
-          on: { click: () => es.set({ selection: { type: 'stations', ids: [s.stationId] } }) },
-        }, (st && st.name) || t('station.unnamed')));
+        const code = fullCode(line, numbers[i]);
+        const numInput = n.enabled && fixed
+          ? textInput({
+            value: s.number || '',
+            maxLength: 8,
+            onChange: (v) => store.dispatch({ type: 'line/stop', lineId, index: i, fields: { number: v.trim() || undefined } }),
+          })
+          : null;
+        if (numInput) {
+          numInput.classList.add('stop-number');
+          numInput.setAttribute('aria-label', t('numbering.numberOf', { name: (st && st.name) || '' }));
+        }
+        return h('li', {},
+          numInput || (code ? h('span', { class: 'stop-code' }, code) : null),
+          h('button', {
+            class: 'link-btn',
+            type: 'button',
+            on: { click: () => es.set({ selection: { type: 'stations', ids: [s.stationId] } }) },
+          }, (st && st.name) || t('station.unnamed')));
       }));
     },
   };

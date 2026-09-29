@@ -36,6 +36,7 @@ export default {
   'common.openedYear': '開業年',
   'common.closedYear': '廃止年',
   'common.unset': '（未設定）',
+  'common.listSep': '、',
   'common.count': '{count}件',
 
   // エラー（共通）
@@ -145,6 +146,17 @@ export default {
   'numbering.step': '増分',
   'numbering.digits': '桁数',
   'numbering.fromEnd': '終点側から振る',
+  'numbering.modeAuto': 'いまは自動の連番です。「番号を確定する」と、いまの番号を各駅に持たせ、途中に駅を足しても番号が変わらなくなります。',
+  'numbering.modeFixed': '番号を確定しています。途中に駅を足すと、枝番を振るか以降を振り直すかを選べます。下の駅の一覧で番号を書き換えられます。',
+  'numbering.fix': '番号を確定する',
+  'numbering.renumber': '連番で振り直す',
+  'numbering.unfix': '確定をやめて自動の連番にする',
+  'numbering.duplicates': '同じ番号の駅があります：{numbers}。駅の一覧で番号を直してください。',
+  'numbering.numberOf': '{name}の番号',
+  'numbering.insertTitle': '駅番号をどうしますか？',
+  'numbering.insertMessage': 'この路線は番号を確定しています。途中に足す駅の番号を選んでください。',
+  'numbering.insertBranch': '枝番を振る（例：05-1）',
+  'numbering.insertRenumber': '以降を振り直す',
 
   // 区間
   'section.title': '{a}〜{b}',

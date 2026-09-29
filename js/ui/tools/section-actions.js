@@ -3,6 +3,29 @@
 import { t } from '../../i18n/i18n.js';
 import { snapToGrid } from '../../core/viewport.js';
 import { isOctilinear } from '../../core/octilinear.js';
+import { openDialog } from '../dialog.js';
+
+/**
+ * 番号を確定している路線に途中の駅を足すときは、枝番か振り直しかを選んでもらう（§6.2）
+ * @param {import('../../core/schema.js').Line} line
+ * @param {(numbering?: 'branch'|'renumber') => void} insert
+ */
+export async function insertWithNumbering(line, insert) {
+  if (!line.numbering.enabled || line.numbering.mode !== 'fixed') {
+    insert();
+    return;
+  }
+  const v = await openDialog({
+    title: t('numbering.insertTitle'),
+    message: t('numbering.insertMessage'),
+    actions: [
+      { label: t('common.cancel'), value: 'cancel' },
+      { label: t('numbering.insertRenumber'), value: 'renumber' },
+      { label: t('numbering.insertBranch'), value: 'branch', kind: 'primary' },
+    ],
+  });
+  if (v === 'branch' || v === 'renumber') insert(v);
+}
 
 /**
  * @param {import('../editor.js').ToolContext} ed
@@ -27,7 +50,9 @@ export function sectionMenuItems(ed, hit, w, which) {
           return;
         }
         const target = existing ? { stationId: existing } : { newStation: g };
-        store.dispatch({ type: 'line/insertStop', lineId: line.id, sectionIndex: hit.index, ...target });
+        insertWithNumbering(line, (numbering) => {
+          store.dispatch({ type: 'line/insertStop', lineId: line.id, sectionIndex: hit.index, ...target, numbering });
+        });
       },
     });
   }

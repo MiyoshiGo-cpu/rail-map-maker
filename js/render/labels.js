@@ -30,9 +30,36 @@ export function labelLevel(zoom) {
 }
 
 /**
+ * @typedef {object} BadgeSpec 駅番号のバッジ
+ * @property {string} prefix 上段（路線記号）
+ * @property {string} number 下段（番号）
+ * @property {string} color 縁の色（ラインカラー）
+ * @property {'square'|'roundSquare'|'circle'|'pill'|'none'} shape
+ */
+
+/**
+ * バッジの大きさを決めて run にする
+ * @param {BadgeSpec[]} badges
+ * @param {import('../core/schema.js').MapStyle} style
+ * @param {number} size 駅名の文字の大きさ
+ * @param {Measure} measure
+ */
+function badgeRuns(badges, style, size, measure) {
+  const topFont = mapFont(style, size * 0.5, 700);
+  const bottomFont = mapFont(style, size * 0.66, 700);
+  const h = size * 1.5;
+  return badges.map((b) => {
+    let w = Math.max(h * 0.92, Math.max(measure(topFont, b.prefix), measure(bottomFont, b.number)) + size * 0.4);
+    if (b.shape === 'circle') w = Math.max(w, h);
+    const hh = b.shape === 'circle' ? w : h;
+    return { kind: 'badge', ...b, w, h: hh, topFont, bottomFont, x: 0, y: 0 };
+  });
+}
+
+/**
  * 札の中身を組み立てる。座標は札の左上を原点にする
  * @param {import('../core/schema.js').Station} st
- * @param {{ style: import('../core/schema.js').MapStyle, subLanguages: string[], measure: Measure, level: number, align: 'left'|'center'|'right', vertical: boolean }} o
+ * @param {{ style: import('../core/schema.js').MapStyle, subLanguages: string[], measure: Measure, level: number, align: 'left'|'center'|'right', vertical: boolean, badges?: BadgeSpec[] }} o
  */
 export function buildBlock(st, o) {
   const { style, measure } = o;
@@ -49,30 +76,65 @@ export function buildBlock(st, o) {
   const icons = st.facilities || [];
   const iconSize = size * 0.95;
   const runs = [];
+  const badges = badgeRuns(o.badges || [], style, size, o.measure);
+  const badgeW = badges.reduce((s, b) => s + b.w, 0) + Math.max(0, badges.length - 1) * 2;
+  const badgeH = badges.reduce((m, b) => Math.max(m, b.h), 0);
 
   if (o.vertical) {
-    // 縦書き：主表記を1文字ずつ縦に並べ、副表記は右に90°回して置く
-    const chars = [...mainLines.join('')];
-    const step = size * 1.05;
-    let y = 0;
-    for (const ch of chars) {
-      runs.push({ kind: 'text', text: ch, font, color: MAP_INK, x: size / 2, y: y + step / 2, align: 'center', rot: ROTATE_IN_VERTICAL.has(ch) ? Math.PI / 2 : 0 });
-      y += step;
+    // 縦書き：バッジは上に横並び、その下に文字の列
+    let bx = 0;
+    for (const b of badges) {
+      runs.push({ ...b, x: bx, y: 0 });
+      bx += b.w + 2;
     }
-    let x = size + 2;
-    let hgt = y;
-    for (const s of subs) {
-      const w = measure(subFont, s);
-      runs.push({ kind: 'text', text: s, font: subFont, color: SUB_COLOR, x: x + subSize * 0.6, y: 0, align: 'left', rot: Math.PI / 2 });
-      x += subSize * 1.25;
-      hgt = Math.max(hgt, w);
-    }
-    icons.forEach((ic, i) => runs.push({ kind: 'icon', icon: ic, x: 0, y: hgt + 2 + i * (iconSize + 2), size: iconSize, color: MAP_INK }));
-    if (icons.length) hgt += 2 + icons.length * (iconSize + 2);
-    return { runs, w: x, h: hgt, size };
+    const top = badges.length ? badgeH + 3 : 0;
+    const inner = verticalRuns({ ...o, size, font, subFont, subSize, subs, mainLines, icons, iconSize });
+    for (const r of inner.runs) runs.push({ ...r, y: r.y + top });
+    return { runs, w: Math.max(inner.w, badgeW), h: inner.h + top, size };
   }
 
-  // 横書き
+  // 横書き：バッジは左に、主表記の1行目の高さにそろえる
+  const lineH0 = size * 1.25;
+  const textX = badges.length ? badgeW + 3 : 0;
+  const textY = badges.length ? Math.max(0, (badgeH - lineH0) / 2) : 0;
+  let bx = 0;
+  for (const b of badges) {
+    runs.push({ ...b, x: bx, y: textY + lineH0 / 2 - b.h / 2 });
+    bx += b.w + 2;
+  }
+  const inner = horizontalRuns({ ...o, size, font, subFont, subSize, subs, mainLines, icons, iconSize });
+  for (const r of inner.runs) runs.push({ ...r, x: r.x + textX, y: r.y + textY });
+  return { runs, w: textX + inner.w, h: Math.max(textY + inner.h, badges.length ? textY + lineH0 / 2 + badgeH / 2 : 0), size };
+}
+
+/** 縦書きの文字の並び：主表記を1文字ずつ縦に並べ、副表記は右に90°回して置く */
+function verticalRuns(o) {
+  const { size, font, subFont, subSize, subs, mainLines, icons, iconSize, measure } = o;
+  const runs = [];
+  const chars = [...mainLines.join('')];
+  const step = size * 1.05;
+  let y = 0;
+  for (const ch of chars) {
+    runs.push({ kind: 'text', text: ch, font, color: MAP_INK, x: size / 2, y: y + step / 2, align: 'center', rot: ROTATE_IN_VERTICAL.has(ch) ? Math.PI / 2 : 0 });
+    y += step;
+  }
+  let x = size + 2;
+  let hgt = y;
+  for (const s of subs) {
+    const w = measure(subFont, s);
+    runs.push({ kind: 'text', text: s, font: subFont, color: SUB_COLOR, x: x + subSize * 0.6, y: 0, align: 'left', rot: Math.PI / 2 });
+    x += subSize * 1.25;
+    hgt = Math.max(hgt, w);
+  }
+  icons.forEach((ic, i) => runs.push({ kind: 'icon', icon: ic, x: 0, y: hgt + 2 + i * (iconSize + 2), size: iconSize, color: MAP_INK }));
+  if (icons.length) hgt += 2 + icons.length * (iconSize + 2);
+  return { runs, w: x, h: hgt };
+}
+
+/** 横書きの文字の並び */
+function horizontalRuns(o) {
+  const { size, font, subFont, subSize, subs, mainLines, icons, iconSize, measure } = o;
+  const runs = [];
   const lineH = size * 1.25;
   const subH = subSize * 1.3;
   const widths = mainLines.map((s, i) => measure(font, s) + (i === 0 && icons.length ? icons.length * (iconSize + 2) + 2 : 0));
@@ -96,7 +158,7 @@ export function buildBlock(st, o) {
     runs.push({ kind: 'text', text: s, font: subFont, color: SUB_COLOR, x: xOf(subWidths[i]), y: y + subH / 2, align: 'left' });
     y += subH;
   });
-  return { runs, w, h: y, size };
+  return { runs, w, h: y };
 }
 
 /** 方向ごとの札の左上と揃え */
@@ -172,6 +234,7 @@ function rotatedBox(x, y, w, h, ax, ay, angle) {
  *   symbols: Map<string, any>,
  *   passes: Map<string, { dirs: { x: number, y: number }[], lineIds: Set<string> }>,
  *   obstacles: any[],
+ *   badgesOf?: (stationId: string) => BadgeSpec[],
  * }} o obstacles は線と駅記号の表示リスト
  * @returns {{ items: any[], info: Map<string, { pos: string, box: Box }> }}
  */
@@ -208,10 +271,11 @@ export function layoutLabels(p, o) {
       return [d.x / len, d.y / len];
     });
     const candidates = lb.pos && lb.pos !== 'auto' ? [lb.pos] : DIRECTIONS;
+    const badges = o.badgesOf ? o.badgesOf(st.id) : [];
 
     let best = null;
     candidates.forEach((dir, order) => {
-      const probe = buildBlock(st, { style, subLanguages: p.locale.subLanguages, measure: o.measure, level: o.level, align: 'left', vertical });
+      const probe = buildBlock(st, { style, subLanguages: p.locale.subLanguages, measure: o.measure, level: o.level, align: 'left', vertical, badges });
       const at = placeAt(dir, sym, probe.w, probe.h, gap);
       const x = at.x + (lb.dx || 0);
       const y = at.y + (lb.dy || 0);
@@ -242,7 +306,7 @@ export function layoutLabels(p, o) {
       if (!best || score < best.score) best = { dir, x, y, ax, ay, box, score, align: at.align };
     });
 
-    const block = buildBlock(st, { style, subLanguages: p.locale.subLanguages, measure: o.measure, level: o.level, align: best.align, vertical });
+    const block = buildBlock(st, { style, subLanguages: p.locale.subLanguages, measure: o.measure, level: o.level, align: best.align, vertical, badges });
     const item = {
       kind: 'label',
       x: best.x,

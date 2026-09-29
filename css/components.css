@@ -539,3 +539,15 @@
 }
 .link-btn:hover { text-decoration-color: currentColor; }
 input:disabled { opacity: .6; }
+
+.panel-warn {
+  margin: 4px 0 12px;
+  padding: 8px 10px;
+  border-left: 4px solid var(--danger);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-14);
+}
+.stop-list li { display: flex; align-items: center; gap: 8px; }
+.stop-code { min-width: 3.5em; font-variant-numeric: tabular-nums; font-weight: 700; }
+.stop-list .stop-number { width: 5.5em; min-height: 36px; padding: 4px 8px; }

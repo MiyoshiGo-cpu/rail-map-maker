@@ -8,6 +8,7 @@ import { effectiveSectionAttrs } from '../core/lines.js';
 import { createSpatialIndex } from './spatial-index.js';
 import { strokeFor, bundleSpacing, MAP_INK, MAP_PAPER } from './styles.js';
 import { layoutLabels } from './labels.js';
+import { stationNumbers } from '../core/numbering.js';
 
 /** @typedef {import('../core/schema.js').Project} Project */
 /** @typedef {(font: string, text: string) => number} Measure 文字の幅を測る */
@@ -119,12 +120,22 @@ export function buildSchematicScene(p, opt) {
   }
 
   // ---------- 駅名 ----------
+  const operatorOf = new Map(p.operators.map((o) => [o.id, o]));
   const labels = layoutLabels(p, {
     measure: opt.measure,
     level: opt.level ?? 0,
     symbols: stationItems,
     passes,
     obstacles: [...lineItems, ...symbolItems],
+    // 駅番号のバッジ（表示の設定がオンのとき）。形は事業者の設定、縁は路線の色
+    badgesOf: (id) => (style.showNumbering
+      ? stationNumbers(p, id).map((n) => ({
+        prefix: n.prefix,
+        number: n.number,
+        color: n.line.color,
+        shape: operatorOf.get(n.line.operatorId)?.badgeShape || 'roundSquare',
+      }))
+      : []),
   });
   const labelItems = labels.items;
 

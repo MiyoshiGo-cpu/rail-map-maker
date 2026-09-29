@@ -4,6 +4,7 @@ import { t } from '../../i18n/i18n.js';
 import { STATION_RANKS, STATION_STRUCTURES, PLATFORM_TYPES, FACILITIES, LABEL_POSITIONS, LABEL_ORIENTATIONS } from '../../core/schema.js';
 import { getRegion } from '../../core/regions/index.js';
 import { field, textInput, textArea, selectInput, numberInput, checkInput, group, enumOptions } from '../form.js';
+import { stationNumbers } from '../../core/numbering.js';
 
 /**
  * @param {{ store: any, es: any, onDelete: (ids: string[]) => void }} ctx
@@ -163,13 +164,15 @@ export function createStationPanel(ctx, stationId) {
       lReset.disabled = !lb.dx && !lb.dy;
 
       const lines = p.lines.filter((l) => l.stops.some((s) => s.stationId === stationId)).sort((a, b) => a.order - b.order);
+      // 1つの駅は通る路線の数だけ番号を持つ（§6.2）
+      const codes = new Map(stationNumbers(p, stationId).map((x) => [x.line.id, x.code]));
       lineChips.replaceChildren(...(lines.length
         ? lines.map((l) => h('li', {}, h('button', {
           class: 'chip',
           type: 'button',
           style: { '--chip': l.color },
           on: { click: () => es.set({ selection: { type: 'line', lineId: l.id } }) },
-        }, l.displayName || l.name)))
+        }, codes.get(l.id) ? `${codes.get(l.id)} ${l.displayName || l.name}` : l.displayName || l.name)))
         : [h('li', { class: 'panel-note' }, t('station.noLines'))]));
     },
     focusName() {

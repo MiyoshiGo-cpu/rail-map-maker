@@ -2,6 +2,7 @@
 import { GRID, visibleWorldRect } from '../core/viewport.js';
 import { luminance } from '../core/color.js';
 import { drawPictogram } from './pictograms.js';
+import { MAP_INK } from './styles.js';
 
 /** iPhone の canvas の上限（約1,600万画素）を超えないようにする */
 const MAX_CANVAS_PIXELS = 16_000_000;
@@ -241,6 +242,10 @@ function drawLabelItem(ctx, it) {
         if (pass === 1) drawPictogram(ctx, r.icon, r.x, r.y, r.size, r.color, it.halo);
         continue;
       }
+      if (r.kind === 'badge') {
+        if (pass === 1) drawBadge(ctx, r);
+        continue;
+      }
       ctx.save();
       ctx.translate(r.x, r.y);
       if (r.rot) ctx.rotate(r.rot);
@@ -259,6 +264,36 @@ function drawLabelItem(ctx, it) {
       }
       ctx.restore();
     }
+  }
+  ctx.restore();
+}
+
+/** 駅番号のバッジ：上段に路線記号、下段に番号。形は事業者の設定 */
+function drawBadge(ctx, b) {
+  const lw = Math.max(1.2, b.h * 0.09);
+  const r = b.shape === 'square' ? 0.5 : b.shape === 'roundSquare' ? b.h * 0.22 : Math.min(b.w, b.h) / 2;
+  ctx.save();
+  if (b.shape !== 'none') {
+    ctx.beginPath();
+    ctx.roundRect(b.x + lw / 2, b.y + lw / 2, b.w - lw, b.h - lw, r);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fill();
+    ctx.strokeStyle = b.color;
+    ctx.lineWidth = lw;
+    ctx.stroke();
+  }
+  ctx.fillStyle = MAP_INK;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const cx = b.x + b.w / 2;
+  if (b.prefix) {
+    ctx.font = b.topFont;
+    ctx.fillText(b.prefix, cx, b.y + b.h * 0.32);
+    ctx.font = b.bottomFont;
+    ctx.fillText(b.number, cx, b.y + b.h * 0.68);
+  } else {
+    ctx.font = b.bottomFont;
+    ctx.fillText(b.number, cx, b.y + b.h / 2);
   }
   ctx.restore();
 }
