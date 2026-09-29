@@ -100,11 +100,11 @@
 
 - フェーズ1は完了（2026-09-29）。完了条件13個をすべて確認し、公開版を PC と iPhone（Safari・ホーム画面）で確認済み。未計測なのは iPhone 実機での駅200・路線20の操作感だけ（任意）。
 - フェーズ2は完了（2026-09-29）。計画のステップ0〜10をすべて終え、完了条件5つを確かめ、公開版を iPhone で確認してもらった。
-- フェーズ3（見た目と書き出し）は計画を承認済み（2026-09-29。下の「フェーズ3の計画」）。ステップ1から進めている。
+- フェーズ3（見た目と書き出し）は計画を承認済み（2026-09-29。下の「フェーズ3の計画」）。ステップ1〜3（スタイル・パレットと似た色の警告・縦書きの仕上げ）を終え、区切り1として main に反映した。iPhone での確認待ち。次はステップ4（凡例とタイトル）。
 - 性能（PC）：駅200・路線20で、パン・ズームの描画1回が中央値0.8〜3.5ms（3倍の画素数）、ラベル込みの表示リスト作成が約9ms。
 - 描画：core/schematic.js → core/parallel.js → render/scene-schematic.js（連絡線・駅記号・labels.js のラベル）→ render/backend-canvas.js。操作：ui/editor.js（約555行。これ以上は editor-views.js などに分ける）＋ editor-header.js・editor-commands.js・editor-state.js・tools/・panels/・data-view.js・check-view.js。起動と画面の切り替え・iPhone 向けの処理は js/main.js。
-- 型は core/schema.js、既定値と補完は defaults.js、アクションは core/actions/、保存は js/storage/。CSS は app.css・components.css・table.css・services.css（フェーズ2）、カタログは js/i18n/ja.js（約490行）＋ ja-help.js ＋ ja-services.js（フェーズ2）。営業キロは core/distance.js、種別は core/actions/service-types.js・ui/panels/service-type-panel.js・ui/data-tabs-services.js。系統：経路の展開・停車駅・直通の判定は core/services.js、経路の候補は core/network.js、所要時間は core/runtime.js、アクションと後始末は core/actions/services.js、チェックは core/validate-services.js。画面は ui/panels/service-panel.js・service-new-panel.js・ui/route-picker.js・service-ui.js・pending-pick.js（地図のタップで駅を選ぶ）・service-overlay.js（路線図の強調）。停車駅案内図は core/stopchart.js（中身）→ render/scene-stopchart.js（表示リスト。横・縦）→ ui/stopchart-view.js（ビュー）、ビューの切り替えは ui/editor-views.js。
-- 確認用：`?debug=1` で window.rmmDebug（store・es・canvasView・getScene・commands）と、一覧の「性能確認用のデータを作る」。テストは Node 187件・ブラウザ（/tests/）182件（tests/helpers.js の throughNetwork が直通の路線網の見本）、`node tools/check-i18n.js` は0件。
+- 型は core/schema.js、既定値と補完は defaults.js、アクションは core/actions/、保存は js/storage/。CSS は app.css・components.css・table.css・services.css（フェーズ2）、カタログは js/i18n/ja.js（約490行）＋ ja-help.js ＋ ja-services.js（フェーズ2）。営業キロは core/distance.js、種別は core/actions/service-types.js・ui/panels/service-type-panel.js・ui/data-tabs-services.js。系統：経路の展開・停車駅・直通の判定は core/services.js、経路の候補は core/network.js、所要時間は core/runtime.js、アクションと後始末は core/actions/services.js、チェックは core/validate-services.js。画面は ui/panels/service-panel.js・service-new-panel.js・ui/route-picker.js・service-ui.js・pending-pick.js（地図のタップで駅を選ぶ）・service-overlay.js（路線図の強調）。停車駅案内図は core/stopchart.js（中身）→ render/scene-stopchart.js（表示リスト。横・縦）→ ui/stopchart-view.js（ビュー）、ビューの切り替えは ui/editor-views.js。スタイル：プリセットは地域パック（jp.js の stylePresets）、適用は core/map-style.js、色づかい（inkOf・paperOf・tone・lineAppearance）は render/styles.js、設定の欄は ui/style-settings.js。パレットは ui/color-palette.js（色は jp.js の linePalette）、色の差は core/color.js の colorDistance（CIEDE2000）。カタログはフェーズ3の分を js/i18n/ja-export.js、CSS は css/export.css。
+- 確認用：`?debug=1` で window.rmmDebug（store・es・canvasView・getScene・commands）と、一覧の「性能確認用のデータを作る」。テストは Node 198件・ブラウザ（/tests/）193件（tests/helpers.js の throughNetwork が直通の路線網の見本）、`node tools/check-i18n.js` は0件。
 
 ### 直近で対応した問題（2026-09-29、すべて解決済み）
 
@@ -214,3 +214,6 @@
 - 2026-09-29 スマホのヘッダーは2段（上：戻る・名前・↶↷⋯、下：路線図・案内図）。そのため --header-h を 88px にした。ビューを切り替えたときはシートを見出しだけに下げる。
 - 2026-09-29 サンプル：2号線の東の終点をみなと急行の東湾（(10,-1) に移動）、緑ヶ丘線の起点を2号線の西公園にして、緑ヶ丘線 → 2号線 → みなと急行本線 の直通急行（2号線内は各駅停車）を入れた。JR の東湾・旭町との乗換グループは残した。営業キロは路線図の上の距離から1マス0.8kmで入れ、使っていない種別は外した。
 - 2026-09-29 フェーズ3の方針（計画の承認時に決めた）：凡例とタイトルは地図の外側（上の角なら上、下の角なら下）に置いて重ならないようにする。書き出しは今表示しているビューをそのまま。駅名標のテンプレートと表示項目はプロジェクト（MapStyle）に保存し、表示中の駅・路線は保存しない。スタイルプリセットを選ぶと詳細設定をまとめて書き換える。モノクロ印刷・夜間は案内図と駅名標にも当てる。「書き出す」ボタンはシートを開き（JSON もそこで選べる）、Ctrl+S は JSON のまま。
+- 2026-09-29 スタイル：MapStyle に ink（文字と駅の縁）・paper（駅の地と文字の縁取り）・colorMode（color／mono／bright）・stationSymbol（circle／tick）を足した。モノクロは路線の並び順で灰色3段と破線4種を割り当て、そのほかの色（駅番号の縁・種別の札など）は同じ明るさの灰色にする。広域の目盛りは1つの路線だけが通る一般・無人・臨時駅だけ（ターミナル・主要駅・乗換駅は丸のまま）。
+- 2026-09-29 最近使った色は、パレット付きの色の欄（路線・路線を引く・系統・事業者・種別）で選んだ色を覚える。似た色の警告は路線の組ごとに1回、並び順が後の路線を「移動」の対象にする。
+- 2026-09-29 縦書きの駅名：伸ばす記号と括弧は90°回し、小さい文字（ぁぃぅぇぉっゃゅょゎ とカタカナ）は右上へ少し、句読点は右上へ大きく寄せる（labels.js の verticalGlyph。案内図も同じ）。
