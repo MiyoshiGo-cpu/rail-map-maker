@@ -90,3 +90,17 @@ test('ラベルの中身：主表記・英字・改行・付帯施設・縦書�
   const v = buildBlock({ ...st, label: { ...st.label, schematic: { ...st.label.schematic, text: undefined } } }, { ...opt, vertical: true });
   assert.deepEqual(v.runs.filter((r) => r.kind === 'text' && !r.rot).map((r) => r.text), ['港', '町']);
 });
+
+test('ラベル：駅名が空でも、駅番号を付けていればバッジだけの札を出す', () => {
+  const { store, ids, lineId } = lineOf([[0, 0], [4, 0], [8, 0]], ['', '', '']);
+  store.dispatch({ type: 'line/update', lineId, fields: { symbol: 'AB' } });
+  let scene = buildSchematicScene(store.getState(), { measure });
+  assert.equal(scene.labelInfo.size, 0, '番号なし・駅名なしなら出さない');
+  store.dispatch({ type: 'line/numbering', lineId, fields: { enabled: true } });
+  scene = buildSchematicScene(store.getState(), { measure });
+  assert.equal(scene.labelInfo.size, 3);
+  const labels = scene.items.filter((i) => i.kind === 'label');
+  assert.deepEqual(labels.map((l) => l.runs.filter((r) => r.kind === 'badge').map((r) => r.prefix + r.number)[0]).sort(), ['AB01', 'AB02', 'AB03']);
+  assert.equal(labels[0].runs.filter((r) => r.kind === 'text').length, 0);
+  void ids;
+});

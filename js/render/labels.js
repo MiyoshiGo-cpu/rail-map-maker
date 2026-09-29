@@ -95,7 +95,8 @@ export function buildBlock(st, o) {
 
   // 横書き：バッジは左に、主表記の1行目の高さにそろえる
   const lineH0 = size * 1.25;
-  const textX = badges.length ? badgeW + 3 : 0;
+  const hasText = mainLines.length > 0 || subs.length > 0 || icons.length > 0;
+  const textX = badges.length && hasText ? badgeW + 3 : 0;
   const textY = badges.length ? Math.max(0, (badgeH - lineH0) / 2) : 0;
   let bx = 0;
   for (const b of badges) {
@@ -104,7 +105,9 @@ export function buildBlock(st, o) {
   }
   const inner = horizontalRuns({ ...o, size, font, subFont, subSize, subs, mainLines, icons, iconSize });
   for (const r of inner.runs) runs.push({ ...r, x: r.x + textX, y: r.y + textY });
-  return { runs, w: textX + inner.w, h: Math.max(textY + inner.h, badges.length ? textY + lineH0 / 2 + badgeH / 2 : 0), size };
+  // 駅名が空でバッジだけのときは、バッジの幅だけにする
+  const w = hasText ? textX + inner.w : badgeW;
+  return { runs, w, h: Math.max(textY + inner.h, badges.length ? textY + lineH0 / 2 + badgeH / 2 : 0), size };
 }
 
 /** 縦書きの文字の並び：主表記を1文字ずつ縦に並べ、副表記は右に90°回して置く */
@@ -247,9 +250,12 @@ export function layoutLabels(p, o) {
   const items = [];
   const info = new Map();
 
+  // 駅番号のバッジ（駅名が空でもバッジがあれば札を出す）
+  const badgeMap = new Map(p.stations.map((st) => [st.id, o.badgesOf ? o.badgesOf(st.id) : []]));
   const stations = p.stations
     .filter((st) => {
-      if (!st.name && !st.label.schematic.text) return false;
+      const hasText = st.name || st.label.schematic.text || p.locale.subLanguages.some((l) => st.names[l]);
+      if (!hasText && !badgeMap.get(st.id).length) return false;
       if (!o.symbols.has(st.id)) return false;
       const lb = st.label.schematic;
       if (lb.hidden === true) return false;
@@ -271,7 +277,7 @@ export function layoutLabels(p, o) {
       return [d.x / len, d.y / len];
     });
     const candidates = lb.pos && lb.pos !== 'auto' ? [lb.pos] : DIRECTIONS;
-    const badges = o.badgesOf ? o.badgesOf(st.id) : [];
+    const badges = badgeMap.get(st.id);
 
     let best = null;
     candidates.forEach((dir, order) => {
