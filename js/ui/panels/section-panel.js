@@ -3,7 +3,8 @@ import { h } from '../dom.js';
 import { t } from '../../i18n/i18n.js';
 import { ELECTRIFICATIONS, COLLECTIONS, TRACKS, STRUCTURES, LINE_STATUSES, BENDS, GAUGE_CANDIDATES } from '../../core/schema.js';
 import { field, selectInput, numberInput, gaugeInput, group, enumOptions } from '../form.js';
-import { gaugeLabels } from './line-panel.js';
+import { gaugeLabels, kmText } from './line-panel.js';
+import { lineKm } from '../../core/distance.js';
 import { nextViaPoint } from '../../core/schematic.js';
 
 const INHERIT = '';
@@ -21,6 +22,7 @@ export function createSectionPanel(ctx, lineId, index) {
 
   const title = h('h2', { class: 'panel-title' });
   const sub = h('p', { class: 'panel-note' });
+  const kmInfo = h('p', { class: 'panel-note' });
 
   const bend = selectInput({ options: enumOptions(BENDS, (v) => t('bend.' + v)), onChange: (v) => set({ schematicBend: v === 'auto' ? null : v }) });
   const viaInfo = h('p', { class: 'panel-note' });
@@ -74,7 +76,7 @@ export function createSectionPanel(ctx, lineId, index) {
 
   const el = h('div', {},
     h('div', { class: 'panel-head' }, title),
-    h('div', { class: 'panel-section' }, sub,
+    h('div', { class: 'panel-section' }, sub, kmInfo,
       h('div', { class: 'panel-actions' },
         h('button', { class: 'btn btn-small', type: 'button', on: { click: () => es.set({ selection: { type: 'line', lineId } }) } }, t('section.openLine')),
       ),
@@ -121,6 +123,8 @@ export function createSectionPanel(ctx, lineId, index) {
       const b = l.stops[(index + 1) % l.stops.length].stationId;
       title.textContent = t('section.title', { a: name(a), b: name(b) });
       sub.textContent = t('section.ofLine', { name: l.displayName || l.name, index: index + 1 });
+      const sk = lineKm(p, l).sections[index];
+      kmInfo.textContent = t('km.sectionValue', { value: kmText(sk.km, sk.source === 'estimate', p.locale.distanceUnit) });
       bend.setValue(s.schematicBend || 'auto');
       const viaCount = (s.schematicVia || []).length;
       viaInfo.textContent = viaCount ? t('via.count', { count: viaCount }) : t('via.none');

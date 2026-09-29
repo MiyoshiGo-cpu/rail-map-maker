@@ -1,9 +1,10 @@
 // 路線のパネル（§3 Line）：基本・駅ナンバリングの規則・区間の既定値・駅の一覧
 import { h } from '../dom.js';
-import { t } from '../../i18n/i18n.js';
+import { t, formatDistance } from '../../i18n/i18n.js';
 import { LINE_KINDS, ELECTRIFICATIONS, COLLECTIONS, TRACKS, STRUCTURES, LINE_STATUSES, UP_DIRECTIONS, GAUGE_CANDIDATES } from '../../core/schema.js';
 import { field, textInput, textArea, selectInput, numberInput, checkInput, colorInput, group, enumOptions, gaugeInput } from '../form.js';
 import { stopNumbers, fullCode, duplicateNumbers } from '../../core/numbering.js';
+import { lineKm } from '../../core/distance.js';
 
 const NEW_OPERATOR = '__new__';
 
@@ -30,6 +31,7 @@ export function createLinePanel(ctx, lineId) {
   const year = (v) => (v === null ? undefined : Math.round(v));
 
   const title = h('h2', { class: 'panel-title' });
+  const kmInfo = h('p', { class: 'panel-note' });
 
   // ---------- 基本 ----------
   const operator = selectInput({
@@ -115,6 +117,7 @@ export function createLinePanel(ctx, lineId) {
 
   const el = h('div', {},
     h('div', { class: 'panel-head' }, title),
+    h('div', { class: 'panel-section' }, kmInfo),
     group(t('panel.basic'), [
       h('div', { class: 'field-row field-row-end' }, field(t('line.operator'), operator), editOperator),
       field(t('line.name'), name),
@@ -174,6 +177,7 @@ export function createLinePanel(ctx, lineId) {
       const line = p.lines.find((l) => l.id === lineId);
       if (!line) return;
       title.textContent = line.displayName || line.name;
+      kmInfo.textContent = kmSummary(p, line);
       operator.setOptions([
         ...p.operators.map((o) => ({ value: o.id, label: o.name })),
         { value: NEW_OPERATOR, label: t('line.newOperator') },
@@ -246,4 +250,23 @@ export function createLinePanel(ctx, lineId) {
       }));
     },
   };
+}
+
+/**
+ * 営業キロと駅の数の要約（例：営業キロ 12.3 km（概算）・6駅）
+ * @param {import('../../core/schema.js').Project} p
+ * @param {import('../../core/schema.js').Line} line
+ */
+export function kmSummary(p, line) {
+  const lk = lineKm(p, line);
+  return t('km.summary', { km: kmText(lk.total, lk.approx, p.locale.distanceUnit), count: line.stops.length });
+}
+
+/**
+ * 距離の表示（概算なら印を付ける）
+ * @param {number} km @param {boolean} approx @param {'km'|'mi'} unit
+ */
+export function kmText(km, approx, unit) {
+  const v = formatDistance(km, unit);
+  return approx ? t('km.withEstimated', { value: v }) : v;
 }

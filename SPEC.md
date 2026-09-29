@@ -211,6 +211,7 @@ type Line = {
   numbering: NumberingRule;
   status: LineStatus; openedYear?: number; closedYear?: number;
   order: number;              // 並走するときの並び順
+  loopKm?: number;            // 環状線の一周の営業キロ（手入力。最後の駅から起点に戻る区間を決める）
   note?: string;
 };
 

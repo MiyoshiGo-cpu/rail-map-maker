@@ -3,6 +3,7 @@
 import { SCHEMA_VERSION } from './schema.js';
 import { sectionCount } from './defaults.js';
 import { duplicateNumbers } from './numbering.js';
+import { allLineKm, extremeSection } from './distance.js';
 
 /** @typedef {import('./schema.js').Project} Project */
 /** @typedef {{ code: string, id?: string, detail?: string }} IntegrityProblem */
@@ -107,14 +108,14 @@ export function describeProblems(problems) {
  * @property {'error'|'warning'|'info'} level
  * @property {string} code 画面の文言のキー（check.<code>）
  * @property {Record<string, any>} params 文言に差し込む値
- * @property {{ type: 'station', id: string } | { type: 'line', id: string } | { type: 'operator', id: string } | { type: 'interchange', id: string } | null} target 「移動」で選ぶもの
+ * @property {{ type: 'station'|'line'|'operator'|'interchange'|'serviceType'|'service', id: string } | { type: 'section', id: string, index: number } | null} target 「移動」で選ぶもの（section の id は路線）
  */
 
 /** 同名の駅を近くと判定する距離（路線図の格子のマス数。§6.6） */
 export const NEARBY_SAME_NAME_CELLS = 3;
 
 /**
- * フェーズ1で判定できるチェック（色の近さ・駅間・営業キロの概算・系統・種別はあとのフェーズ）
+ * 利用者向けのチェック（色の近さはフェーズ3）
  * @param {Project} p
  * @returns {CheckItem[]}
  */
@@ -138,6 +139,29 @@ export function runChecks(p) {
     const dups = duplicateNumbers(line);
     if (dups.length) {
       out.push({ level: 'error', code: 'duplicateNumber', params: { name: lineName(line), numbers: dups.join(', ') }, target: { type: 'line', id: line.id } });
+    }
+  }
+
+  // 警告：駅間が極端（0.3km未満、新幹線以外で50km超）／情報：営業キロが概算の路線
+  const kms = allLineKm(p);
+  const stName = new Map(p.stations.map((s) => [s.id, s.name]));
+  const unit = p.locale.distanceUnit;
+  for (const line of p.lines) {
+    const lk = kms.get(line.id);
+    lk.sections.forEach((sec, i) => {
+      const kind = extremeSection(line, sec);
+      if (!kind) return;
+      const a = stName.get(line.stops[i].stationId) || '';
+      const b = stName.get(line.stops[(i + 1) % line.stops.length].stationId) || '';
+      out.push({
+        level: 'warning',
+        code: kind === 'short' ? 'sectionShort' : 'sectionLong',
+        params: { name: lineName(line), a, b, km: { distance: sec.km, unit } },
+        target: { type: 'section', id: line.id, index: i },
+      });
+    });
+    if (lk.approx && line.stops.length >= 2) {
+      out.push({ level: 'info', code: 'kmEstimated', params: { name: lineName(line) }, target: { type: 'line', id: line.id } });
     }
   }
 

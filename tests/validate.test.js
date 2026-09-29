@@ -47,7 +47,8 @@ test('チェック：駅2つ未満の路線・番号の重複・駅名/よみが
   // 名前もよみも空
   assert.ok(codes().includes('nameEmpty'));
   ids.forEach((id, i) => store.dispatch({ type: 'station/update', stationId: id, fields: { name: `駅${i}`, reading: `えき${i}` } }));
-  assert.deepEqual(codes(), []);
+  // 営業キロを入れていないので、概算の情報だけが出る
+  assert.deepEqual(codes(), ['kmEstimated']);
   // 番号の重複（エラー）
   store.dispatch({ type: 'line/numbering', lineId, fields: { enabled: true } });
   store.dispatch({ type: 'line/fixNumbers', lineId });

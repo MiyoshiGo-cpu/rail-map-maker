@@ -80,7 +80,10 @@ export function withStops(oldLine, newStops, newIsLoop) {
     else if (pair.has(b + '>' + a)) sections.push(flipGeom(pair.get(b + '>' + a)));
     else sections.push(stripGeom(leaving.get(a) || entering.get(b) || {}));
   }
-  return { ...oldLine, stops: newStops, isLoop, sections };
+  const out = { ...oldLine, stops: newStops, isLoop, sections };
+  // 一周の営業キロは環状線のときだけ意味がある
+  if (!isLoop) delete out.loopKm;
+  return out;
 }
 
 /**

@@ -1,0 +1,6 @@
+/* フェーズ2：営業キロ・種別・系統・停車駅案内図（components.css・table.css を600行未満に保つため分けた） */
+
+/* ---------- 駅の並び：環状線の「起点に戻る」の行 ---------- */
+
+.drag-grip.is-placeholder { cursor: default; }
+.stops-loop .stop-name { color: var(--ink-sub); }

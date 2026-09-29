@@ -180,6 +180,7 @@ export const DEFAULT_WALK_MINUTES = 5;
  * @property {number} [openedYear]
  * @property {number} [closedYear]
  * @property {number} order 並走するときの並び順
+ * @property {number} [loopKm] 環状線の一周の営業キロ（手入力。最後の駅から起点に戻る区間を決める）
  * @property {string} [note]
  */
 

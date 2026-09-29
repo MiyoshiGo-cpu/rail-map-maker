@@ -21,4 +21,5 @@ export const files = [
   'search.test.js',
   'file-io.test.js',
   'sample.test.js',
+  'distance.test.js',
 ];

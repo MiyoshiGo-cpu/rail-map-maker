@@ -68,6 +68,12 @@ export function createEditorCommands(ctx) {
       const line = p.lines.find((l) => l.id === target.id);
       const first = line && line.stops[0] && p.stations.find((s) => s.id === line.stops[0].stationId);
       reveal(first && first.schematic);
+    } else if (target.type === 'section') {
+      const line = p.lines.find((l) => l.id === target.id);
+      if (line && target.index < line.sections.length) {
+        es.set({ selection: { type: 'section', lineId: line.id, index: target.index } });
+        reveal(p.stations.find((s) => s.id === line.stops[target.index].stationId)?.schematic);
+      }
     } else if (target.type === 'operator') {
       es.set({ selection: { type: 'operator', id: target.id } });
     } else if (target.type === 'interchange') {

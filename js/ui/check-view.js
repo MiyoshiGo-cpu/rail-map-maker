@@ -1,7 +1,7 @@
 // チェック（§6.6）：問題の一覧。各項目の「移動」で、該当するものを選んで画面に出す
 import { h } from './dom.js';
 import { icon } from './icons.js';
-import { t } from '../i18n/i18n.js';
+import { t, formatDistance } from '../i18n/i18n.js';
 import { runChecks } from '../core/validate.js';
 
 /**
@@ -44,9 +44,21 @@ export function createCheckView(ctx) {
       }
       list.replaceChildren(...all.map((it) => h('li', { class: 'check-item', dataset: { level: it.level } },
         h('span', { class: 'check-level' }, t('check.level.' + it.level)),
-        h('span', { class: 'check-text' }, t('check.' + it.code, it.params)),
+        h('span', { class: 'check-text' }, t('check.' + it.code, formatParams(it.params))),
         it.target ? h('button', { class: 'btn btn-small', type: 'button', on: { click: () => ctx.go(it.target) } }, t('common.move')) : null,
       )));
     },
   };
+}
+
+/**
+ * 差し込む値を表示用にする（距離は { distance, unit } で受け取り、単位を付けて0.1単位にする）
+ * @param {Record<string, any>} params
+ */
+function formatParams(params) {
+  const out = {};
+  for (const [k, v] of Object.entries(params)) {
+    out[k] = v && typeof v === 'object' && 'distance' in v ? formatDistance(v.distance, v.unit) : v;
+  }
+  return out;
 }
