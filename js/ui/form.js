@@ -144,3 +144,80 @@ export function colorInput(opt) {
   el.input = text;
   return el;
 }
+
+/**
+ * 見出し付きのまとまり。collapsible なら開閉できる（details）
+ * @param {string} title
+ * @param {any[]} children
+ * @param {{ collapsible?: boolean, open?: boolean }} [opt]
+ */
+export function group(title, children, opt = {}) {
+  if (opt.collapsible) {
+    const d = h('details', { class: 'panel-section panel-group' },
+      h('summary', {}, title),
+      h('div', { class: 'panel-group-body' }, children),
+    );
+    if (opt.open) d.setAttribute('open', '');
+    return d;
+  }
+  return h('div', { class: 'panel-section' }, h('h3', {}, title), children);
+}
+
+/**
+ * 列挙値の選択肢（表示名はカタログの「prefix + 値」）
+ * @param {readonly (string|number)[]} values
+ * @param {(v: string) => string} label
+ */
+export function enumOptions(values, label) {
+  return values.map((v) => ({ value: String(v), label: label(String(v)) }));
+}
+
+/**
+ * 軌間：候補から選ぶか数値を入れる。null は対象外（モノレール等）
+ * @param {{
+ *   candidates: number[],
+ *   onChange: (v: number | null | undefined) => void,
+ *   labels: { none: string, other: string, mm: (v: number) => string, inherit?: string },
+ *   allowNone?: boolean,
+ * }} opt inherit を渡すと「路線の既定」を選べる（undefined を返す）。allowNone が false なら「対象外」を出さない
+ */
+export function gaugeInput(opt) {
+  const opts = [];
+  if (opt.labels.inherit) opts.push({ value: 'inherit', label: opt.labels.inherit });
+  for (const c of opt.candidates) opts.push({ value: String(c), label: opt.labels.mm(c) });
+  if (opt.allowNone !== false) opts.push({ value: 'none', label: opt.labels.none });
+  opts.push({ value: 'other', label: opt.labels.other });
+  const num = numberInput({
+    min: 100,
+    max: 3000,
+    step: 1,
+    onChange: (v) => {
+      if (v !== null && v > 0) opt.onChange(Math.round(v));
+    },
+  });
+  const sel = selectInput({
+    options: opts,
+    onChange: (v) => {
+      num.hidden = v !== 'other';
+      if (v === 'inherit') opt.onChange(undefined);
+      else if (v === 'none') opt.onChange(null);
+      else if (v === 'other') num.focus();
+      else opt.onChange(Number(v));
+    },
+  });
+  const el = /** @type {HTMLDivElement & { setValue(v: number | null | undefined): void, setInheritLabel(s: string): void }} */ (h('div', { class: 'gauge-field' }, sel, num));
+  el.setInheritLabel = (text) => {
+    const o = sel.querySelector('option[value="inherit"]');
+    if (o) o.textContent = text;
+  };
+  el.setValue = (v) => {
+    let key;
+    if (v === undefined) key = opt.labels.inherit ? 'inherit' : 'none';
+    else if (v === null) key = 'none';
+    else key = opt.candidates.includes(v) ? String(v) : 'other';
+    sel.setValue(key);
+    num.hidden = key !== 'other';
+    if (key === 'other') num.setValue(v);
+  };
+  return el;
+}

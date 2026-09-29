@@ -88,3 +88,18 @@ test('路線の形：同じ2駅を結ぶ auto の区間は、並び順が先の�
   const p2 = [...g.get(l2)[1].pts].reverse();
   assert.deepEqual(p2, p1);
 });
+
+test('経由点を足す位置：いちばん長い区切りの中点。近すぎれば置かない', async () => {
+  const { nextViaPoint } = await import('../js/core/schematic.js');
+  assert.deepEqual(nextViaPoint([{ x: 0, y: 0 }, { x: 8, y: 2 }]), { index: 0, point: { x: 4, y: 1 } });
+  assert.deepEqual(nextViaPoint([{ x: 0, y: 0 }, { x: 2, y: 0 }, { x: 10, y: 0 }]), { index: 1, point: { x: 6, y: 0 } });
+  assert.equal(nextViaPoint([{ x: 0, y: 0 }, { x: 1, y: 0 }]), null);
+});
+
+test('経由点を通る区間の形は、経由点を通って八方向で結ばれる', () => {
+  const { store, lineId } = storeWithLine([[0, 0], [8, 0]]);
+  store.dispatch({ type: 'line/section', lineId, index: 0, fields: { schematicVia: [{ x: 4, y: 3 }] } });
+  const g = computeSchematicGeometry(store.getState()).get(lineId)[0];
+  assert.ok(g.pts.some((q) => q.x === 4 && q.y === 3));
+  for (let i = 0; i + 1 < g.pts.length; i++) assert.ok(isOctilinear(g.pts[i + 1].x - g.pts[i].x, g.pts[i + 1].y - g.pts[i].y));
+});

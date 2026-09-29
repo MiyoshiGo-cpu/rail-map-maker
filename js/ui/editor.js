@@ -49,6 +49,7 @@ const HIT_RADIUS = { touch: 22, mouse: 8, pen: 12 };
  * @property {(ids: string[]) => void} deleteStations
  * @property {(lineId: string) => void} deleteLine
  * @property {(stationId: string) => import('./menu.js').MenuItem[]} stationMenuItems
+ * @property {(p: { pointerType: string }) => number} hitRadius 当たり判定の半径（世界座標）
  */
 
 /**
@@ -202,9 +203,9 @@ export function createEditor(opt) {
       store,
       es,
       getScene,
+      hitRadius: (p) => (HIT_RADIUS[p.pointerType] ?? 8) / canvasView.getView().zoom,
       hitTest(p, w, filter) {
-        const r = (HIT_RADIUS[p.pointerType] ?? 8) / canvasView.getView().zoom;
-        return getScene().index.hitTest(w.x, w.y, r, filter);
+        return getScene().index.hitTest(w.x, w.y, toolCtx.hitRadius(p), filter);
       },
       stationAt(g) {
         const st = store.getState().stations.find((s) => s.schematic && s.schematic.x === g.x && s.schematic.y === g.y);
@@ -319,7 +320,13 @@ export function createEditor(opt) {
     const panels = createPanelHost({
       store,
       es,
+      toast: (m) => toast(m),
       finishDrawing: () => tools.line.finish(),
+      deleteSection: (lineId, index) => {
+        store.dispatch({ type: 'line/cutSection', lineId, sectionIndex: index });
+        es.set({ selection: NO_SELECTION });
+        toast(t('section.deleted'));
+      },
       onDelete: (ids) => toolCtx.deleteStations(ids),
       onDeleteLine: (lineId) => toolCtx.deleteLine(lineId),
       align,

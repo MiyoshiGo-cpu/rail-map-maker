@@ -107,6 +107,24 @@ export function drawOverlay(ctx, o) {
     }
   }
 
+  // 選んだ区間の経由点（ドラッグで動かせる四角）
+  if (sel.type === 'section') {
+    const line = p.lines.find((l) => l.id === sel.lineId);
+    const via = line && line.sections[sel.index] && line.sections[sel.index].schematicVia;
+    if (via) {
+      const s = px(10);
+      for (const v of via) {
+        ctx.beginPath();
+        ctx.rect(v.x * GRID - s / 2, v.y * GRID - s / 2, s, s);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fill();
+        ctx.strokeStyle = accent;
+        ctx.lineWidth = px(2.5);
+        ctx.stroke();
+      }
+    }
+  }
+
   // 範囲選択の四角
   if (es.marquee) {
     const m = es.marquee;

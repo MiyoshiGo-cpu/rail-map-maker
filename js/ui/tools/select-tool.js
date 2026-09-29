@@ -47,6 +47,50 @@ export function createSelectTool(ed) {
     };
   }
 
+  /** 選んだ区間の経由点の近くなら、その番号 */
+  function viaAt(p, w) {
+    const sel = es.get().selection;
+    if (sel.type !== 'section') return null;
+    const line = store.getState().lines.find((l) => l.id === sel.lineId);
+    const via = line && line.sections[sel.index] && line.sections[sel.index].schematicVia;
+    if (!via) return null;
+    const r = ed.hitRadius(p);
+    let best = null;
+    let bestD = Infinity;
+    via.forEach((v, i) => {
+      const d = Math.hypot(v.x * GRID - w.x, v.y * GRID - w.y);
+      if (d <= r && d < bestD) {
+        bestD = d;
+        best = i;
+      }
+    });
+    return best === null ? null : { lineId: sel.lineId, index: sel.index, via, i: best };
+  }
+
+  /** 経由点をドラッグして動かす */
+  function viaDrag(v) {
+    let last = null;
+    const withMoved = (g) => v.via.map((q, k) => (k === v.i ? g : q));
+    return {
+      move(q) {
+        const w = ed.toWorld(q);
+        const g = { x: Math.round(w.x / GRID) + 0, y: Math.round(w.y / GRID) + 0 };
+        if (last && last.x === g.x && last.y === g.y) return;
+        last = g;
+        store.preview({ type: 'line/section', lineId: v.lineId, index: v.index, fields: { schematicVia: withMoved(g) } });
+      },
+      end() {
+        store.cancelPreview();
+        const orig = v.via[v.i];
+        if (!last || (last.x === orig.x && last.y === orig.y)) return;
+        store.dispatch({ type: 'line/section', lineId: v.lineId, index: v.index, fields: { schematicVia: withMoved(last) } });
+      },
+      cancel() {
+        store.cancelPreview();
+      },
+    };
+  }
+
   /** 範囲選択 */
   function marqueeDrag(w0, additive) {
     return {
@@ -92,12 +136,26 @@ export function createSelectTool(ed) {
       const range = es.get().rangeMode || (p.pointerType === 'mouse' && p.shiftKey);
       // 範囲選択は選び直し。Ctrl（Mac は ⌘）も押していれば今の選択に足す
       if (range) return marqueeDrag(w, p.ctrlKey || p.metaKey);
+      const v = viaAt(p, w);
+      if (v) return viaDrag(v);
       const hit = ed.hitTest(p, w, (tg) => tg.type === 'station' || tg.type === 'label');
       if (hit) return moveDrag(hit.id, w);
       return null;
     },
     /** 長押し・右クリックのメニュー */
     onLongPress(p, w) {
+      const v = viaAt(p, w);
+      if (v) {
+        ed.openMenuAt(p, [{
+          label: t('via.remove'),
+          danger: true,
+          onSelect: () => {
+            const rest = v.via.filter((_, k) => k !== v.i);
+            store.dispatch({ type: 'line/section', lineId: v.lineId, index: v.index, fields: { schematicVia: rest.length ? rest : null } });
+          },
+        }]);
+        return;
+      }
       const hit = ed.hitTest(p, w);
       if (!hit) return;
       if (hit.type === 'station' || hit.type === 'label') {

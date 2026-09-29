@@ -79,3 +79,24 @@ export function computeSchematicGeometry(p) {
   }
   return out;
 }
+
+/**
+ * 経由点を1つ足す位置：いちばん長い区切りの中点（格子に丸める）
+ * @param {{ x: number, y: number }[]} pts 始点・経由点…・終点
+ * @returns {{ index: number, point: { x: number, y: number } } | null} index は経由点の配列に入れる位置
+ */
+export function nextViaPoint(pts) {
+  let best = -1;
+  let bestLen = 0;
+  for (let i = 0; i + 1 < pts.length; i++) {
+    const len = Math.hypot(pts[i + 1].x - pts[i].x, pts[i + 1].y - pts[i].y);
+    if (len > bestLen) {
+      bestLen = len;
+      best = i;
+    }
+  }
+  if (best < 0 || bestLen < 2) return null;
+  const a = pts[best];
+  const b = pts[best + 1];
+  return { index: best, point: { x: Math.round((a.x + b.x) / 2) + 0, y: Math.round((a.y + b.y) / 2) + 0 } };
+}
