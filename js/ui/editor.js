@@ -1,5 +1,5 @@
-// エディタ全体の組み立て（ストア・自動保存・ヘッダー・パネル）。
-// キャンバスとツールはステップ6以降で足す。
+// エディタ全体の組み立て（ストア・自動保存・ヘッダー・キャンバス・パネル）。
+// ツールはステップ7以降で足す。
 import { h, replaceChildren } from './dom.js';
 import { icon } from './icons.js';
 import { t } from '../i18n/i18n.js';
@@ -10,6 +10,8 @@ import { migrate } from '../core/migrate.js';
 import { normalizeProject } from '../core/defaults.js';
 import { getProject, putProject } from '../storage/idb.js';
 import { createAutosave } from '../storage/autosave.js';
+import { createCanvasView } from './canvas-view.js';
+import { stationBounds, GRID } from '../core/viewport.js';
 
 /**
  * @param {{ projectId: string, onExit: () => void }} opt
@@ -93,10 +95,33 @@ export function createEditor(opt) {
       panel.dataset.stage = order[(order.indexOf(cur) + 1) % order.length];
     }
 
+    // キャンバス
+    const canvasView = createCanvasView({
+      getStyle: () => store.getState().style,
+      initialView: store.getState().view.schematic,
+      onViewChange: (v) => {
+        const cur = store.getCommittedState().view.schematic;
+        if (cur.cx === v.cx && cur.cy === v.cy && cur.zoom === v.zoom) return;
+        store.dispatch({ type: 'project/view', view: 'schematic', state: v, silent: true });
+      },
+      getBounds: () => {
+        const b = stationBounds(store.getState().stations);
+        // 駅名の分だけ余白をとる
+        return b && { minX: b.minX - GRID * 2, minY: b.minY - GRID * 2, maxX: b.maxX + GRID * 2, maxY: b.maxY + GRID * 2 };
+      },
+    });
+    cleanups.push(() => canvasView.dispose());
+
+    // 開発用：?debug=1 のときだけ、コンソールから状態を見られるようにする
+    if (new URLSearchParams(location.search).has('debug')) {
+      /** @type {any} */ (window).rmmDebug = { store, canvasView };
+      cleanups.push(() => { delete (/** @type {any} */ (window)).rmmDebug; });
+    }
+
     replaceChildren(el,
       header,
       h('div', { class: 'ed-banner' }),
-      h('main', { class: 'ed-stage' }, h('canvas', { class: 'ed-canvas', 'aria-label': t('views.schematic') })),
+      h('main', { class: 'ed-stage' }, canvasView.el),
       panel,
     );
 
@@ -127,6 +152,7 @@ export function createEditor(opt) {
       if (document.activeElement !== authorInput) authorInput.value = p.author || '';
       undoBtn.disabled = !store.canUndo();
       redoBtn.disabled = !store.canRedo();
+      canvasView.requestRender();
     }
     cleanups.push(store.subscribe(render));
     render();

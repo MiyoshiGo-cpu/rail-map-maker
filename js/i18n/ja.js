@@ -78,6 +78,9 @@ export default {
   'panel.label': 'プロパティ',
   'panel.resize': 'パネルの大きさを変える',
   'panel.project.title': 'プロジェクト',
+  'canvas.zoomIn': '拡大',
+  'canvas.zoomOut': '縮小',
+  'canvas.fit': '全体を表示',
 
   // 単位
   'unit.km': '{value} km',

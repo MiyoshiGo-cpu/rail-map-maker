@@ -331,3 +331,50 @@ button { touch-action: manipulation; }
 
 /* まだツールがないときは下部ツールバーの高さを0にする */
 .editor.no-tools { --toolbar-h: 0px; }
+
+/* ---------- キャンバス ---------- */
+
+.canvas-view {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.zoom-ctl {
+  position: absolute;
+  right: calc(12px + var(--safe-r));
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .12);
+}
+
+.ed-hint {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  transform: translate(-50%, -50%);
+  max-width: min(90%, 420px);
+  margin: 0;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink-sub);
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .1);
+  pointer-events: none;
+}
+
+@media (max-width: 899.98px) {
+  /* スマホではボトムシートと重ならないよう右上に置く */
+  .zoom-ctl {
+    top: 12px;
+    bottom: auto;
+  }
+}

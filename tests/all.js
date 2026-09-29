@@ -11,4 +11,5 @@ export const files = [
   'actions.test.js',
   'validate.test.js',
   'autosave.test.js',
+  'viewport.test.js',
 ];
