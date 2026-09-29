@@ -100,11 +100,11 @@
 
 - フェーズ1は完了（2026-09-29）。完了条件13個をすべて確認し、公開版を PC と iPhone（Safari・ホーム画面）で確認済み。未計測なのは iPhone 実機での駅200・路線20の操作感だけ（任意）。
 - フェーズ2は完了（2026-09-29）。計画のステップ0〜10をすべて終え、完了条件5つを確かめ、公開版を iPhone で確認してもらった。
-- フェーズ3（見た目と書き出し）は計画を承認済み（2026-09-29。下の「フェーズ3の計画」）。ステップ1〜3を終えて区切り1（確認済み）。ステップ4〜7（凡例とタイトル・PNG・SVG・印刷）を終え、区切り2として main に反映した。iPhone での確認待ち。次はステップ8（駅名標ビュー）。
+- フェーズ3（見た目と書き出し）は計画のステップ1〜9をすべて終え、区切り3として main に反映した（2026-09-29）。完了条件5つのうち4つは Chromium で確かめ済み（PNG と SVG の画素比較、1,600万画素の案内、駅名標の前後の駅のテスト、A4 横の PDF が1ページ）。残りは iPhone で PNG を共有シートから写真に保存できるかの確認で、確認が済んだら「進捗」にチェックを付ける。次はフェーズ4（架空地形と地理ビュー）の計画。
 - 性能（PC）：駅200・路線20で、パン・ズームの描画1回が中央値0.8〜3.5ms（3倍の画素数）、ラベル込みの表示リスト作成が約9ms。
 - 描画：core/schematic.js → core/parallel.js → render/scene-schematic.js（連絡線・駅記号・labels.js のラベル）→ render/backend-canvas.js。操作：ui/editor.js（約555行。これ以上は editor-views.js などに分ける）＋ editor-header.js・editor-commands.js・editor-state.js・tools/・panels/・data-view.js・check-view.js。起動と画面の切り替え・iPhone 向けの処理は js/main.js。
-- 型は core/schema.js、既定値と補完は defaults.js、アクションは core/actions/、保存は js/storage/。CSS は app.css・components.css・table.css・services.css（フェーズ2）、カタログは js/i18n/ja.js（約490行）＋ ja-help.js ＋ ja-services.js（フェーズ2）。営業キロは core/distance.js、種別は core/actions/service-types.js・ui/panels/service-type-panel.js・ui/data-tabs-services.js。系統：経路の展開・停車駅・直通の判定は core/services.js、経路の候補は core/network.js、所要時間は core/runtime.js、アクションと後始末は core/actions/services.js、チェックは core/validate-services.js。画面は ui/panels/service-panel.js・service-new-panel.js・ui/route-picker.js・service-ui.js・pending-pick.js（地図のタップで駅を選ぶ）・service-overlay.js（路線図の強調）。停車駅案内図は core/stopchart.js（中身）→ render/scene-stopchart.js（表示リスト。横・縦）→ ui/stopchart-view.js（ビュー）、ビューの切り替えは ui/editor-views.js。スタイル：プリセットは地域パック（jp.js の stylePresets）、適用は core/map-style.js、色づかい（inkOf・paperOf・tone・lineAppearance）は render/styles.js、設定の欄は ui/style-settings.js。パレットは ui/color-palette.js（色は jp.js の linePalette）、色の差は core/color.js の colorDistance（CIEDE2000）。凡例とタイトルは render/scene-legend.js（設定の欄は ui/legend-settings.js）、駅の記号は render/station-symbol.js。書き出し：シートは ui/export-view.js、絵と PNG は ui/exporter.js、大きさの上限は core/export-size.js、SVG は render/backend-svg.js、印刷は ui/print.js（印刷用 CSS は css/export.css）。カタログはフェーズ3の分を js/i18n/ja-export.js、CSS は css/export.css。
-- 確認用：`?debug=1` で window.rmmDebug（store・es・canvasView・getScene・commands）と、一覧の「性能確認用のデータを作る」。テストは Node 216件・ブラウザ（/tests/）211件（tests/helpers.js の throughNetwork が直通の路線網の見本）、`node tools/check-i18n.js` は0件。印刷は `node tools/browser-check.js shot … --pdf`（PDF のページ数と用紙）と `--media=print`（印刷用 CSS での画面写真）で確かめる。
+- 型は core/schema.js、既定値と補完は defaults.js、アクションは core/actions/、保存は js/storage/。CSS は app.css・components.css・table.css・services.css（フェーズ2）、カタログは js/i18n/ja.js（約490行）＋ ja-help.js ＋ ja-services.js（フェーズ2）。営業キロは core/distance.js、種別は core/actions/service-types.js・ui/panels/service-type-panel.js・ui/data-tabs-services.js。系統：経路の展開・停車駅・直通の判定は core/services.js、経路の候補は core/network.js、所要時間は core/runtime.js、アクションと後始末は core/actions/services.js、チェックは core/validate-services.js。画面は ui/panels/service-panel.js・service-new-panel.js・ui/route-picker.js・service-ui.js・pending-pick.js（地図のタップで駅を選ぶ）・service-overlay.js（路線図の強調）。停車駅案内図は core/stopchart.js（中身）→ render/scene-stopchart.js（表示リスト。横・縦）→ ui/stopchart-view.js（ビュー）、ビューの切り替えは ui/editor-views.js。スタイル：プリセットは地域パック（jp.js の stylePresets）、適用は core/map-style.js、色づかい（inkOf・paperOf・tone・lineAppearance）は render/styles.js、設定の欄は ui/style-settings.js。パレットは ui/color-palette.js（色は jp.js の linePalette）、色の差は core/color.js の colorDistance（CIEDE2000）。凡例とタイトルは render/scene-legend.js（設定の欄は ui/legend-settings.js）、駅の記号は render/station-symbol.js。駅名標は core/signboard.js（中身）→ render/scene-signboard.js（3つのテンプレート）→ ui/signboard-view.js（ビュー）。案内図と駅名標のビューは ui/editor-views.js の createOtherViews でまとめて作る。書き出し：シートは ui/export-view.js、絵と PNG は ui/exporter.js、大きさの上限は core/export-size.js、SVG は render/backend-svg.js、印刷は ui/print.js（印刷用 CSS は css/export.css）。カタログはフェーズ3の分を js/i18n/ja-export.js、CSS は css/export.css。
+- 確認用：`?debug=1` で window.rmmDebug（store・es・canvasView・getScene・commands・others）と、一覧の「性能確認用のデータを作る」。テストは Node 225件・ブラウザ（/tests/）220件（tests/helpers.js の throughNetwork が直通の路線網の見本）、`node tools/check-i18n.js` は0件。印刷は `node tools/browser-check.js shot … --pdf`（PDF のページ数と用紙）と `--media=print`（印刷用 CSS での画面写真）で確かめる。
 
 ### 直近で対応した問題（2026-09-29、すべて解決済み）
 
@@ -117,8 +117,8 @@
 
 ### 次にやること（この順番で）
 
-1. 下の「フェーズ3の計画」をステップ順に進める。ステップごとに実装 → テスト → check-i18n → ブラウザ確認 → コミット。区切りでは main に反映し、iPhone での確認手順を伝えて、確認を待つ。
-2. 完了条件（SPEC §7 フェーズ3 の5つ）を総点検 → main に反映して公開 → iPhone で確認 → 「進捗」にチェックし、このファイルを更新。
+1. iPhone でフェーズ3の最終確認（特に PNG を共有シートから写真に保存）をしてもらう → 「進捗」のフェーズ3にチェックし、このファイルを更新。
+2. フェーズ4（架空地形と地理ビュー。SPEC §7 と §6.7・§6.8・§5.4）の計画を立てて承認をもらう。
 3. （任意）iPhone で大きな路線図の操作感を確かめてもらう（「iPhone での確認手順」の5）。
 
 ### フェーズ3の計画（2026-09-29 承認）
@@ -219,3 +219,4 @@
 - 2026-09-29 縦書きの駅名：伸ばす記号と括弧は90°回し、小さい文字（ぁぃぅぇぉっゃゅょゎ とカタカナ）は右上へ少し、句読点は右上へ大きく寄せる（labels.js の verticalGlyph。案内図も同じ）。
 - 2026-09-29 凡例とタイトル：MapStyle.legend（show・corner・lines・types・symbols）と MapStyle.title（show・corner・text・showAuthor・date）。既定はどちらも出さない。地図の範囲（線と駅記号に文字の大きさ×3の余白を足したものと駅名）の外に置き、同じ角ならタイトル → 凡例の順に積む。凡例の種別は系統で使っているものだけ、記号は路線図に出ているものだけ。タイトルが空ならプロジェクト名、作者は Project.author、日付は自由に書く（「今日の日付」で「2026年9月29日現在」を入れる）。当たり判定には入れない。
 - 2026-09-29 書き出し：「書き出す」のシート（PNG・SVG・印刷・JSON）。PNG は約1,600万画素かつ1辺16,384px まで。iPhone で共有シートを開けなかったとき（準備に時間がかかり、タップの直後でなくなったとき）は「共有シートを開く」ボタンを出す。SVG の文字は Canvas より0.5px ほど下にずれることがある（書体の測り方の違い。許容）。印刷は SVG を用紙（A4・A3、横・縦、余白10mm）に収め、ブラウザのメニューからの印刷でも同じにする。
+- 2026-09-29 駅名標：MapStyle.signboard（template：band・number・kana、items：reading・en・subName・number・neighbors・multilingual）。表示中の駅・路線はエディタの状態（signStation・signLine）に持ち、保存しない。前後の駅は信号場・貨物駅・車両基地を飛ばす。2〜3文字の駅名は字の間をあけ、長い駅名は文字を小さくして幅に収める。前後の駅を押すとその駅に移る。駅名標の帯のため、角丸の四角で角ごとの半径（corners）を使えるようにした。

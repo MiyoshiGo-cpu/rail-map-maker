@@ -1,4 +1,4 @@
-// ヘルプ（§4.3：操作方法、iPhone での保存の注意、データの出典）
+// ヘルプ（§4.3：操作方法、見た目と書き出し、iPhone での保存の注意、データの出典）
 import { h } from './dom.js';
 import { t } from '../i18n/i18n.js';
 import { group } from './form.js';
@@ -21,6 +21,7 @@ export function openHelp() {
     body: [
       group(t('help.basicsTitle'), paras('help.basics')),
       group(t('help.servicesTitle'), paras('help.services')),
+      group(t('help.lookTitle'), paras('help.look')),
       group(t('help.touchTitle'), paras('help.touch')),
       group(t('help.keysTitle'), [
         h('dl', { class: 'help-keys' }, keys.flatMap(([k, label]) => [h('dt', {}, h('kbd', {}, k)), h('dd', {}, t(label))])),
