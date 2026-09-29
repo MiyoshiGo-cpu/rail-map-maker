@@ -98,11 +98,11 @@
 作業の区切りごとに書き換える。どこまで進んだか、次にやること、未解決の問題を3〜8行で書き、セッションが変わってもここを読めば続きから再開できるようにする。
 
 - フェーズ1は完了（2026-09-29）。完了条件13個をすべて確認し、公開版を PC と iPhone（Safari・ホーム画面）で確認済み。未計測なのは iPhone 実機での駅200・路線20の操作感だけ（任意）。
-- フェーズ2は計画を承認済み（2026-09-29。下の「フェーズ2の計画」）。ステップ0（準備）から進めている。
+- フェーズ2は計画を承認済み（2026-09-29。下の「フェーズ2の計画」）。ステップ0〜2（準備・営業キロ・種別）が終わり、区切り1として main に反映した。iPhone での確認待ち。次はステップ3（系統の計算）。
 - 性能（PC）：駅200・路線20で、パン・ズームの描画1回が中央値0.8〜3.5ms（3倍の画素数）、ラベル込みの表示リスト作成が約9ms。
 - 描画：core/schematic.js → core/parallel.js → render/scene-schematic.js（連絡線・駅記号・labels.js のラベル）→ render/backend-canvas.js。操作：ui/editor.js（約540行）＋ editor-header.js・editor-commands.js・editor-state.js・tools/・panels/・data-view.js・check-view.js。起動と画面の切り替え・iPhone 向けの処理は js/main.js。
-- 型は core/schema.js、既定値と補完は defaults.js、アクションは core/actions/、保存は js/storage/。CSS は app.css・components.css・table.css、カタログは js/i18n/ja.js（約490行）＋ ja-help.js。
-- 確認用：`?debug=1` で window.rmmDebug（store・es・canvasView・getScene・commands）と、一覧の「性能確認用のデータを作る」。テストは Node 145件・ブラウザ（/tests/）140件、`node tools/check-i18n.js` は0件。
+- 型は core/schema.js、既定値と補完は defaults.js、アクションは core/actions/、保存は js/storage/。CSS は app.css・components.css・table.css・services.css（フェーズ2）、カタログは js/i18n/ja.js（約490行）＋ ja-help.js ＋ ja-services.js（フェーズ2）。営業キロは core/distance.js、種別は core/actions/service-types.js・ui/panels/service-type-panel.js・ui/data-tabs-services.js。
+- 確認用：`?debug=1` で window.rmmDebug（store・es・canvasView・getScene・commands）と、一覧の「性能確認用のデータを作る」。テストは Node 159件・ブラウザ（/tests/）154件、`node tools/check-i18n.js` は0件。
 
 ### 直近で対応した問題（2026-09-29、すべて解決済み）
 
