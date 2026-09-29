@@ -67,13 +67,13 @@
 
 作業の区切りごとに書き換える。どこまで進んだか、次にやること、未解決の問題を3〜8行で書き、セッションが変わってもここを読めば続きから再開できるようにする。
 
-- フェーズ1を17ステップで実装中（計画は承認済み。止まって確認をもらうのはステップ4・9・13・16・17 の後）。ステップ16の区切りの報告（14〜16）を出して確認待ち。
-- 済：1〜16。16 はサンプル（tools/make-sample.js → samples/sample-metro.railmap.json）、?debug=1 の性能確認用データ（core/debug-data.js。駅200・路線20で、パン・ズームの描画1回が中央値0.8〜3.5ms、ラベル込みの表示リスト作成が約9ms）、README の更新。
-- 次：ステップ17（完了条件13個の総点検 → SPEC §10 に追記 → push の許可をもらって GitHub Pages の公開手順を案内 → iPhone の Safari とホーム画面で起動を確認）。
+- フェーズ1の17ステップのうち、17 の公開以外はすべて済み。完了条件13個のうち12個を実際の操作で確認済み（残りは「GitHub Pages で公開し、iPhone の Safari とホーム画面で起動」）。SPEC §10 に 1.2 として補足を追記済み。
+- 次：ユーザーの「pushして」を待つ → `git push -u origin main` → GitHub の Settings → Pages で main / (root) を選んでもらう → 公開URL（https://miyoshigo-cpu.github.io/rail-map-maker/）を PC と iPhone の Safari・ホーム画面で確認 → 完了条件13を確認できたら「進捗」のフェーズ1にチェック。
+- 性能：駅200・路線20で、パン・ズームの描画1回が中央値0.8〜3.5ms（3倍の画素数）、ラベル込みの表示リスト作成が約9ms。iPhone は同じネットワークで http://192.168.0.181:8000/ から開ける（ユーザー確認済み）。
 - 描画：core/schematic.js → core/parallel.js → render/scene-schematic.js（連絡線・駅記号・labels.js のラベル）→ render/backend-canvas.js。操作：ui/editor.js（約540行）＋ editor-header.js・editor-commands.js・editor-state.js・tools/・panels/・data-view.js・check-view.js。
 - CSS は app.css・components.css（約555行、これ以上足さない）・table.css。カタログは ja.js（約490行）＋ ja-help.js。
-- 確認用：`?debug=1` で window.rmmDebug（store・es・canvasView・getScene・commands）。アプリ内ブラウザは隠れていると描画・タイマーが止まり、スクリーンショットが古い画面のことがある。
-- 起動：`py tools/serve.py` → http://localhost:8000/（iPhone は同じネットワークで http://192.168.0.181:8000/）、テスト：`npm test`、検査：`node tools/check-i18n.js`。
+- 確認用：`?debug=1` で window.rmmDebug（store・es・canvasView・getScene・commands）と、一覧の「性能確認用のデータを作る」。アプリ内ブラウザは隠れていると描画・タイマーが止まり、スクリーンショットが古い画面のことがある。
+- 起動：`py tools/serve.py` → http://localhost:8000/、テスト：`npm test`（Node 145件）と /tests/（ブラウザ 140件）、検査：`node tools/check-i18n.js`。
 
 ## 決定事項ログ
 
