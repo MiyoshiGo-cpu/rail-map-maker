@@ -30,4 +30,5 @@ export const files = [
   'map-style.test.js',
   'color.test.js',
   'legend.test.js',
+  'export-size.test.js',
 ];

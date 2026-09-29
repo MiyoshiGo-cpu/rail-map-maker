@@ -118,7 +118,7 @@ export function createEditor(opt) {
       onExit: () => opt.onExit(),
       onUndo: () => store.undo(),
       onRedo: () => store.redo(),
-      onExport: () => commands.exportJson(),
+      onExport: () => commands.openExport(),
       menuItems: () => commands.menuItems(),
       views: viewTabs(),
       onView: (v) => changeView(v),
@@ -424,7 +424,7 @@ export function createEditor(opt) {
     cleanups.push(() => dataView.dispose());
 
     // ---------- 書き出し・復元ポイント・検索・チェック ----------
-    commands = createEditorCommands({ store, es, canvasView, onExit: () => opt.onExit() });
+    commands = createEditorCommands({ store, es, canvasView, getChartScene: () => chartView.getScene(), onExit: () => opt.onExit() });
     cleanups.push(() => commands.dispose());
     const checkView = createCheckView({ store, close: () => es.set({ drawer: null }), go: (target) => commands.goTo(target) });
 

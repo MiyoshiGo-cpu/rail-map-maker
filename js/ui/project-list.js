@@ -223,7 +223,8 @@ export function createProjectList(opt) {
     const p = await getProject(m.id);
     if (!p) return;
     const result = await saveTextFile(exportFilename(p.name), serializeProject(p));
-    if (result === 'cancelled') return;
+    if (result === 'needsTap') toast(t('export.tapAgain'));
+    if (result === 'cancelled' || result === 'needsTap') return;
     await putProject({ ...p, meta: { ...p.meta, lastBackupAt: new Date().toISOString() } });
     toast(t('editor.exported'));
     refresh();

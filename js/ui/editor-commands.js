@@ -1,4 +1,4 @@
-// エディタの画面単位の操作：JSON の書き出し、復元ポイント（10分ごと・大きな操作の前）、
+// エディタの画面単位の操作：書き出し（シートと JSON）、復元ポイント（10分ごと・大きな操作の前）、
 // 駅の検索、チェックの項目への移動、設定・ヘルプ、その他のメニュー
 import { t } from '../i18n/i18n.js';
 import { toast } from './toast.js';
@@ -9,6 +9,7 @@ import { RESTORE_POINT_INTERVAL_MS } from '../storage/backup.js';
 import { openStationSearch } from './search-view.js';
 import { openSettings } from './settings-view.js';
 import { openHelp } from './help-view.js';
+import { openExportSheet } from './export-view.js';
 
 const MOBILE = '(max-width: 899.98px)';
 
@@ -17,6 +18,7 @@ const MOBILE = '(max-width: 899.98px)';
  *   store: any,
  *   es: any,
  *   canvasView: ReturnType<typeof import('./canvas-view.js').createCanvasView>,
+ *   getChartScene: () => any,
  *   onExit: () => void,
  * }} ctx
  */
@@ -43,13 +45,19 @@ export function createEditorCommands(ctx) {
     const p = store.getCommittedState();
     try {
       const result = await saveTextFile(exportFilename(p.name), serializeProject(p));
-      if (result === 'cancelled') return;
+      if (result === 'needsTap') toast(t('export.tapAgain'));
+      if (result === 'cancelled' || result === 'needsTap') return;
       store.dispatch({ type: 'project/meta', fields: { lastBackupAt: new Date().toISOString() }, silent: true });
       toast(t('editor.exported'));
     } catch (e) {
       console.error(e);
       toast(t('editor.exportFailed'), { kind: 'error' });
     }
+  }
+
+  /** 「書き出す」のシート（今表示しているビューを PNG などで。JSON もここから） */
+  function openExport() {
+    openExportSheet({ store, es, getChartScene: ctx.getChartScene, onJson: exportJson });
   }
 
   /** 世界座標の格子点を画面に出す */
@@ -104,7 +112,7 @@ export function createEditorCommands(ctx) {
   /** プロジェクト名のメニューと「その他」のメニュー */
   function menuItems() {
     return [
-      { label: t('editor.export'), onSelect: exportJson },
+      { label: t('editor.export'), onSelect: openExport },
       { label: t('search.title'), onSelect: search },
       { label: t('check.title'), onSelect: () => es.set({ drawer: 'check' }) },
       { separator: true },
@@ -118,6 +126,7 @@ export function createEditorCommands(ctx) {
   return {
     checkpoint,
     exportJson,
+    openExport,
     goTo,
     search,
     settings,

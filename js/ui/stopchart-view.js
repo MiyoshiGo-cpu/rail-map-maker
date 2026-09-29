@@ -105,6 +105,8 @@ export function createStopChartView(ctx) {
       }
       return '';
     },
+    /** 表示している表示リスト（書き出しに使う） */
+    getScene: () => scene,
     fitAll: () => canvasView.fitAll(),
     zoomBy: (f) => canvasView.zoomBy(f),
     dispose() {

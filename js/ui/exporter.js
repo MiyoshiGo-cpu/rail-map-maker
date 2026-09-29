@@ -1,0 +1,67 @@
+// 書き出しの中身（§5.9）：今表示しているビューの絵（表示リストと範囲）を作り、PNG にする。
+// 書き出す絵には格子を入れず、駅名はズームに関係なくすべて出す。作業用の canvas は使い終えたら解放する。
+import { buildSchematicScene } from '../render/scene-schematic.js';
+import { unionBoxes } from '../render/scene-legend.js';
+import { drawItems, createMeasure } from '../render/backend-canvas.js';
+import { exportSize, EXPORT_MARGIN } from '../core/export-size.js';
+import { mapTranslator } from '../i18n/i18n.js';
+
+/**
+ * 書き出す絵
+ * @typedef {object} ExportTarget
+ * @property {'schematic'|'stopChart'} view
+ * @property {any[]} items 表示リスト
+ * @property {{ minX: number, minY: number, maxX: number, maxY: number }} bounds
+ * @property {string} background
+ */
+
+let measure = null;
+
+/**
+ * 今表示しているビューの絵（書き出すものが無ければ null）
+ * @param {import('../core/schema.js').Project} p
+ * @param {'schematic'|'stopChart'} view
+ * @param {any} [chartScene] 案内図のビューが表示している表示リスト
+ * @returns {ExportTarget | null}
+ */
+export function exportTarget(p, view, chartScene) {
+  if (view === 'stopChart') {
+    if (!chartScene || !chartScene.items.length) return null;
+    return { view, items: chartScene.items, bounds: chartScene.bounds, background: p.style.background };
+  }
+  if (!measure) measure = createMeasure();
+  const scene = buildSchematicScene(p, { measure, level: 0, mapT: mapTranslator(p.locale.mapLanguage) });
+  const bounds = unionBoxes(scene.items);
+  if (!bounds) return null;
+  return { view: 'schematic', items: scene.items, bounds, background: p.style.background };
+}
+
+/**
+ * PNG にする
+ * @param {ExportTarget} target
+ * @param {{ scale: number, transparent: boolean }} opt
+ * @returns {Promise<Blob>}
+ */
+export async function renderPng(target, opt) {
+  const size = exportSize(target.bounds, opt.scale);
+  const canvas = document.createElement('canvas');
+  try {
+    canvas.width = size.width;
+    canvas.height = size.height;
+    const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
+    if (!opt.transparent) {
+      ctx.fillStyle = target.background;
+      ctx.fillRect(0, 0, size.width, size.height);
+    }
+    const s = opt.scale;
+    ctx.setTransform(s, 0, 0, s, (EXPORT_MARGIN - target.bounds.minX) * s, (EXPORT_MARGIN - target.bounds.minY) * s);
+    drawItems(ctx, target.items, null);
+    return await new Promise((resolve, reject) => {
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png');
+    });
+  } finally {
+    // iPhone では canvas の画素が残ると次の書き出しで上限を超えるので、すぐに解放する
+    canvas.width = 0;
+    canvas.height = 0;
+  }
+}
