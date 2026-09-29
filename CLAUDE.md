@@ -85,7 +85,7 @@
 ## 進捗
 
 - [x] フェーズ1：路線図エディタの土台（2026-09-29 完了・公開済み）
-- [ ] フェーズ2：種別・運行系統・直通運転
+- [x] フェーズ2：種別・運行系統・直通運転（2026-09-29 完了・公開済み）
 - [ ] フェーズ3：見た目と書き出し
 - [ ] フェーズ4：架空地形と地理ビュー
 - [ ] フェーズ5：実在の日本地図モード
@@ -99,7 +99,8 @@
 作業の区切りごとに書き換える。どこまで進んだか、次にやること、未解決の問題を3〜8行で書き、セッションが変わってもここを読めば続きから再開できるようにする。
 
 - フェーズ1は完了（2026-09-29）。完了条件13個をすべて確認し、公開版を PC と iPhone（Safari・ホーム画面）で確認済み。未計測なのは iPhone 実機での駅200・路線20の操作感だけ（任意）。
-- フェーズ2は計画のステップ0〜10をすべて終え、完了条件5つを確かめて区切り3として main に反映した（2026-09-29）。iPhone での最終確認待ち。確認できたら「進捗」のフェーズ2にチェックし、次はフェーズ3（見た目と書き出し）の計画を立てる。
+- フェーズ2は完了（2026-09-29）。計画のステップ0〜10をすべて終え、完了条件5つを確かめ、公開版を iPhone で確認してもらった。
+- フェーズ3（見た目と書き出し）はまだ始めていない（計画も未作成）。
 - 性能（PC）：駅200・路線20で、パン・ズームの描画1回が中央値0.8〜3.5ms（3倍の画素数）、ラベル込みの表示リスト作成が約9ms。
 - 描画：core/schematic.js → core/parallel.js → render/scene-schematic.js（連絡線・駅記号・labels.js のラベル）→ render/backend-canvas.js。操作：ui/editor.js（約555行。これ以上は editor-views.js などに分ける）＋ editor-header.js・editor-commands.js・editor-state.js・tools/・panels/・data-view.js・check-view.js。起動と画面の切り替え・iPhone 向けの処理は js/main.js。
 - 型は core/schema.js、既定値と補完は defaults.js、アクションは core/actions/、保存は js/storage/。CSS は app.css・components.css・table.css・services.css（フェーズ2）、カタログは js/i18n/ja.js（約490行）＋ ja-help.js ＋ ja-services.js（フェーズ2）。営業キロは core/distance.js、種別は core/actions/service-types.js・ui/panels/service-type-panel.js・ui/data-tabs-services.js。系統：経路の展開・停車駅・直通の判定は core/services.js、経路の候補は core/network.js、所要時間は core/runtime.js、アクションと後始末は core/actions/services.js、チェックは core/validate-services.js。画面は ui/panels/service-panel.js・service-new-panel.js・ui/route-picker.js・service-ui.js・pending-pick.js（地図のタップで駅を選ぶ）・service-overlay.js（路線図の強調）。停車駅案内図は core/stopchart.js（中身）→ render/scene-stopchart.js（表示リスト。横・縦）→ ui/stopchart-view.js（ビュー）、ビューの切り替えは ui/editor-views.js。
@@ -116,9 +117,8 @@
 
 ### 次にやること（この順番で）
 
-1. フェーズ2の最終確認（区切り3）の結果を聞き、問題があれば直す。問題がなければ「進捗」のフェーズ2にチェックを入れ、このファイルを更新する。
-2. （任意）iPhone で大きな路線図の操作感を確かめてもらう（「iPhone での確認手順」の5）。
-3. フェーズ3「見た目と書き出し」の計画を立てて出す。コードはまだ書かない。SPEC §7 フェーズ3 と §5.6〜5.9（駅名標・凡例・スタイル・書き出し）を読み、作るファイル・ステップと区切り・質問・リスク・確認方法をまとめて承認を待つ。停車駅案内図の書き出し（表示リストは render/scene-stopchart.js にある）も含めるか確認する。
+1. （任意）iPhone で大きな路線図の操作感を確かめてもらう（「iPhone での確認手順」の5）。
+2. フェーズ3「見た目と書き出し」の計画を立てて出す。コードはまだ書かない。SPEC §7 フェーズ3 と §5.6〜5.9（駅名標・凡例・スタイル・書き出し）を読み、作るファイル・ステップと区切り・質問・リスク・確認方法をまとめて承認を待つ。停車駅案内図の書き出し（表示リストは render/scene-stopchart.js にある）も含めるか確認する。
 
 ### フェーズ2の計画（2026-09-29 承認・すべて実施）
 
