@@ -3,11 +3,14 @@
 import { GRID } from '../core/viewport.js';
 import { computeSchematicGeometry } from '../core/schematic.js';
 import { computeBundles } from '../core/parallel.js';
-import { offsetPolyline, turnSign, collinearExtent, boundsOf } from '../core/geometry.js';
+import { offsetPolyline, turnSign } from '../core/geometry.js';
 import { effectiveSectionAttrs } from '../core/lines.js';
 import { createSpatialIndex } from './spatial-index.js';
 import { strokeFor, bundleSpacing, inkOf, paperOf, lineAppearance } from './styles.js';
 import { layoutLabels } from './labels.js';
+import { stationSymbol } from './station-symbol.js';
+import { buildLegend, unionBoxes } from './scene-legend.js';
+import { mapTranslator } from '../i18n/i18n.js';
 import { stationNumbers } from '../core/numbering.js';
 
 /** @typedef {import('../core/schema.js').Project} Project */
@@ -34,7 +37,7 @@ function bboxOfPts(pts, pad) {
 
 /**
  * @param {Project} p
- * @param {{ measure: Measure, level?: number }} opt level はズームで隠す段階（labels.js の labelLevel）
+ * @param {{ measure: Measure, level?: number, mapT?: (key: string, vars?: any) => string }} opt level はズームで隠す段階（labels.js の labelLevel）。mapT は地図の言語の文言（凡例・タイトル）
  */
 export function buildSchematicScene(p, opt) {
   const style = p.style;
@@ -47,6 +50,8 @@ export function buildSchematicScene(p, opt) {
   /** 駅 ID → 線が通る点と向き（駅記号の形を決める） */
   /** @type {Map<string, { pts: Pt[], dirs: Pt[], lineIds: Set<string> }>} */
   const passes = new Map();
+  // 凡例の「記号」に出すもの（実際に描いたものだけ）
+  const facts = { lineIds: new Set(), symbols: new Set(), statuses: new Set() };
   const passOf = (id) => {
     let v = passes.get(id);
     if (!v) passes.set(id, (v = { pts: [], dirs: [], lineIds: new Set() }));
@@ -84,6 +89,8 @@ export function buildSchematicScene(p, opt) {
       const attrs = effectiveSectionAttrs(line, i);
       const s = strokeFor(style, line.kind, attrs.status, line.color, orderIndex.get(line.id));
       if (s.hidden) return;
+      facts.lineIds.add(line.id);
+      if (attrs.status !== 'open') facts.statuses.add(attrs.status);
       const pts = [];
       for (const q of shifted) pts.push(q.x, q.y);
       const item = {
@@ -118,10 +125,12 @@ export function buildSchematicScene(p, opt) {
     const items = stationSymbol(st, center, pass, ids.length, style, stroke, ids.length ? lineColor.get(ids[0]) : inkOf(style));
     for (const it of items) symbolItems.push(it);
     stationItems.set(st.id, items[0]);
+    facts.symbols.add(symbolKind(st, ids.length, pass, style));
   }
 
   // ---------- 乗換グループの連絡線（§5.2：白地に黒縁の太い線で駅の記号を結ぶ） ----------
   const connectorItems = buildConnectors(p, stationItems, style);
+  if (connectorItems.length) facts.symbols.add('connector');
 
   // ---------- 駅名 ----------
   const operatorOf = new Map(p.operators.map((o) => [o.id, o]));
@@ -143,10 +152,41 @@ export function buildSchematicScene(p, opt) {
   });
   const labelItems = labels.items;
 
-  const items = [...lineItems, ...connectorItems, ...symbolItems, ...labelItems];
+  // ---------- 凡例とタイトル（地図の外側。当たり判定には入れない） ----------
+  // 地図の範囲は、線と駅記号に駅名の分の余白を足したもの（ズームで駅名が隠れても位置が動きにくいように）と、駅名の範囲を合わせる
+  const core = unionBoxes([...lineItems, ...connectorItems, ...symbolItems]);
+  const pad = style.fontSize * 3;
+  const mapBox = core && unionBoxes([
+    { bbox: { minX: core.minX - pad, minY: core.minY - pad, maxX: core.maxX + pad, maxY: core.maxY + pad } },
+    ...labelItems,
+  ]);
+  const legend = buildLegend(p, { measure: opt.measure, mapT: opt.mapT || mapTranslator(p.locale.mapLanguage), mapBox, facts, orderIndex });
+
+  const mapItems = [...lineItems, ...connectorItems, ...symbolItems, ...labelItems];
   const index = createSpatialIndex();
-  for (const it of items) index.insert(it);
-  return { items, index, sectionItems, stationItems, geom, bundles, labelInfo: labels.info, level: opt.level ?? 0 };
+  for (const it of mapItems) index.insert(it);
+  const items = legend.items.length ? [...mapItems, ...legend.items] : mapItems;
+  return { items, index, sectionItems, stationItems, geom, bundles, labelInfo: labels.info, level: opt.level ?? 0, mapBox, legendBounds: legend.bounds };
+}
+
+/**
+ * 凡例の「記号」の種類（scene-legend.js の SYMBOL_ORDER）
+ * @param {import('../core/schema.js').Station} st
+ * @param {number} lineCount
+ * @param {{ pts: Pt[] } | undefined} pass
+ * @param {import('../core/schema.js').MapStyle} style
+ */
+function symbolKind(st, lineCount, pass, style) {
+  if (st.rank === 'signal' || st.rank === 'freight' || st.rank === 'depot') return st.rank;
+  const onLine = !!(pass && pass.pts.length);
+  if (lineCount >= 2 && onLine) return 'interchange';
+  const tick = style.stationSymbol === 'tick' && onLine;
+  if (tick && (st.rank === 'normal' || st.rank === 'unstaffed')) return 'tick';
+  if (tick && st.rank === 'temporary') return 'temporaryTick';
+  // 白丸のスタイルでは主要駅も一般駅と同じ記号
+  if (st.rank === 'major') return tick ? 'major' : 'station';
+  if (st.rank === 'normal') return 'station';
+  return st.rank;
 }
 
 /** 駅の記号の中心 */
@@ -196,118 +236,6 @@ function buildConnectors(p, stationItems, style) {
     }
   }
   return out;
-}
-
-/**
- * 駅の記号（§5.2）。最初の要素が駅そのもの（選択の輪を合わせる）
- * @param {import('../core/schema.js').Station} st
- * @param {Pt} center
- * @param {{ pts: Pt[], dirs: Pt[] } | undefined} pass
- * @param {number} lineCount
- * @param {import('../core/schema.js').MapStyle} style
- * @param {string} stroke
- * @param {string} tickColor 目盛り（広域のスタイルの一般駅）の色＝通る路線の色
- * @returns {any[]}
- */
-function stationSymbol(st, center, pass, lineCount, style, stroke, tickColor) {
-  const target = { type: 'station', id: st.id };
-  const base = style.stationRadius;
-  const sw = 2; // 縁の太さ
-  const paper = paperOf(style);
-  const circle = (c, r, extra = {}) => ({
-    kind: 'circle', x: c.x, y: c.y, r, fill: paper, stroke, lineWidth: sw, target,
-    bbox: { minX: c.x - r - sw, minY: c.y - r - sw, maxX: c.x + r + sw, maxY: c.y + r + sw },
-    ...extra,
-  });
-  const pts = pass ? pass.pts : [];
-  const dir = pass && pass.dirs.length ? pass.dirs[0] : { x: 1, y: 0 };
-  const dlen = Math.hypot(dir.x, dir.y) || 1;
-  const along = { x: dir.x / dlen, y: dir.y / dlen };
-  const across = { x: -along.y, y: along.x };
-
-  switch (st.rank) {
-    case 'signal': {
-      // 線に直交する短い線
-      const L = base + 3;
-      const c = pts[0] || center;
-      return [{
-        kind: 'path', pts: [c.x - across.x * L, c.y - across.y * L, c.x + across.x * L, c.y + across.y * L],
-        radius: 0, width: 2.5, color: stroke, cap: 'butt', target,
-        bbox: { minX: c.x - L - 2, minY: c.y - L - 2, maxX: c.x + L + 2, maxY: c.y + L + 2 },
-      }];
-    }
-    case 'freight': {
-      const s = base * 1.8;
-      const c = pts[0] || center;
-      return [{
-        kind: 'rrect', x: c.x, y: c.y, w: s, h: s, r: 1, fill: paper, stroke, lineWidth: sw, target,
-        bbox: { minX: c.x - s / 2 - sw, minY: c.y - s / 2 - sw, maxX: c.x + s / 2 + sw, maxY: c.y + s / 2 + sw },
-      }];
-    }
-    case 'depot': {
-      // 本線の脇の小さな四角と短い引込線
-      const c = pts[0] || center;
-      const off = base * 2.6;
-      const q = { x: c.x + across.x * off, y: c.y + across.y * off };
-      const s = base * 1.4;
-      return [
-        {
-          kind: 'rrect', x: q.x, y: q.y, w: s, h: s, r: 1, fill: paper, stroke, lineWidth: sw, target,
-          bbox: { minX: Math.min(c.x, q.x) - s, minY: Math.min(c.y, q.y) - s, maxX: Math.max(c.x, q.x) + s, maxY: Math.max(c.y, q.y) + s },
-        },
-        {
-          kind: 'path', pts: [c.x, c.y, q.x, q.y], radius: 0, width: 1.5, color: stroke, cap: 'butt',
-          bbox: { minX: Math.min(c.x, q.x) - 1, minY: Math.min(c.y, q.y) - 1, maxX: Math.max(c.x, q.x) + 1, maxY: Math.max(c.y, q.y) + 1 },
-        },
-      ];
-    }
-    default:
-      break;
-  }
-
-  // 広域のスタイル：1つの路線だけが通る一般駅は、線の片側に出た短い目盛り
-  if (style.stationSymbol === 'tick' && lineCount <= 1 && pts.length && (st.rank === 'normal' || st.rank === 'unstaffed' || st.rank === 'temporary')) {
-    const c = pts[0];
-    const L = style.lineWidth / 2 + Math.max(4, style.lineWidth * 1.4);
-    const w = Math.max(1.5, style.lineWidth * 0.6);
-    const e = { x: c.x + across.x * L, y: c.y + across.y * L };
-    return [{
-      kind: 'path', pts: [c.x, c.y, e.x, e.y], radius: 0, width: w, color: tickColor, cap: 'butt', target,
-      dash: st.rank === 'temporary' ? [w, w * 0.6] : null,
-      bbox: { minX: Math.min(c.x, e.x) - w, minY: Math.min(c.y, e.y) - w, maxX: Math.max(c.x, e.x) + w, maxY: Math.max(c.y, e.y) + w },
-    }];
-  }
-
-  let r = base;
-  if (st.rank === 'terminal') r = base * 1.4;
-  else if (st.rank === 'unstaffed') r = base * 0.75;
-  const dash = st.rank === 'temporary' ? [2.5, 2] : null;
-
-  if (lineCount >= 2 && pts.length) {
-    // 複数の路線が通る駅：線が通る点をすべて覆う白いカプセル（一直線に並ばなければ角丸四角）
-    const rc = Math.max(r, style.lineWidth / 2 + sw + 1);
-    const ext = collinearExtent(pts);
-    if (ext) {
-      if (ext.a.x === ext.b.x && ext.a.y === ext.b.y) return [circle(ext.a, rc + 1, { dash })];
-      return [{
-        kind: 'capsule', x1: ext.a.x, y1: ext.a.y, x2: ext.b.x, y2: ext.b.y, r: rc,
-        fill: paper, stroke, lineWidth: sw, dash, target,
-        bbox: {
-          minX: Math.min(ext.a.x, ext.b.x) - rc - sw, minY: Math.min(ext.a.y, ext.b.y) - rc - sw,
-          maxX: Math.max(ext.a.x, ext.b.x) + rc + sw, maxY: Math.max(ext.a.y, ext.b.y) + rc + sw,
-        },
-      }];
-    }
-    const b = boundsOf(pts);
-    const w = b.maxX - b.minX + rc * 2;
-    const hgt = b.maxY - b.minY + rc * 2;
-    const c = { x: (b.minX + b.maxX) / 2, y: (b.minY + b.maxY) / 2 };
-    return [{
-      kind: 'rrect', x: c.x, y: c.y, w, h: hgt, r: rc, fill: paper, stroke, lineWidth: sw, dash, target,
-      bbox: { minX: c.x - w / 2 - sw, minY: c.y - hgt / 2 - sw, maxX: c.x + w / 2 + sw, maxY: c.y + hgt / 2 + sw },
-    }];
-  }
-  return [circle(pts[0] || center, r, { dash })];
 }
 
 /** @typedef {ReturnType<typeof buildSchematicScene>} SchematicScene */

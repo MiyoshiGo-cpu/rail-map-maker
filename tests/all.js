@@ -29,4 +29,5 @@ export const files = [
   'stopchart.test.js',
   'map-style.test.js',
   'color.test.js',
+  'legend.test.js',
 ];

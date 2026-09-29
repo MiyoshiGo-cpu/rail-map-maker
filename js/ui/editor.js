@@ -191,7 +191,8 @@ export function createEditor(opt) {
       const p = store.getState();
       // ズームで駅名を隠す段階が変わったときだけ、ラベルを置き直す
       const level = labelLevel(canvasView ? canvasView.getView().zoom : 1);
-      const key = [p.stations, p.lines, p.interchanges, p.operators, p.style, p.locale, p.settings, level];
+      // 凡例は種別・系統・名前・作者も使う
+      const key = [p.stations, p.lines, p.interchanges, p.operators, p.style, p.locale, p.settings, p.services, p.serviceTypes, p.name, p.author, level];
       if (!cache.scene || cache.key.some((v, i) => v !== key[i])) {
         cache = { key, scene: buildSchematicScene(p, { measure, level }) };
       }
@@ -208,8 +209,12 @@ export function createEditor(opt) {
       },
       getBounds: () => {
         const b = stationBounds(store.getState().stations);
-        // 駅名の分だけ余白をとる
-        return b && { minX: b.minX - GRID * 2, minY: b.minY - GRID * 2, maxX: b.maxX + GRID * 2, maxY: b.maxY + GRID * 2 };
+        // 駅名の分だけ余白をとる。凡例とタイトルがあればそれも入れる
+        const l = b && getScene().legendBounds;
+        return b && {
+          minX: Math.min(b.minX - GRID * 2, l ? l.minX : Infinity), minY: Math.min(b.minY - GRID * 2, l ? l.minY : Infinity),
+          maxX: Math.max(b.maxX + GRID * 2, l ? l.maxX : -Infinity), maxY: Math.max(b.maxY + GRID * 2, l ? l.maxY : -Infinity),
+        };
       },
       // スマホではボトムシートに隠れる部分を除いて全体を表示する
       getInsets: () => {

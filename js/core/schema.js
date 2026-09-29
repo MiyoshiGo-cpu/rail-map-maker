@@ -25,6 +25,8 @@ export const FONT_FAMILIES = /** @type {const} */ (['gothic', 'mincho', 'maru'])
 export const COLOR_MODES = /** @type {const} */ (['color', 'mono', 'bright']);
 export const STATION_SYMBOLS = /** @type {const} */ (['circle', 'tick']);
 export const STATION_STROKES = /** @type {const} */ (['black', 'line']);
+/** 凡例とタイトルを置く角（上の角は地図の上、下の角は地図の下） */
+export const LEGEND_CORNERS = /** @type {const} */ (['tl', 'tr', 'bl', 'br']);
 export const STOP_RULES = /** @type {const} */ (['all', 'majorAndAbove', 'terminalOnly', 'manual']);
 export const SEATINGS = /** @type {const} */ (['free', 'reserved', 'mixed']);
 
@@ -336,6 +338,28 @@ export const DEFAULT_WALK_MINUTES = 5;
  * @property {string} paper 駅の地と、文字の縁取りの色
  * @property {'color'|'mono'|'bright'} colorMode 路線の色づかい（mono は灰色の濃淡と破線で区別、bright は明るくする）
  * @property {'circle'|'tick'} stationSymbol 一般駅の記号（tick は線の上の短い目盛り）
+ * @property {LegendSettings} legend 凡例（§5.7）
+ * @property {TitleSettings} title タイトル・作者・日付（§5.7）
+ */
+
+/**
+ * 凡例。地図の外側の角に置く
+ * @typedef {object} LegendSettings
+ * @property {boolean} show
+ * @property {'tl'|'tr'|'bl'|'br'} corner
+ * @property {boolean} lines 事業者ごとの路線一覧
+ * @property {boolean} types 種別（系統で使っているもの）
+ * @property {boolean} symbols 記号の説明（駅の記号と線の状態）
+ */
+
+/**
+ * タイトル。地図の外側の角に置く
+ * @typedef {object} TitleSettings
+ * @property {boolean} show
+ * @property {'tl'|'tr'|'bl'|'br'} corner
+ * @property {string} text 空ならプロジェクト名
+ * @property {boolean} showAuthor 作者（Project.author）を添える
+ * @property {string} date 日付（自由に書く。空なら出さない）
  */
 
 /**

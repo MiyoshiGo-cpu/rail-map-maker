@@ -30,6 +30,8 @@ export function defaultStyle() {
     paper: '#FFFFFF',
     colorMode: 'color',
     stationSymbol: 'circle',
+    legend: { show: false, corner: 'br', lines: true, types: true, symbols: true },
+    title: { show: false, corner: 'tl', text: '', showAuthor: true, date: '' },
   };
 }
 
@@ -266,6 +268,21 @@ const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const arr = (v) => (Array.isArray(v) ? v : []);
 
 /**
+ * 見た目の設定の補完（凡例・タイトルは中の項目まで補う）
+ * @param {import('./schema.js').MapStyle} base
+ * @param {any} s
+ */
+function normalizeStyle(base, s) {
+  const src = isObj(s) ? s : {};
+  return {
+    ...base,
+    ...src,
+    legend: { ...base.legend, ...(isObj(src.legend) ? src.legend : {}) },
+    title: { ...base.title, ...(isObj(src.title) ? src.title : {}) },
+  };
+}
+
+/**
  * 足りない項目を既定値で補う（同じデータに何度かけても結果は同じ）。
  * マイグレーションのあとに呼ぶ。
  * @param {any} p
@@ -279,7 +296,7 @@ export function normalizeProject(p) {
     ...p,
     locale: { ...base.locale, ...(isObj(p.locale) ? p.locale : {}) },
     world: isObj(p.world) && p.world.mode ? p.world : { mode: 'none' },
-    style: { ...base.style, ...(isObj(p.style) ? p.style : {}) },
+    style: normalizeStyle(base.style, p.style),
     settings: {
       ...base.settings,
       ...(isObj(p.settings) ? p.settings : {}),

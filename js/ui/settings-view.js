@@ -1,10 +1,11 @@
-// 設定（§4.3。「スタイル」「表示」「英字の規則」「バックアップ」。UIの言語・地図の言語はフェーズ8）
+// 設定（§4.3。「スタイル」「凡例とタイトル」「表示」「英字の規則」「バックアップ」。UIの言語・地図の言語はフェーズ8）
 import { h } from './dom.js';
 import { t, formatDate } from '../i18n/i18n.js';
 import { getRegion } from '../core/regions/index.js';
 import { field, selectInput, checkInput, group } from './form.js';
 import { openSheet } from './dialog.js';
 import { createStyleSettings } from './style-settings.js';
+import { createLegendSettings } from './legend-settings.js';
 
 /**
  * @param {{ store: any, onExport: () => void }} ctx
@@ -17,6 +18,9 @@ export function openSettings(ctx) {
 
   // スタイル（プリセットと詳細設定）。プリセットで英字・駅番号の表示も変わるので、表示の欄も合わせ直す
   const styleSettings = createStyleSettings({ store, onChange: () => refreshToggles() });
+
+  // 凡例とタイトル（§5.7）
+  const legendSettings = createLegendSettings({ store });
 
   // 表示
   const toggles = [
@@ -67,6 +71,6 @@ export function openSettings(ctx) {
 
   openSheet({
     title: t('settings.title'),
-    body: [styleSettings.el, group(t('settings.display'), toggles), romaji, backup],
+    body: [styleSettings.el, legendSettings.el, group(t('settings.display'), toggles), romaji, backup],
   });
 }
