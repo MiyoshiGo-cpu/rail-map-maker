@@ -31,60 +31,28 @@ if (vv) {
 }
 
 // ホーム画面から起動したときは、アドレスバーが無いので実際の高さを --app-h に入れて使う（css の #app など）。
-// iPhone では 100dvh も clientHeight も時計の表示の分だけ短く伝えられ、下に隙間ができるため、
-// 画面の幅いっぱいに開いていて差が小さいときは、画面そのものの高さを使う
+// iPhone では、画面の高さから時計の表示の分を引いた高さまでしか描かれず、その下（ホームバーのあたり）には
+// 何も表示されない。そのときはアプリをその高さに収め、下のセーフエリアの余白を取らない（css の .ios-short-viewport）
 const iosStandalone = /** @type {any} */ (navigator).standalone === true;
 const standalone = matchMedia('(display-mode: standalone)').matches || iosStandalone;
 if (standalone) {
   const setAppHeight = () => {
-    let h = document.documentElement.clientHeight;
+    const h = document.documentElement.clientHeight;
+    let short = false;
     if (iosStandalone) {
       const landscape = innerWidth > innerHeight;
-      const long = Math.max(screen.width, screen.height);
-      const short = Math.min(screen.width, screen.height);
-      const sw = landscape ? long : short;
-      const sh = landscape ? short : long;
-      if (Math.abs(innerWidth - sw) <= 1 && sh > h && sh - h <= 100) h = sh;
+      const longSide = Math.max(screen.width, screen.height);
+      const shortSide = Math.min(screen.width, screen.height);
+      const sw = landscape ? longSide : shortSide;
+      const sh = landscape ? shortSide : longSide;
+      short = Math.abs(innerWidth - sw) <= 1 && sh - h > 1 && sh - h <= 100;
     }
     document.documentElement.style.setProperty('--app-h', `${h}px`);
+    document.documentElement.classList.toggle('ios-short-viewport', short);
   };
-  // アプリは画面に固定する（css の .is-standalone #app）。ページが画面より高いとスクロールできる扱いになり、
-  // iPhone が上端に時計の表示の分の余白をもう一度足してしまうため
-  document.documentElement.classList.add('is-standalone');
   setAppHeight();
   addEventListener('resize', setAppHeight);
   addEventListener('orientationchange', () => setTimeout(setAppHeight, 300));
-}
-
-// 一時的：ホーム画面から起動した iPhone の高さの確認用（確認が済んだら消す）
-if (iosStandalone) {
-  const box = document.createElement('div');
-  box.style.cssText = 'position:fixed;left:8px;top:45%;z-index:9999;background:rgba(0,0,0,.72);color:#fff;'
-    + 'font:12px/1.4 ui-monospace,monospace;padding:6px 8px;border-radius:6px;pointer-events:none;white-space:pre';
-  const probe = document.createElement('div');
-  probe.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:env(safe-area-inset-top);visibility:hidden';
-  document.body.append(box, probe);
-  const update = () => {
-    const r = app.getBoundingClientRect();
-    box.textContent = [
-      `screen ${screen.width}x${screen.height}`,
-      `inner ${innerWidth}x${innerHeight}`,
-      `client ${document.documentElement.clientHeight}`,
-      `vv ${vv ? `${Math.round(vv.height)} @${Math.round(vv.offsetTop)}` : '-'}`,
-      `safeT ${probe.offsetHeight}`,
-      `appH ${getComputedStyle(document.documentElement).getPropertyValue('--app-h')}`,
-      `app ${Math.round(r.top)}..${Math.round(r.bottom)}`,
-      `head ${(() => {
-        const hd = document.querySelector('.ed-header, .plist-header');
-        if (!hd) return '-';
-        const b = hd.getBoundingClientRect();
-        return `${Math.round(b.top)}..${Math.round(b.bottom)}`;
-      })()}`,
-      `scroll ${scrollY}/${document.documentElement.scrollHeight}`,
-    ].join('\n');
-  };
-  update();
-  setInterval(update, 1000);
 }
 
 /** @type {{ dispose: () => any } | null} */

@@ -110,12 +110,8 @@ button, input, select, textarea {
   height: var(--app-h);
   width: 100%;
 }
-/* ホーム画面から起動したときは画面に固定する（ページがスクロールできる扱いにならないように。main.js） */
-.is-standalone #app {
-  position: fixed;
-  top: 0;
-  left: 0;
-}
+/* ホーム画面から起動した iPhone で、表示がホームバーより上で終わってしまうときは下の余白を取らない（main.js） */
+html.ios-short-viewport { --safe-b: 0px; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
