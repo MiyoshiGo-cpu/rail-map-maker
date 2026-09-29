@@ -69,9 +69,14 @@ function resolveStation(tx, ctx, a) {
 
 /** @type {Record<string, (tx: Tx, a: any, ctx: Ctx) => any>} */
 export const lineReducers = {
-  /** { fields?, stationIds? } → 新しい ID */
-  'line/add'(tx, { fields, stationIds }, ctx) {
-    return addLineTo(tx, ctx, fields, stationIds);
+  /**
+   * { fields?, stationIds?, newStation? } → 新しい ID。
+   * newStation を渡すと、その位置に駅を作って最初の駅にする（1手で取り消せるように）
+   */
+  'line/add'(tx, { fields, stationIds = [], newStation }, ctx) {
+    const ids = [...stationIds];
+    if (newStation) ids.push(addStationTo(tx, ctx, newStation, newStation.fields));
+    return addLineTo(tx, ctx, fields, ids);
   },
 
   /**

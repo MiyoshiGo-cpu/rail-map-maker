@@ -12,4 +12,5 @@ export const files = [
   'validate.test.js',
   'autosave.test.js',
   'viewport.test.js',
+  'octilinear.test.js',
 ];

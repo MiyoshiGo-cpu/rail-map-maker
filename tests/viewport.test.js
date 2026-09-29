@@ -56,3 +56,13 @@ test('格子へのスナップと駅の範囲', () => {
   assert.deepEqual(b, { minX: -3 * GRID, minY: 2 * GRID, maxX: GRID, maxY: 5 * GRID });
   assert.equal(stationBounds([]), null);
 });
+
+test('全体表示：隠れている部分（ボトムシート）を除いた所に収める', () => {
+  const b = { minX: 0, minY: 0, maxX: 100, maxY: 100 };
+  const insets = { top: 0, right: 0, bottom: 150, left: 0 };
+  const v = fitBounds(b, size, { padding: 10, insets });
+  const top = worldToScreen(v, size, 50, 0);
+  const bottom = worldToScreen(v, size, 50, 100);
+  assert.ok(top.y >= 9.99, `上端 ${top.y}`);
+  assert.ok(bottom.y <= 300 - 150 - 9.99, `下端 ${bottom.y}`);
+});

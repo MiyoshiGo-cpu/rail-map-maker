@@ -65,22 +65,26 @@ export function panBy(v, dx, dy) {
 }
 
 /**
- * 世界座標の範囲が画面に収まる表示
+ * 世界座標の範囲が画面に収まる表示。insets は画面の端で隠れている部分（スマホのボトムシートなど）
  * @param {{ minX: number, minY: number, maxX: number, maxY: number } | null} b
  * @param {Size} size
- * @param {{ padding?: number, maxZoom?: number }} [opt]
+ * @param {{ padding?: number, maxZoom?: number, insets?: { top: number, right: number, bottom: number, left: number } }} [opt]
  * @returns {ViewState}
  */
 export function fitBounds(b, size, opt = {}) {
   const padding = opt.padding ?? 48;
   const maxZoom = opt.maxZoom ?? 2;
+  const ins = opt.insets || { top: 0, right: 0, bottom: 0, left: 0 };
   if (!b) return { cx: 0, cy: 0, zoom: 1 };
   const w = Math.max(b.maxX - b.minX, 1);
   const h = Math.max(b.maxY - b.minY, 1);
-  const availW = Math.max(size.width - padding * 2, 40);
-  const availH = Math.max(size.height - padding * 2, 40);
+  const availW = Math.max(size.width - ins.left - ins.right - padding * 2, 40);
+  const availH = Math.max(size.height - ins.top - ins.bottom - padding * 2, 40);
   const zoom = clampZoom(Math.min(availW / w, availH / h, maxZoom));
-  return { cx: (b.minX + b.maxX) / 2, cy: (b.minY + b.maxY) / 2, zoom };
+  // 見えている部分の中心に範囲の中心が来るようにする
+  const offX = (ins.left - ins.right) / 2 / zoom;
+  const offY = (ins.top - ins.bottom) / 2 / zoom;
+  return { cx: (b.minX + b.maxX) / 2 - offX, cy: (b.minY + b.maxY) / 2 - offY, zoom };
 }
 
 /**

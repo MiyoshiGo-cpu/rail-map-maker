@@ -1,0 +1,114 @@
+// 操作の目印：選択の強調、路線を引いているときの端と予告線、指している格子点
+import { GRID } from '../core/viewport.js';
+import { connect, isOctilinear } from '../core/octilinear.js';
+import { tracePath } from '../render/backend-canvas.js';
+
+/**
+ * 表示リストの下に描く目印（選んだ路線・区間の縁）
+ * @param {CanvasRenderingContext2D} ctx 世界座標の変換を設定済み
+ * @param {{
+ *   project: import('../core/schema.js').Project,
+ *   scene: import('../render/scene-schematic.js').SchematicScene,
+ *   es: import('./editor-state.js').EditorState,
+ *   zoom: number,
+ *   accent: string,
+ * }} o
+ */
+export function drawUnderlay(ctx, o) {
+  const { scene, es, zoom, accent } = o;
+  const px = (n) => n / zoom;
+  const sel = es.selection;
+  // 路線・区間の強調（線の外側にアクセント色の縁。駅や線の下に描く）
+  const hl = (item) => {
+    ctx.beginPath();
+    tracePath(ctx, item.pts, item.radius, item.radii);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = accent;
+    ctx.globalAlpha = 0.35;
+    ctx.lineWidth = item.width + px(10);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  };
+  if (sel.type === 'line' || sel.type === 'section') {
+    for (const [k, item] of scene.sectionItems) {
+      const [lineId, idx] = k.split(':');
+      if (lineId !== sel.lineId) continue;
+      if (sel.type === 'section' && Number(idx) !== sel.index) continue;
+      hl(item);
+    }
+  }
+}
+
+/**
+ * 表示リストの上に描く目印
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {Parameters<typeof drawUnderlay>[1]} o
+ */
+export function drawOverlay(ctx, o) {
+  const { project: p, scene, es, zoom, accent } = o;
+  const px = (n) => n / zoom; // 画面の px を世界座標にする
+  const sel = es.selection;
+
+  // 駅の選択（アクセント色の輪）
+  const ring = (id, color) => {
+    const st = scene.stationItems.get(id);
+    if (!st) return;
+    ctx.beginPath();
+    if (st.kind === 'capsule') {
+      const r = st.r + px(4);
+      const len = Math.hypot(st.x2 - st.x1, st.y2 - st.y1);
+      const ang = Math.atan2(st.y2 - st.y1, st.x2 - st.x1);
+      ctx.save();
+      ctx.translate(st.x1, st.y1);
+      ctx.rotate(ang);
+      ctx.roundRect(-r, -r, len + r * 2, r * 2, r);
+      ctx.restore();
+    } else {
+      const r = (st.r || Math.max(st.w || 0, st.h || 0) / 2) + px(4);
+      ctx.arc(st.x, st.y, r, 0, Math.PI * 2);
+    }
+    ctx.strokeStyle = color;
+    ctx.lineWidth = px(3);
+    ctx.stroke();
+  };
+  if (sel.type === 'stations') for (const id of sel.ids) ring(id, accent);
+
+  // 路線を引いている途中：端の駅と、指している点までの予告線
+  if (es.tool === 'line' && es.drawing) {
+    const line = p.lines.find((l) => l.id === es.drawing.lineId);
+    if (line && line.stops.length) {
+      const endId = es.drawing.atStart ? line.stops[0].stationId : line.stops[line.stops.length - 1].stationId;
+      const st = p.stations.find((s) => s.id === endId);
+      ring(endId, line.color);
+      if (st && st.schematic && es.hover && (es.hover.x !== st.schematic.x || es.hover.y !== st.schematic.y)) {
+        const a = st.schematic;
+        const b = es.hover;
+        const pts = isOctilinear(b.x - a.x, b.y - a.y) ? [a, b] : connect(a, b, 'diagonalFirst');
+        ctx.beginPath();
+        tracePath(ctx, pts.flatMap((q) => [q.x * GRID, q.y * GRID]), p.style.cornerRadius);
+        ctx.setLineDash([px(6), px(5)]);
+        ctx.strokeStyle = line.color;
+        ctx.globalAlpha = 0.7;
+        ctx.lineWidth = p.style.lineWidth;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
+      }
+    }
+  }
+
+  // 駅を置く・路線を引くツールで、指している格子点
+  if ((es.tool === 'station' || es.tool === 'line') && es.hover) {
+    ctx.beginPath();
+    ctx.arc(es.hover.x * GRID, es.hover.y * GRID, p.style.stationRadius, 0, Math.PI * 2);
+    ctx.strokeStyle = accent;
+    ctx.globalAlpha = 0.6;
+    ctx.lineWidth = px(2);
+    ctx.setLineDash([px(3), px(3)]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+  }
+}

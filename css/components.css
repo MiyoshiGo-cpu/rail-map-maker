@@ -437,3 +437,14 @@
   .save-status:not([data-state="error"]) { display: none; }
   .ed-project-btn { max-width: none; flex: 1 1 auto; }
 }
+
+.panel-note {
+  margin: 4px 0 12px;
+  color: var(--ink-sub);
+  font-size: var(--fs-14);
+}
+.field-hint {
+  color: var(--ink-sub);
+  font-size: var(--fs-12);
+}
+.color-field .input { flex: 1; min-width: 0; font-variant-numeric: tabular-nums; }

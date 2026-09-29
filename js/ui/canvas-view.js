@@ -25,6 +25,7 @@ import { zoomAt, panBy, fitBounds, screenToWorld } from '../core/viewport.js';
  *   initialView: ViewState,
  *   onViewChange: (v: ViewState) => void,
  *   getBounds: () => ({ minX: number, minY: number, maxX: number, maxY: number } | null),
+ *   getInsets?: () => { top: number, right: number, bottom: number, left: number },
  * }} opt
  */
 export function createCanvasView(opt) {
@@ -85,7 +86,8 @@ export function createCanvasView(opt) {
   }
 
   function fitAll() {
-    setView(fitBounds(opt.getBounds(), size, { padding: Math.min(64, size.width / 8) }));
+    const insets = opt.getInsets ? opt.getInsets() : undefined;
+    setView(fitBounds(opt.getBounds(), size, { padding: Math.min(48, size.width / 8), insets }));
   }
 
   const world = (p) => screenToWorld(view, size, p.x, p.y);
