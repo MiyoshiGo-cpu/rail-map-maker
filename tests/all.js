@@ -25,4 +25,5 @@ export const files = [
   'service-types.test.js',
   'services.test.js',
   'runtime.test.js',
+  'through-check.test.js',
 ];

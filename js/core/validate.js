@@ -4,6 +4,7 @@ import { SCHEMA_VERSION } from './schema.js';
 import { sectionCount } from './defaults.js';
 import { duplicateNumbers } from './numbering.js';
 import { allLineKm, extremeSection } from './distance.js';
+import { serviceChecks } from './validate-services.js';
 
 /** @typedef {import('./schema.js').Project} Project */
 /** @typedef {{ code: string, id?: string, detail?: string }} IntegrityProblem */
@@ -200,6 +201,9 @@ export function runChecks(p) {
       }
     }
   }
+
+  // 系統と種別（直通チェックなど）
+  out.push(...serviceChecks(p));
 
   // 情報：使われていない事業者
   for (const op of p.operators) {

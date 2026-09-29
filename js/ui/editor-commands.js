@@ -78,6 +78,8 @@ export function createEditorCommands(ctx) {
       es.set({ selection: { type: 'operator', id: target.id } });
     } else if (target.type === 'interchange') {
       es.set({ selection: { type: 'interchange', id: target.id } });
+    } else if (target.type === 'service' || target.type === 'serviceType') {
+      es.set({ selection: { type: target.type, id: target.id } });
     }
     // スマホでは一覧を閉じて、選んだものを見せる
     if (window.matchMedia(MOBILE).matches) es.set({ drawer: null });

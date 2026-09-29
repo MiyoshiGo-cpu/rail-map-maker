@@ -52,13 +52,18 @@ export function createCheckView(ctx) {
 }
 
 /**
- * 差し込む値を表示用にする（距離は { distance, unit } で受け取り、単位を付けて0.1単位にする）
+ * 差し込む値を表示用にする。距離は { distance, unit }（単位を付けて0.1単位）、
+ * 列挙値などの名前は { key, vars? }（カタログのキー）、軌間は { gauge }（mm。null は対象外）で受け取る
  * @param {Record<string, any>} params
  */
 function formatParams(params) {
   const out = {};
   for (const [k, v] of Object.entries(params)) {
-    out[k] = v && typeof v === 'object' && 'distance' in v ? formatDistance(v.distance, v.unit) : v;
+    if (!v || typeof v !== 'object') out[k] = v;
+    else if ('distance' in v) out[k] = formatDistance(v.distance, v.unit);
+    else if ('key' in v) out[k] = t(v.key, v.vars);
+    else if ('gauge' in v) out[k] = v.gauge === null ? t('gauge.none') : t('unit.mm', { value: v.gauge });
+    else out[k] = '';
   }
   return out;
 }

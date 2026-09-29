@@ -134,4 +134,11 @@ export default {
   'check.sectionShort': '「{name}」の{a}〜{b}の駅間が{km}しかありません。営業キロを確かめてください。',
   'check.sectionLong': '「{name}」の{a}〜{b}の駅間が{km}あります。営業キロを確かめてください。',
   'check.kmEstimated': '「{name}」は営業キロが入っていない駅間があり、概算で計算しています。',
+  'check.serviceBroken': '系統「{service}」の経路がつながっていません。系統のパネルの「経路を組み直す」で選び直してください。',
+  'check.loopDirMissing': '系統「{service}」が{line}を回る向きが決まっていません。「経路を組み直す」で選び直してください。',
+  'check.gaugeMismatch': '系統「{service}」は{station}で軌間が変わります（{a}→{b}）。軌間の違う路線には直通できません。',
+  'check.electrificationMismatch': '系統「{service}」は{station}で電化方式が変わります（{a}→{b}）。両方に対応した車両が必要です。',
+  'check.emuOnNonElectrified': '系統「{service}」の電車が、非電化の{line}を走ります。車両を気動車にするか、区間を電化してください。',
+  'check.serviceFewStops': '系統「{service}」の停車駅が2つ未満です。停車駅を選んでください。',
+  'check.unusedServiceType': '{operator}の種別「{name}」はどの系統にも使われていません。',
 };
