@@ -153,3 +153,58 @@ export async function requestPersist() {
   }
   return false;
 }
+
+// ---------- 復元ポイント（§2.4：1プロジェクトにつき最大10個を循環） ----------
+
+export const MAX_RESTORE_POINTS = 10;
+
+/**
+ * @typedef {object} RestorePoint
+ * @property {string} id
+ * @property {string} projectId
+ * @property {string} createdAt
+ * @property {string} reason 作った理由（画面の文言のキー）
+ * @property {Project} data
+ */
+
+/**
+ * 復元ポイントを作る。11個目からは、いちばん古いものを消す
+ * @param {Project} project
+ * @param {string} reason
+ * @returns {Promise<RestorePoint>}
+ */
+export async function addRestorePoint(project, reason) {
+  const db = await openDb();
+  const now = new Date().toISOString();
+  /** @type {RestorePoint} */
+  const rp = {
+    id: `rp_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+    projectId: project.id,
+    createdAt: now,
+    reason,
+    data: project,
+  };
+  const tx = db.transaction('restorePoints', 'readwrite');
+  const store = tx.objectStore('restorePoints');
+  store.put(rp);
+  // 数えて、多すぎれば古い順に消す（await を挟まずにコールバックの中で行う）
+  const req = store.index('projectId').getAll(project.id);
+  req.onsuccess = () => {
+    const list = req.result.sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1));
+    for (let i = 0; i < list.length - MAX_RESTORE_POINTS; i++) store.delete(list[i].id);
+  };
+  await done(tx);
+  return rp;
+}
+
+/**
+ * 新しい順（中身は含む）
+ * @param {string} projectId
+ * @returns {Promise<RestorePoint[]>}
+ */
+export async function listRestorePoints(projectId) {
+  const db = await openDb();
+  const tx = db.transaction('restorePoints', 'readonly');
+  const list = await request(tx.objectStore('restorePoints').index('projectId').getAll(projectId));
+  return list.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+}

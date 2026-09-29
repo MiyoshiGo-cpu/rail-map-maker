@@ -10,6 +10,9 @@ import { newId } from '../core/ids.js';
 import { ID_PREFIX } from '../core/schema.js';
 import { getRegion } from '../core/regions/index.js';
 import { listProjectMeta, getProject, putProject, deleteProject } from '../storage/idb.js';
+import { exportFilename, serializeProject, saveTextFile, parseProjectText, pickTextFile } from '../storage/file-io.js';
+import { InvalidFileError, NewerVersionError } from '../core/migrate.js';
+import { openRestorePoints } from './restore-view.js';
 
 /**
  * @param {{ onOpen: (id: string) => void }} opt
@@ -20,9 +23,12 @@ export function createProjectList(opt) {
   // 上部の「新しいプロジェクト」。プロジェクトが無いあいだは、画面中央の案内のボタンだけにするので隠す
   const headerNewBtn = h('button', { class: 'btn btn-sign', type: 'button', hidden: true, on: { click: () => newProject() } },
     icon('plus'), h('span', {}, t('plist.new')));
+  const importBtn = h('button', { class: 'btn btn-sign', type: 'button', on: { click: () => importFile() } },
+    icon('import'), h('span', {}, t('plist.import')));
   const el = h('div', { class: 'plist' },
     h('header', { class: 'plist-header on-sign' },
       h('h1', { class: 'plist-title' }, t('app.title')),
+      importBtn,
       headerNewBtn,
     ),
     h('main', { class: 'plist-body' },
@@ -44,7 +50,9 @@ export function createProjectList(opt) {
       replaceChildren(listEl,
         h('div', { class: 'plist-empty' },
           h('p', {}, t('plist.empty')),
-          h('button', { class: 'btn btn-primary', type: 'button', on: { click: () => newProject() } }, t('plist.new')),
+          h('div', { class: 'panel-actions' },
+            h('button', { class: 'btn btn-primary', type: 'button', on: { click: () => newProject() } }, t('plist.new')),
+          ),
         ),
       );
       return;
@@ -64,6 +72,8 @@ export function createProjectList(opt) {
           openMenu(more, [
             { label: t('common.rename'), onSelect: () => rename(m) },
             { label: t('common.duplicate'), onSelect: () => duplicate(m) },
+            { label: t('editor.export'), onSelect: () => exportProject(m) },
+            { label: t('restore.title'), onSelect: () => openRestorePoints(m.id, refresh) },
             { separator: true },
             { label: t('common.delete'), danger: true, onSelect: () => remove(m) },
           ], { label: t('plist.actions', { name: m.name }) });
@@ -150,6 +160,37 @@ export function createProjectList(opt) {
     };
     await putProject(copy);
     toast(t('plist.duplicated'));
+    refresh();
+  }
+
+  async function exportProject(m) {
+    const p = await getProject(m.id);
+    if (!p) return;
+    const result = await saveTextFile(exportFilename(p.name), serializeProject(p));
+    if (result === 'cancelled') return;
+    await putProject({ ...p, meta: { ...p.meta, lastBackupAt: new Date().toISOString() } });
+    toast(t('editor.exported'));
+    refresh();
+  }
+
+  /** ファイルから読み込む。いつも新しいプロジェクトとして追加し、既存のものは上書きしない */
+  async function importFile() {
+    const file = await pickTextFile();
+    if (!file) return;
+    let p;
+    try {
+      p = parseProjectText(file.text);
+    } catch (e) {
+      console.error(e);
+      let msg = t('import.error.broken');
+      if (e instanceof NewerVersionError) msg = t('import.error.newer');
+      else if (e instanceof InvalidFileError) msg = t('import.error.' + e.code);
+      toast(msg, { kind: 'error' });
+      return;
+    }
+    if (await getProject(p.id)) p = { ...p, id: newId(ID_PREFIX.project) };
+    await putProject(p);
+    toast(t('plist.imported', { name: p.name }));
     refresh();
   }
 

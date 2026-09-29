@@ -113,3 +113,36 @@ export async function promptDialog(opt) {
   });
   return v === 'ok' ? input.value.trim() : null;
 }
+
+/**
+ * 中身を自由に置けるダイアログ（検索・設定・ヘルプなど）。閉じるボタン付き
+ * @param {{ title: string, body: Node | Node[], wide?: boolean, onClose?: () => void }} opt
+ * @returns {{ el: HTMLDialogElement, close: () => void }}
+ */
+export function openSheet(opt) {
+  const titleId = 'sheet-title-' + Math.random().toString(36).slice(2, 8);
+  const dlg = /** @type {HTMLDialogElement} */ (h('dialog', { class: ['dialog', 'sheet-dialog', opt.wide ? 'is-wide' : ''], 'aria-labelledby': titleId }));
+  let closed = false;
+  const close = () => {
+    if (closed) return;
+    closed = true;
+    if (dlg.open) dlg.close();
+    dlg.remove();
+    if (opt.onClose) opt.onClose();
+  };
+  dlg.append(
+    h('div', { class: 'sheet-dialog-head' },
+      h('h2', { class: 'dialog-title', id: titleId }, opt.title),
+      h('button', { class: 'btn btn-small', type: 'button', on: { click: close } }, t('common.close')),
+    ),
+    h('div', { class: 'dialog-body' }, opt.body),
+  );
+  dlg.addEventListener('cancel', (e) => {
+    e.preventDefault();
+    close();
+  });
+  dlg.addEventListener('close', close);
+  document.body.append(dlg);
+  dlg.showModal();
+  return { el: dlg, close };
+}

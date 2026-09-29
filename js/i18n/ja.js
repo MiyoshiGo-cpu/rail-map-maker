@@ -1,6 +1,10 @@
 // 日本語カタログ。キーは「画面.役割」の英語。値の {name} は差し込み。
-// 600行を超えそうなら ja-*.js に分けて、ここで結合する。
+// 600行を超えないよう、長めの文は ja-help.js に分けてここで結合する。
+import help from './ja-help.js';
+
 export default {
+  ...help,
+
   // アプリ全体
   'app.title': '架空路線図メーカー',
   'app.loading': '読み込んでいます…',
@@ -54,6 +58,8 @@ export default {
 
   // プロジェクト一覧
   'plist.new': '新しいプロジェクト',
+  'plist.import': 'ファイルから読み込む',
+  'plist.imported': '「{name}」を読み込みました',
   'plist.empty': 'プロジェクトがありません。「新しいプロジェクト」から作ってください。',
   'plist.counts': '駅 {stations}・路線 {lines}',
   'plist.updated': '更新 {date}',
@@ -76,6 +82,9 @@ export default {
   // エディタ
   'editor.backToList': 'プロジェクト一覧へ',
   'editor.projectMenu': 'プロジェクトのメニュー',
+  'editor.export': '書き出す',
+  'editor.exported': '書き出しました',
+  'editor.exportFailed': '書き出せませんでした。もう一度「書き出す」を押してください。',
   'editor.undo': '取り消す',
   'editor.redo': 'やり直す',
   'editor.notFound': 'プロジェクトが見つかりません。一覧から開き直してください。',
@@ -84,6 +93,7 @@ export default {
   'panel.label': 'プロパティ',
   'panel.resize': 'パネルの大きさを変える',
   'panel.project.title': 'プロジェクト',
+  'panel.project.settingsHint': '表示の切り替えや英字の規則は、右上の「⋯」→「設定」で変えられます。',
   'panel.basic': '基本',
   'panel.details': '詳しい設定',
   'hint.empty': '「駅」を選び、画面をタップして駅を置いてください',
@@ -97,6 +107,7 @@ export default {
   'tool.station.title': '駅を置く（S）',
   'tool.line': '路線',
   'tool.line.title': '路線を引く（L）',
+  'tool.check.title': 'チェックを開く・閉じる',
   'tool.data': 'データ',
   'tool.data.title': 'データ表を開く・閉じる',
   'tool.delete': '削除',
@@ -225,6 +236,35 @@ export default {
   'interchange.pickHint': '一緒に乗換グループにする駅をタップしてください（Esc で取り消し）',
   'interchange.pickMiss': '駅をタップしてください。',
   'interchange.pickOther': 'ほかの駅をタップしてください。',
+  'backup.export': 'バックアップを書き出す',
+  'backup.later': 'あとで',
+  'backup.remind': '最後のバックアップ（{date}）から7日以上たちました。データが消えたときのために、JSON で書き出してください。',
+  'backup.remindNever': 'まだ一度もバックアップしていません。データが消えたときのために、JSON で書き出してください。',
+  'restore.title': '復元ポイント',
+  'restore.hint': '大きな操作の前と、編集中は10分ごとに自動で作ります（最大10個）。',
+  'restore.none': '復元ポイントはまだありません。',
+  'restore.apply': 'この時点に戻す',
+  'restore.confirmTitle': 'この時点に戻しますか？',
+  'restore.confirmMessage': '{date} の状態に戻します。いまの状態は、戻す前に別の復元ポイントとして残します。',
+  'restore.done': '戻しました',
+  'restore.reason.auto': '自動（10分ごと）',
+  'restore.reason.bulkDelete': 'まとめて削除する前',
+  'restore.reason.deleteLine': '路線を削除する前',
+  'restore.reason.romaji': '英字を作り直す前',
+  'restore.reason.beforeRestore': '復元する前',
+  'search.title': '駅を検索',
+  'search.placeholder': '駅名・よみ・英字・駅番号',
+  'search.hint': '駅名・よみ・英字・駅番号のどれでも探せます。',
+  'search.none': '見つかりませんでした。',
+  'settings.title': '設定',
+  'settings.display': '表示',
+  'settings.showSubNames': '英字（副表記）を表示する',
+  'settings.showNumbering': '駅番号のバッジを表示する',
+  'settings.showAbolished': '廃止された区間を表示する',
+  'settings.showGrid': '格子を表示する',
+  'settings.backup': 'バックアップ',
+  'settings.lastBackup': '最後のバックアップ：{date}',
+  'settings.noBackup': 'まだ一度もバックアップしていません。',
   'data.title': 'データ表',
   'data.tab.operators': '事業者',
   'data.tab.lines': '路線',

@@ -177,3 +177,104 @@
   .data-head { padding: 8px 12px; }
   .data-filter { max-width: none; order: 3; flex-basis: 100%; }
 }
+
+/* 中身を自由に置けるダイアログ */
+.sheet-dialog { width: min(560px, calc(100vw - 24px)); }
+.sheet-dialog.is-wide { width: min(760px, calc(100vw - 24px)); }
+.sheet-dialog-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px 4px;
+}
+.sheet-dialog-head .dialog-title { flex: 1; margin: 0; }
+.sheet-dialog .dialog-body { padding-bottom: 20px; }
+
+/* ---------- チェック ---------- */
+
+.check-title { margin: 0; font-size: var(--fs-16); }
+.check-summary { color: var(--ink-sub); font-size: var(--fs-14); }
+.check-list { list-style: none; margin: 0; padding: 4px 12px 16px; }
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.check-level {
+  flex: none;
+  min-width: 3.5em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: var(--fs-12);
+  font-weight: 700;
+  text-align: center;
+}
+.check-item[data-level="error"] .check-level { background: var(--danger); color: #FFFFFF; }
+.check-item[data-level="warning"] .check-level { background: var(--caution); color: #1F2933; }
+.check-item[data-level="info"] .check-level { background: var(--surface); color: var(--ink-sub); border: 1px solid var(--rule); }
+.check-text { flex: 1; min-width: 0; }
+
+/* チェックの件数（ツールのバッジの右上） */
+.badge-btn { position: relative; overflow: visible; }
+.badge-count {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: var(--danger);
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 駅の検索 ---------- */
+
+.search-results { list-style: none; margin: 8px 0 0; padding: 0; max-height: 50dvh; overflow-y: auto; }
+.search-hit {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  min-height: 48px;
+  padding: 6px 8px;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.search-hit:hover, .search-hit:focus-visible { background: var(--surface); }
+.search-name { font-weight: 700; }
+.search-sub { color: var(--ink-sub); font-size: var(--fs-12); }
+
+/* ---------- 復元ポイント・ヘルプ ---------- */
+
+.restore-list { list-style: none; margin: 0; padding: 0; }
+.restore-list li { display: flex; align-items: center; gap: 8px; min-height: 52px; border-bottom: 1px solid var(--rule); }
+.restore-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.restore-date { font-weight: 700; font-variant-numeric: tabular-nums; }
+.restore-sub { color: var(--ink-sub); font-size: var(--fs-12); }
+.help-p { margin: 0 0 8px; }
+.help-keys { display: grid; grid-template-columns: max-content 1fr; gap: 6px 12px; margin: 0; }
+.help-keys dt { font-variant-numeric: tabular-nums; }
+.help-keys dd { margin: 0; }
+kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--rule);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--surface);
+  font-family: inherit;
+  font-size: var(--fs-12);
+}
+.ed-banner .banner { border-bottom: 1px solid rgba(0, 0, 0, .1); }

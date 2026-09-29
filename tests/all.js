@@ -19,4 +19,5 @@ export const files = [
   'labels.test.js',
   'numbering.test.js',
   'search.test.js',
+  'file-io.test.js',
 ];

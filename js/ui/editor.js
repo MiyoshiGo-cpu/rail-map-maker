@@ -1,4 +1,4 @@
-// エディタ全体の組み立て：ストア・自動保存・ヘッダー・ツール・キャンバス・パネル
+// エディタ全体の組み立て：ストア・自動保存・ヘッダー・ツール・キャンバス・パネル・データ表・チェック
 import { h, replaceChildren } from './dom.js';
 import { icon } from './icons.js';
 import { t } from '../i18n/i18n.js';
@@ -18,17 +18,20 @@ import { buildSchematicScene } from '../render/scene-schematic.js';
 import { labelLevel } from '../render/labels.js';
 import { LABEL_POSITIONS } from '../core/schema.js';
 import { drawItems, createMeasure } from '../render/backend-canvas.js';
-import { createEditorState, NO_SELECTION } from './editor-state.js';
+import { createEditorState, NO_SELECTION, accentFor, repairFor } from './editor-state.js';
 import { drawOverlay, drawUnderlay } from './overlay.js';
 import { createPanelHost } from './panel-host.js';
 import { createSelectTool, moveStationsSafely } from './tools/select-tool.js';
 import { createDeleteTool } from './tools/delete-tool.js';
 import { createDataView } from './data-view.js';
+import { createCheckView } from './check-view.js';
+import { createEditorHeader, createBackupBanner } from './editor-header.js';
+import { createEditorCommands } from './editor-commands.js';
+import { needsBackupReminder, isSnoozed, snooze } from '../storage/backup.js';
 import { attachShortcuts } from './keyboard.js';
 import { createPlaceStationTool } from './tools/place-station-tool.js';
 import { createDrawLineTool } from './tools/draw-line-tool.js';
 
-const DEFAULT_ACCENT = '#0079C2';
 /** 当たり判定の半径（画面の px。§4.4） */
 const HIT_RADIUS = { touch: 22, mouse: 8, pen: 12 };
 
@@ -97,44 +100,37 @@ export function createEditor(opt) {
       rangeMode: false,
       marquee: null,
       pending: null,
-      dataOpen: false,
+      drawer: null,
     });
 
-    // ---------- 保存 ----------
-    const saveStatus = h('span', { class: 'save-status', dataset: { state: 'saved' } }, t('save.saved'));
+    // ---------- ヘッダーと保存 ----------
+    /** @type {ReturnType<typeof createEditorCommands>} */
+    let commands = null;
+    const header = createEditorHeader({
+      onExit: () => opt.onExit(),
+      onUndo: () => store.undo(),
+      onRedo: () => store.redo(),
+      onExport: () => commands.exportJson(),
+      menuItems: () => commands.menuItems(),
+    });
     autosave = createAutosave(store, {
       save: (p) => putProject(p),
       onStatus: (s, detail) => {
-        saveStatus.dataset.state = s;
-        saveStatus.textContent = t('save.' + s);
         const msg = detail ? (detail.reason === 'invalid' ? t('save.invalidDetail', { detail: detail.message }) : t('save.failed')) : '';
-        saveStatus.title = msg;
+        header.setSaveStatus(s, msg);
         if (s === 'error' && msg) toast(msg, { kind: 'error' });
       },
     });
-
-    // ---------- ヘッダー ----------
-    const undoBtn = h('button', { class: 'icon-btn', type: 'button', 'aria-label': t('editor.undo'), title: t('editor.undo'), on: { click: () => store.undo() } }, icon('undo'));
-    const redoBtn = h('button', { class: 'icon-btn', type: 'button', 'aria-label': t('editor.redo'), title: t('editor.redo'), on: { click: () => store.redo() } }, icon('redo'));
-    const nameEl = h('span', { class: 'name' });
-    const projectBtn = h('button', {
-      class: 'ed-project-btn',
-      type: 'button',
-      'aria-label': t('editor.projectMenu'),
-      on: {
-        click: () => openMenu(projectBtn, [
-          { label: t('editor.backToList'), onSelect: () => opt.onExit() },
-        ], { label: t('editor.projectMenu') }),
+    // バックアップの案内（最後のバックアップから7日以上）
+    let bannerHidden = isSnoozed(store.getState().id);
+    const banner = createBackupBanner({
+      onExport: () => commands.exportJson(),
+      onSnooze: () => {
+        snooze(store.getState().id);
+        bannerHidden = true;
+        render();
       },
-    }, nameEl, icon('chevronDown'));
-    const header = h('header', { class: 'ed-header on-sign' },
-      h('button', { class: 'icon-btn', type: 'button', 'aria-label': t('editor.backToList'), title: t('editor.backToList'), on: { click: () => opt.onExit() } }, icon('back')),
-      projectBtn,
-      h('nav', { class: 'view-tabs is-single', role: 'tablist', 'aria-label': t('views.label') },
-        h('button', { class: 'badge-btn', type: 'button', role: 'tab', 'aria-selected': 'true' }, h('span', { class: 'badge-label' }, t('views.schematic'))),
-      ),
-      h('div', { class: 'ed-header-actions' }, undoBtn, redoBtn, saveStatus),
-    );
+    });
 
     // ---------- ツールのボタン ----------
     const toolDefs = [
@@ -145,14 +141,23 @@ export function createEditor(opt) {
       { id: 'delete', icon: 'delete', label: t('tool.delete'), title: t('tool.delete.title'), pcOnly: true },
     ];
     const toolButtons = new Map();
-    // データ表を開く・閉じる（ツールではないので押した状態は別に持つ）
+    // データ表とチェックを開く・閉じる（ツールではないので押した状態は別に持つ）
+    const toggleDrawer = (name) => es.set({ drawer: es.get().drawer === name ? null : name });
     const dataBtn = h('button', {
       class: 'badge-btn data-toggle',
       type: 'button',
       title: t('tool.data.title'),
       'aria-pressed': 'false',
-      on: { click: () => es.set({ dataOpen: !es.get().dataOpen }) },
+      on: { click: () => toggleDrawer('data') },
     }, icon('data'), h('span', { class: 'badge-label' }, t('tool.data')));
+    const checkCount = h('span', { class: 'badge-count', hidden: true });
+    const checkBtn = h('button', {
+      class: 'badge-btn check-toggle',
+      type: 'button',
+      title: t('tool.check.title'),
+      'aria-pressed': 'false',
+      on: { click: () => toggleDrawer('check') },
+    }, icon('check'), h('span', { class: 'badge-label' }, t('check.title')), checkCount);
     const toolsNav = h('nav', { class: 'ed-tools', 'aria-label': t('tool.label') },
       toolDefs.map((d) => {
         const b = h('button', {
@@ -166,6 +171,7 @@ export function createEditor(opt) {
         return b;
       }),
       dataBtn,
+      checkBtn,
     );
 
     // ---------- キャンバスと表示リスト ----------
@@ -204,7 +210,7 @@ export function createEditor(opt) {
       },
     });
     cleanups.push(() => canvasView.dispose());
-    let accent = DEFAULT_ACCENT;
+    let accent = accentFor(store.getState(), es.get());
     canvasView.addLayer((ctx, view, size) => {
       const scene = getScene();
       const o = { project: store.getState(), scene, es: es.get(), zoom: view.zoom, accent };
@@ -255,6 +261,8 @@ export function createEditor(opt) {
       moveStations: (ids, dx, dy) => moveStationsSafely(store, ids, dx, dy, toast),
       deleteStations(ids) {
         if (!ids.length) return;
+        // まとめて消す前に復元ポイントを作る（§2.4）
+        if (ids.length >= 2) commands.checkpoint('bulkDelete');
         store.dispatch({ type: 'station/delete', ids });
         es.set({ selection: NO_SELECTION });
         toast(ids.length === 1 ? t('station.deleted') : t('station.deletedMany', { count: ids.length }));
@@ -262,6 +270,7 @@ export function createEditor(opt) {
       deleteLine(lineId) {
         const line = store.getState().lines.find((l) => l.id === lineId);
         if (!line) return;
+        commands.checkpoint('deleteLine');
         store.dispatch({ type: 'line/delete', lineId });
         es.set({ selection: NO_SELECTION, drawing: null });
         toast(t('line.deleted', { name: line.displayName || line.name }));
@@ -403,23 +412,29 @@ export function createEditor(opt) {
     const dataView = createDataView({
       store,
       es,
-      close: () => es.set({ dataOpen: false }),
+      close: () => es.set({ drawer: null }),
       activate(sel, opt = {}) {
         es.set({ selection: sel });
         if (opt.reveal) canvasView.reveal(opt.reveal.x * GRID, opt.reveal.y * GRID);
         // スマホでは表を閉じて、詳細のシートを見せる
-        if (window.matchMedia('(max-width: 899.98px)').matches) es.set({ dataOpen: false });
+        if (window.matchMedia('(max-width: 899.98px)').matches) es.set({ drawer: null });
       },
     });
     cleanups.push(() => dataView.dispose());
 
+    // ---------- 書き出し・復元ポイント・検索・チェック ----------
+    commands = createEditorCommands({ store, es, canvasView, onExit: () => opt.onExit() });
+    cleanups.push(() => commands.dispose());
+    const checkView = createCheckView({ store, close: () => es.set({ drawer: null }), go: (target) => commands.goTo(target) });
+
     replaceChildren(el,
-      header,
-      h('div', { class: 'ed-banner' }),
+      header.el,
+      h('div', { class: 'ed-banner' }, banner.el),
       toolsNav,
       h('main', { class: 'ed-stage' }, canvasView.el),
       panels.el,
       dataView.el,
+      checkView.el,
     );
 
     // ---------- キーボード（§4.5） ----------
@@ -452,75 +467,36 @@ export function createEditor(opt) {
       zoom: (f) => canvasView.zoomBy(f),
       toolKey: (e) => !!currentTool().onKey?.(e),
       view: () => {},
+      search: () => commands.search(),
+      exportJson: () => commands.exportJson(),
     }));
 
     // ---------- 画面の更新 ----------
-    function accentColor() {
-      const p = store.getState();
-      const s = es.get();
-      const lineColor = (id) => p.lines.find((l) => l.id === id)?.color;
-      if (s.drawing) return lineColor(s.drawing.lineId) || DEFAULT_ACCENT;
-      if (s.selection.type === 'line' || s.selection.type === 'section') return lineColor(s.selection.lineId) || DEFAULT_ACCENT;
-      if (s.selection.type === 'stations' && s.selection.ids.length) {
-        const id = s.selection.ids[0];
-        const line = [...p.lines].sort((a, b) => a.order - b.order).find((l) => l.stops.some((x) => x.stationId === id));
-        if (line) return line.color;
-      }
-      return DEFAULT_ACCENT;
-    }
-
-    /** 消えたものを指している状態を直す。直したら true */
-    function repairState(p, s) {
-      const sel = s.selection;
-      const hasLine = (id) => p.lines.some((l) => l.id === id);
-      if ((sel.type === 'line' || sel.type === 'section') && !hasLine(sel.lineId)) {
-        es.set({ selection: NO_SELECTION });
-        return true;
-      }
-      if (sel.type === 'section') {
-        const line = p.lines.find((l) => l.id === sel.lineId);
-        if (sel.index >= line.sections.length) {
-          es.set({ selection: { type: 'line', lineId: line.id } });
-          return true;
-        }
-      }
-      if (sel.type === 'stations') {
-        const ids = sel.ids.filter((id) => p.stations.some((st) => st.id === id));
-        if (ids.length !== sel.ids.length) {
-          es.set({ selection: ids.length ? { type: 'stations', ids } : NO_SELECTION });
-          return true;
-        }
-      }
-      if (s.drawing && !hasLine(s.drawing.lineId)) {
-        es.set({ drawing: null });
-        return true;
-      }
-      if (sel.type === 'interchange' && !p.interchanges.some((x) => x.id === sel.id)) {
-        es.set({ selection: NO_SELECTION });
-        return true;
-      }
-      if (s.lineChoice !== 'new' && !hasLine(s.lineChoice)) {
-        es.set({ lineChoice: 'new' });
-        return true;
-      }
-      return false;
-    }
-
     function render() {
       const p = store.getState();
       const s = es.get();
-      if (repairState(p, s)) return;
-      nameEl.textContent = p.name || t('common.untitled');
+      // 消えたものを指している状態を直す（直したら、その変更でもう一度描き直される）
+      const fix = repairFor(p, s);
+      if (fix) {
+        es.set(fix);
+        return;
+      }
+      header.update(p.name, store.canUndo(), store.canRedo());
       document.title = `${p.name} - ${t('app.title')}`;
-      undoBtn.disabled = !store.canUndo();
-      redoBtn.disabled = !store.canRedo();
+      banner.update(!bannerHidden && needsBackupReminder(p), p.meta.lastBackupAt);
       for (const [id, b] of toolButtons) b.setAttribute('aria-pressed', String(s.tool === id));
       rangeBtn.hidden = s.tool !== 'select';
-      dataBtn.setAttribute('aria-pressed', String(!!s.dataOpen));
-      dataView.el.hidden = !s.dataOpen;
-      if (s.dataOpen) dataView.update();
+      dataBtn.setAttribute('aria-pressed', String(s.drawer === 'data'));
+      checkBtn.setAttribute('aria-pressed', String(s.drawer === 'check'));
+      dataView.el.hidden = s.drawer !== 'data';
+      checkView.el.hidden = s.drawer !== 'check';
+      if (s.drawer === 'data') dataView.update();
+      if (s.drawer === 'check') checkView.update();
+      const n = checkView.count();
+      checkCount.hidden = n === 0;
+      checkCount.textContent = n > 99 ? '99+' : String(n);
       rangeBtn.setAttribute('aria-pressed', String(!!s.rangeMode));
-      accent = accentColor();
+      accent = accentFor(p, s);
       el.style.setProperty('--accent', accent);
       el.style.setProperty('--accent-text', readableTextColor(accent));
       canvasView.setCursor(currentTool().cursor || 'default');
@@ -535,7 +511,7 @@ export function createEditor(opt) {
 
     // 開発用：?debug=1 のときだけ、コンソールから状態を見られるようにする
     if (new URLSearchParams(location.search).has('debug')) {
-      /** @type {any} */ (window).rmmDebug = { store, es, canvasView, getScene };
+      /** @type {any} */ (window).rmmDebug = { store, es, canvasView, getScene, commands };
       cleanups.push(() => { delete (/** @type {any} */ (window)).rmmDebug; });
     }
 

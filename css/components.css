@@ -23,6 +23,7 @@
   text-overflow: ellipsis;
 }
 .btn:hover { background: var(--surface); }
+.btn svg { width: 18px; height: 18px; flex: none; }
 .btn:disabled { opacity: .45; cursor: default; }
 .btn-primary {
   background: var(--accent);

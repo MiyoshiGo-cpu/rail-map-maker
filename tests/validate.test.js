@@ -39,3 +39,34 @@ test('整合性：配列がない・版が違う', () => {
   assert.deepEqual(checkIntegrity({ ...p, lines: null }).map((x) => x.code), ['collection']);
   assert.deepEqual(checkIntegrity({ ...p, schemaVersion: 99 }).map((x) => x.code), ['version']);
 });
+
+test('チェック：駅2つ未満の路線・番号の重複・駅名/よみが空・どの路線にもない駅・近くの同名駅・使われていない事業者', async () => {
+  const { runChecks } = await import('../js/core/validate.js');
+  const { store, lineId, ids } = storeWithLine([[0, 0], [2, 0], [4, 0]]);
+  const codes = () => runChecks(store.getState()).map((c) => c.code);
+  // 名前もよみも空
+  assert.ok(codes().includes('nameEmpty'));
+  ids.forEach((id, i) => store.dispatch({ type: 'station/update', stationId: id, fields: { name: `駅${i}`, reading: `えき${i}` } }));
+  assert.deepEqual(codes(), []);
+  // 番号の重複（エラー）
+  store.dispatch({ type: 'line/numbering', lineId, fields: { enabled: true } });
+  store.dispatch({ type: 'line/fixNumbers', lineId });
+  store.dispatch({ type: 'line/stop', lineId, index: 2, fields: { number: '01' } });
+  const dup = runChecks(store.getState()).find((c) => c.code === 'duplicateNumber');
+  assert.equal(dup.level, 'error');
+  assert.deepEqual(dup.target, { type: 'line', id: lineId });
+  // どの路線にもない駅と、近くの同名駅（乗換グループにすれば出ない）
+  const lone = store.dispatch({ type: 'station/add', x: 2, y: 2, fields: { name: '駅1', reading: 'えき1' } });
+  assert.ok(codes().includes('stationOrphan'));
+  assert.ok(codes().includes('sameNameNearby'));
+  store.dispatch({ type: 'interchange/add', stationIds: [ids[1], lone] });
+  assert.ok(!codes().includes('sameNameNearby'));
+  // 駅が2つ未満の路線、使われていない事業者
+  store.dispatch({ type: 'line/add', stationIds: [lone] });
+  assert.ok(codes().includes('lineTooShort'));
+  store.dispatch({ type: 'operator/add' });
+  assert.ok(codes().includes('unusedOperator'));
+  // エラー → 警告 → 情報 の順
+  const levels = runChecks(store.getState()).map((c) => c.level);
+  assert.deepEqual(levels, [...levels].sort((a, b) => ['error', 'warning', 'info'].indexOf(a) - ['error', 'warning', 'info'].indexOf(b)));
+});
