@@ -110,6 +110,12 @@ button, input, select, textarea {
   height: var(--app-h);
   width: 100%;
 }
+/* ホーム画面から起動したときは画面に固定する（ページがスクロールできる扱いにならないように。main.js） */
+.is-standalone #app {
+  position: fixed;
+  top: 0;
+  left: 0;
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

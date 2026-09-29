@@ -48,9 +48,43 @@ if (standalone) {
     }
     document.documentElement.style.setProperty('--app-h', `${h}px`);
   };
+  // アプリは画面に固定する（css の .is-standalone #app）。ページが画面より高いとスクロールできる扱いになり、
+  // iPhone が上端に時計の表示の分の余白をもう一度足してしまうため
+  document.documentElement.classList.add('is-standalone');
   setAppHeight();
   addEventListener('resize', setAppHeight);
   addEventListener('orientationchange', () => setTimeout(setAppHeight, 300));
+}
+
+// 一時的：ホーム画面から起動した iPhone の高さの確認用（確認が済んだら消す）
+if (iosStandalone) {
+  const box = document.createElement('div');
+  box.style.cssText = 'position:fixed;left:8px;top:45%;z-index:9999;background:rgba(0,0,0,.72);color:#fff;'
+    + 'font:12px/1.4 ui-monospace,monospace;padding:6px 8px;border-radius:6px;pointer-events:none;white-space:pre';
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:env(safe-area-inset-top);visibility:hidden';
+  document.body.append(box, probe);
+  const update = () => {
+    const r = app.getBoundingClientRect();
+    box.textContent = [
+      `screen ${screen.width}x${screen.height}`,
+      `inner ${innerWidth}x${innerHeight}`,
+      `client ${document.documentElement.clientHeight}`,
+      `vv ${vv ? `${Math.round(vv.height)} @${Math.round(vv.offsetTop)}` : '-'}`,
+      `safeT ${probe.offsetHeight}`,
+      `appH ${getComputedStyle(document.documentElement).getPropertyValue('--app-h')}`,
+      `app ${Math.round(r.top)}..${Math.round(r.bottom)}`,
+      `head ${(() => {
+        const hd = document.querySelector('.ed-header, .plist-header');
+        if (!hd) return '-';
+        const b = hd.getBoundingClientRect();
+        return `${Math.round(b.top)}..${Math.round(b.bottom)}`;
+      })()}`,
+      `scroll ${scrollY}/${document.documentElement.scrollHeight}`,
+    ].join('\n');
+  };
+  update();
+  setInterval(update, 1000);
 }
 
 /** @type {{ dispose: () => any } | null} */
