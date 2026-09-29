@@ -69,6 +69,7 @@
 - 公開URL：https://miyoshigo-cpu.github.io/rail-map-maker/
 - 反映の流れ：main に push → GitHub が1〜2分で公開 → 公開版のファイルに変更が入ったかを確かめる（例：`curl -s "https://miyoshigo-cpu.github.io/rail-map-maker/js/main.js?v=$RANDOM" | grep 探す文字列`）。
 - GitHub Pages はファイルを最大10分キャッシュさせる（Cache-Control: max-age=600）。
+- クラウドの環境では github.io への接続がネットワークの設定で止められている（curl が 403）。公開されたかは、GitHub の Actions の「pages build and deployment」の実行（main の最新のコミットで success）で確かめる。
 - クラウドで作業ブランチや PR を使う場合は、main にマージされるまで公開版は変わらない。マージや GitHub の設定画面の操作は私が行う。必要になったら手順を教えてください。
 
 ## iPhone での確認手順
