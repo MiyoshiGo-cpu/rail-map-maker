@@ -28,4 +28,5 @@ export const files = [
   'through-check.test.js',
   'stopchart.test.js',
   'map-style.test.js',
+  'color.test.js',
 ];

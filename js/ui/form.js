@@ -1,7 +1,9 @@
 // パネルの入力部品。値は change のときに onChange で渡す。
 // setValue は、入力中（フォーカス中）の欄は書き換えない。
 import { h } from './dom.js';
+import { t } from '../i18n/i18n.js';
 import { normalizeHex } from '../core/color.js';
+import { openColorPalette, rememberColor } from './color-palette.js';
 
 let uid = 0;
 const nextId = () => `f${++uid}`;
@@ -118,8 +120,8 @@ export function checkInput(opt) {
 }
 
 /**
- * 色（カラーピッカーと16進数の入力）
- * @param {{ value?: string, onChange: (v: string) => void, label?: string }} opt
+ * 色（カラーピッカーと16進数の入力）。palette を渡すと、よく使われる色と最近使った色のパレットを開くボタンを付ける
+ * @param {{ value?: string, onChange: (v: string) => void, label?: string, palette?: { id: string, hex: string }[] }} opt
  */
 export function colorInput(opt) {
   const picker = /** @type {HTMLInputElement} */ (h('input', { type: 'color', 'aria-label': opt.label || null }));
@@ -130,16 +132,27 @@ export function colorInput(opt) {
     if (!focused(text)) text.value = c;
   };
   set(opt.value);
+  // パレットがある欄では、選んだ色を「最近使った色」に覚える
+  const changed = (c) => {
+    if (opt.palette) rememberColor(c);
+    opt.onChange(c);
+  };
   picker.addEventListener('change', () => {
     const c = normalizeHex(picker.value);
-    if (c) opt.onChange(c);
+    if (c) changed(c);
   });
   text.addEventListener('change', () => {
     const c = normalizeHex(text.value);
-    if (c) opt.onChange(c);
+    if (c) changed(c);
     else set(picker.value);
   });
-  const el = /** @type {HTMLDivElement & { setValue(v: string): void, input: HTMLInputElement }} */ (h('div', { class: 'color-field' }, picker, text));
+  const paletteBtn = opt.palette ? h('button', {
+    class: 'btn btn-small palette-btn',
+    type: 'button',
+    'aria-haspopup': 'dialog',
+    on: { click: () => openColorPalette(paletteBtn, { value: text.value, palette: opt.palette, onPick: (c) => { set(c); opt.onChange(c); } }) },
+  }, t('palette.open')) : null;
+  const el = /** @type {HTMLDivElement & { setValue(v: string): void, input: HTMLInputElement }} */ (h('div', { class: 'color-field' }, picker, text, paletteBtn));
   el.setValue = set;
   el.input = text;
   return el;

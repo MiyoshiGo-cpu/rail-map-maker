@@ -26,7 +26,7 @@ export function createOperatorPanel(ctx, operatorId) {
     onChange: (v) => set({ category: v }),
   });
   // 色を変えたら、文字の色も読みやすい方に合わせる（あとから変えられる）
-  const color = colorInput({ onChange: (v) => set({ color: v, textColor: readableTextColor(v) }), label: t('operator.color') });
+  const color = colorInput({ onChange: (v) => set({ color: v, textColor: readableTextColor(v) }), label: t('operator.color'), palette: region.linePalette });
   const textColor = colorInput({ onChange: (v) => set({ textColor: v }), label: t('common.textColor') });
   const badge = selectInput({ options: enumOptions(BADGE_SHAPES, (v) => t('badgeShape.' + v)), onChange: (v) => set({ badgeShape: v }) });
   const note = textArea({ onChange: (v) => set({ note: v.trim() || undefined }) });

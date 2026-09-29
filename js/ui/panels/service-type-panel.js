@@ -1,5 +1,6 @@
 // 種別のパネル（§3 ServiceType）：名前・色・rank（並べ替え）・停車駅の決め方・停車時間・料金・座席
 import { h } from '../dom.js';
+import { getRegion } from '../../core/regions/index.js';
 import { t } from '../../i18n/i18n.js';
 import { STOP_RULES, SEATINGS } from '../../core/schema.js';
 import { readableTextColor } from '../../core/color.js';
@@ -22,7 +23,7 @@ export function createServiceTypePanel(ctx, typeId) {
   const shortName = textInput({ maxLength: 4, onChange: (v) => set({ shortName: v.trim() || cur().name }) });
   const nameEn = textInput({ lang: 'en', onChange: (v) => set({ names: { ...cur().names, en: v.trim() || undefined } }) });
   // 色を変えたら、文字の色も読みやすい方に合わせる（あとから変えられる）
-  const color = colorInput({ label: t('common.color'), onChange: (v) => set({ color: v, textColor: readableTextColor(v) }) });
+  const color = colorInput({ label: t('common.color'), onChange: (v) => set({ color: v, textColor: readableTextColor(v) }), palette: getRegion(store.getState().locale.region).linePalette });
   const textColor = colorInput({ label: t('common.textColor'), onChange: (v) => set({ textColor: v }) });
   const rank = numberInput({ step: 1, min: 0, max: 99, onChange: (v) => { if (v !== null) set({ rank: Math.round(v) }); } });
   const slower = btn(t('serviceType.moveSlower'), () => store.dispatch({ type: 'serviceType/move', typeId, delta: -1 }));

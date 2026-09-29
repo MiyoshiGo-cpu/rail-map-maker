@@ -1,0 +1,31 @@
+/* フェーズ3：パレット・凡例・書き出し・印刷・駅名標（components.css を600行未満に保つため分けた） */
+
+/* ---------- ラインカラーのパレット ---------- */
+
+.color-field .palette-btn { flex: none; }
+.palette {
+  position: fixed;
+  z-index: 95;
+  width: min(300px, calc(100vw - 16px));
+  padding: 10px 12px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .22);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.palette-head { margin: 4px 0 6px; font-size: var(--fs-12); color: var(--ink-sub); }
+.palette-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.palette-swatch {
+  aspect-ratio: 1;
+  min-height: 40px;
+  border: 1px solid rgba(0, 0, 0, .18);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.palette-swatch.is-current { outline: 3px solid var(--ink); outline-offset: 2px; }
+.palette-swatch:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.palette-hex { display: flex; gap: 6px; margin-top: 10px; }
+.palette-hex .input { flex: 1; min-width: 0; font-variant-numeric: tabular-nums; }

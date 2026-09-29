@@ -1,5 +1,6 @@
 // 「路線を引く」ツールのパネル：どの路線を引くか（新しい路線なら事業者・名前・色・記号）と完了ボタン
 import { h } from '../dom.js';
+import { getRegion } from '../../core/regions/index.js';
 import { t, mapTranslator } from '../../i18n/i18n.js';
 import { LINE_PALETTE, nextColor } from '../../core/color.js';
 import { field, textInput, selectInput, colorInput } from '../form.js';
@@ -18,7 +19,7 @@ export function createLineToolPanel(ctx) {
   const setNew = (patch) => es.set({ newLine: { ...es.get().newLine, ...patch } });
   const operator = selectInput({ options: [], onChange: (v) => setNew({ operatorId: v }) });
   const name = textInput({ onChange: (v) => setNew({ name: v.trim() }) });
-  const color = colorInput({ onChange: (v) => setNew({ color: v }), label: t('common.color') });
+  const color = colorInput({ onChange: (v) => setNew({ color: v }), label: t('common.color'), palette: getRegion(ctx.store.getState().locale.region).linePalette });
   const symbol = textInput({ onChange: (v) => setNew({ symbol: v.trim() }), maxLength: 4 });
   const newFields = h('div', { class: 'new-line-fields' },
     field(t('line.operator'), operator),

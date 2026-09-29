@@ -1,5 +1,6 @@
 // 路線のパネル（§3 Line）：基本・駅ナンバリングの規則・区間の既定値・駅の一覧
 import { h } from '../dom.js';
+import { getRegion } from '../../core/regions/index.js';
 import { t, formatDistance } from '../../i18n/i18n.js';
 import { LINE_KINDS, ELECTRIFICATIONS, COLLECTIONS, TRACKS, STRUCTURES, LINE_STATUSES, UP_DIRECTIONS, GAUGE_CANDIDATES } from '../../core/schema.js';
 import { field, textInput, textArea, selectInput, numberInput, checkInput, colorInput, group, enumOptions, gaugeInput } from '../form.js';
@@ -57,7 +58,7 @@ export function createLinePanel(ctx, lineId) {
   const displayName = textInput({ onChange: (v) => set({ displayName: v.trim() || undefined }) });
   const nameEn = textInput({ onChange: (v) => set({ names: { ...cur().names, en: v.trim() || undefined } }), lang: 'en' });
   const kind = selectInput({ options: enumOptions(LINE_KINDS, (v) => t('lineKind.' + v)), onChange: (v) => set({ kind: v }) });
-  const color = colorInput({ onChange: (v) => set({ color: v }), label: t('line.color') });
+  const color = colorInput({ onChange: (v) => set({ color: v }), label: t('line.color'), palette: getRegion(store.getState().locale.region).linePalette });
   const symbol = textInput({ onChange: (v) => set({ symbol: v.trim() }), maxLength: 4 });
   const upDir = selectInput({ options: enumOptions(UP_DIRECTIONS, (v) => t('upDirection.' + v)), onChange: (v) => set({ upDirection: v }) });
   const loop = checkInput({

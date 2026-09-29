@@ -1,5 +1,6 @@
 // 運行系統のパネル（§3 Service）：経路と区間ごとの種別、停車駅、本数・両数・両方向運転、所要時間・表定速度・停車駅数
 import { h } from '../dom.js';
+import { getRegion } from '../../core/regions/index.js';
 import { t, formatDuration } from '../../i18n/i18n.js';
 import { expandService, stopFlags, stopIds, throughJoints } from '../../core/services.js';
 import { serviceRuntime } from '../../core/runtime.js';
@@ -25,7 +26,7 @@ export function createServicePanel(ctx, serviceId) {
 
   // ---------- 基本 ----------
   const name = textInput({ onChange: (v) => set({ name: v.trim() || undefined }) });
-  const color = colorInput({ label: t('common.color'), onChange: (v) => set({ color: v }) });
+  const color = colorInput({ label: t('common.color'), onChange: (v) => set({ color: v }), palette: getRegion(store.getState().locale.region).linePalette });
   const resetColor = btn(t('service.useTypeColor'), () => set({ color: undefined }));
 
   // ---------- 経路 ----------

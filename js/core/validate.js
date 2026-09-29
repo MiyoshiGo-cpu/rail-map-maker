@@ -5,6 +5,7 @@ import { sectionCount } from './defaults.js';
 import { duplicateNumbers } from './numbering.js';
 import { allLineKm, extremeSection } from './distance.js';
 import { serviceChecks } from './validate-services.js';
+import { colorDistance } from './color.js';
 
 /** @typedef {import('./schema.js').Project} Project */
 /** @typedef {{ code: string, id?: string, detail?: string }} IntegrityProblem */
@@ -112,11 +113,14 @@ export function describeProblems(problems) {
  * @property {{ type: 'station'|'line'|'operator'|'interchange'|'serviceType'|'service', id: string } | { type: 'section', id: string, index: number } | null} target 「移動」で選ぶもの（section の id は路線）
  */
 
+/** ラインカラーが似すぎとみなす色の差（CIEDE2000。§6.6） */
+export const SIMILAR_COLOR_DELTA_E = 10;
+
 /** 同名の駅を近くと判定する距離（路線図の格子のマス数。§6.6） */
 export const NEARBY_SAME_NAME_CELLS = 3;
 
 /**
- * 利用者向けのチェック（色の近さはフェーズ3）
+ * 利用者向けのチェック
  * @param {Project} p
  * @returns {CheckItem[]}
  */
@@ -198,6 +202,32 @@ export function runChecks(p) {
         if (d <= NEARBY_SAME_NAME_CELLS && !sameGroup) {
           out.push({ level: 'warning', code: 'sameNameNearby', params: { name }, target: { type: 'station', id: a.id } });
         }
+      }
+    }
+  }
+
+  // 警告：同じ駅を通る路線どうしのラインカラーが似すぎ（路線の組ごとに1回）
+  const linesAt = new Map();
+  for (const line of p.lines) {
+    for (const id of new Set(line.stops.map((s) => s.stationId))) {
+      if (!linesAt.has(id)) linesAt.set(id, []);
+      linesAt.get(id).push(line);
+    }
+  }
+  const reported = new Set();
+  for (const [stationId, ls] of linesAt) {
+    for (let i = 0; i < ls.length; i++) {
+      for (let j = i + 1; j < ls.length; j++) {
+        const [a, b] = [ls[i], ls[j]].sort((x, y) => x.order - y.order);
+        const key = a.id + '|' + b.id;
+        if (reported.has(key) || colorDistance(a.color, b.color) >= SIMILAR_COLOR_DELTA_E) continue;
+        reported.add(key);
+        out.push({
+          level: 'warning',
+          code: 'similarLineColors',
+          params: { a: lineName(a), b: lineName(b), station: stName.get(stationId) || '' },
+          target: { type: 'line', id: b.id },
+        });
       }
     }
   }

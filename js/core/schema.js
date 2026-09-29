@@ -415,4 +415,5 @@ export const DEFAULT_WALK_MINUTES = 5;
  * @property {{ byLineKind: Record<string, string>, byCategory: Record<string, string>, fallback: string }} serviceSetDefaults 事業者に合ったプリセット
  * @property {Array<{ maxRank: number, sec: number }>} dwellSecByRank
  * @property {Array<{ id: string, labelKey: string, values: Partial<MapStyle> }>} stylePresets スタイルプリセット（§5.8）
+ * @property {Array<{ id: string, hex: string }>} linePalette ラインカラーのパレット
  */

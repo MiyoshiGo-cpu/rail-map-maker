@@ -129,6 +129,30 @@ const jp = {
     fallback: 'private',
   },
 
+  // ラインカラーのパレット（路線図でよく使われる系統の色。名前はカタログの palette.<id>）
+  linePalette: [
+    { id: 'yellowGreen', hex: '#9ACD32' },
+    { id: 'green', hex: '#009944' },
+    { id: 'darkGreen', hex: '#00703C' },
+    { id: 'teal', hex: '#0E9AA7' },
+    { id: 'skyBlue', hex: '#00A7DB' },
+    { id: 'blue', hex: '#0079C2' },
+    { id: 'navy', hex: '#1E3A8A' },
+    { id: 'purple', hex: '#7A4FBF' },
+    { id: 'lavender', hex: '#A98BD3' },
+    { id: 'pink', hex: '#E85298' },
+    { id: 'red', hex: '#D7263D' },
+    { id: 'maroon', hex: '#9B1B30' },
+    { id: 'vermilion', hex: '#E8541E' },
+    { id: 'orange', hex: '#F08300' },
+    { id: 'yellow', hex: '#F7C600' },
+    { id: 'gold', hex: '#C9A227' },
+    { id: 'brown', hex: '#8C6239' },
+    { id: 'gray', hex: '#7B8794' },
+    { id: 'silver', hex: '#A8B2BD' },
+    { id: 'black', hex: '#2B2B2B' },
+  ],
+
   // スタイルプリセット（§5.8。地図記号は地理ビューのフェーズ4で足す）。選ぶと詳細設定をまとめて書き換える
   stylePresets: [
     {
