@@ -59,6 +59,10 @@ export default {
   // プロジェクト一覧
   'plist.new': '新しいプロジェクト',
   'plist.import': 'ファイルから読み込む',
+  'plist.openSample': 'サンプルを開く',
+  'plist.sampleFailed': 'サンプルを読み込めませんでした。インターネットにつながっているか確かめて、もう一度押してください。',
+  'plist.debugData': '性能確認用のデータを作る（駅200・路線20）',
+  'plist.debugName': '性能確認用（駅200・路線20）',
   'plist.imported': '「{name}」を読み込みました',
   'plist.empty': 'プロジェクトがありません。「新しいプロジェクト」から作ってください。',
   'plist.counts': '駅 {stations}・路線 {lines}',
@@ -78,6 +82,9 @@ export default {
   'newProject.world': '地形',
   'newProject.world.none': '路線図のみ',
   'newProject.create': '作る',
+  'newProject.template': 'テンプレート',
+  'newProject.template.empty': '空',
+  'newProject.template.sample': 'サンプル（架空の都市圏）',
 
   // エディタ
   'editor.backToList': 'プロジェクト一覧へ',

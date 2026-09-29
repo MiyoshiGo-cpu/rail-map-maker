@@ -1,0 +1,1187 @@
+{
+  "schemaVersion": 1,
+  "id": "pj_sample",
+  "name": "サンプル：湾岸都市圏",
+  "createdAt": "2026-09-29T00:00:00.000Z",
+  "updatedAt": "2026-09-29T00:00:00.000Z",
+  "locale": {
+    "region": "jp",
+    "mapLanguage": "ja",
+    "subLanguages": [
+      "en"
+    ],
+    "currency": "JPY",
+    "distanceUnit": "km"
+  },
+  "world": {
+    "mode": "none"
+  },
+  "operators": [
+    {
+      "shortName": "湾岸鉄道",
+      "names": {
+        "en": "Wangan Railway"
+      },
+      "category": "jr",
+      "color": "#2E7D32",
+      "textColor": "#FFFFFF",
+      "badgeShape": "square",
+      "id": "op_uxvwli",
+      "name": "湾岸旅客鉄道"
+    },
+    {
+      "shortName": "みなと急行",
+      "names": {
+        "en": "Minato Express Railway"
+      },
+      "category": "major",
+      "color": "#E8541E",
+      "textColor": "#FFFFFF",
+      "badgeShape": "roundSquare",
+      "id": "op_3700yg",
+      "name": "みなと急行電鉄"
+    },
+    {
+      "shortName": "緑電",
+      "names": {
+        "en": "Midorigaoka Electric Railway"
+      },
+      "category": "semiMajor",
+      "color": "#1E6FD9",
+      "textColor": "#FFFFFF",
+      "badgeShape": "pill",
+      "id": "op_spv2zn",
+      "name": "緑ヶ丘電鉄"
+    },
+    {
+      "shortName": "湾岸市営",
+      "names": {
+        "en": "Wangan City Transportation Bureau"
+      },
+      "category": "public",
+      "color": "#0E9AA7",
+      "textColor": "#FFFFFF",
+      "badgeShape": "circle",
+      "id": "op_t5bpqs",
+      "name": "湾岸市交通局"
+    }
+  ],
+  "lines": [
+    {
+      "names": {
+        "en": "Wangan Loop Line"
+      },
+      "kind": "conventional",
+      "color": "#9ACD32",
+      "symbol": "JC",
+      "isLoop": true,
+      "upDirection": "toStart",
+      "stops": [
+        {
+          "stationId": "st_xmj5ay"
+        },
+        {
+          "stationId": "st_ys6erq"
+        },
+        {
+          "stationId": "st_ost4rd"
+        },
+        {
+          "stationId": "st_pqr2g1"
+        },
+        {
+          "stationId": "st_aa79za"
+        },
+        {
+          "stationId": "st_iuq5o6"
+        },
+        {
+          "stationId": "st_1g8l6a"
+        },
+        {
+          "stationId": "st_k1dezp"
+        },
+        {
+          "stationId": "st_bsr3sd"
+        }
+      ],
+      "defaults": {
+        "gauge": 1067,
+        "electrification": "dc1500",
+        "collection": "overhead",
+        "tracks": 2,
+        "maxSpeed": 100,
+        "structure": "ground",
+        "status": "open"
+      },
+      "sections": [
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {}
+      ],
+      "numbering": {
+        "enabled": true,
+        "prefix": "",
+        "separator": "",
+        "start": 1,
+        "step": 1,
+        "digits": 2,
+        "fromEnd": false,
+        "mode": "auto"
+      },
+      "status": "open",
+      "id": "ln_mjn83o",
+      "operatorId": "op_uxvwli",
+      "name": "湾岸環状線",
+      "order": 0
+    },
+    {
+      "names": {
+        "en": "Line 1 (North-South)"
+      },
+      "kind": "subway",
+      "color": "#F7A600",
+      "symbol": "A",
+      "isLoop": false,
+      "upDirection": "toStart",
+      "stops": [
+        {
+          "stationId": "st_s1uji3"
+        },
+        {
+          "stationId": "st_xmj5ay"
+        },
+        {
+          "stationId": "st_ba0p9e"
+        },
+        {
+          "stationId": "st_58t7hm"
+        },
+        {
+          "stationId": "st_qpb6do"
+        },
+        {
+          "stationId": "st_iuq5o6"
+        }
+      ],
+      "defaults": {
+        "gauge": 1067,
+        "electrification": "dc1500",
+        "collection": "overhead",
+        "tracks": 2,
+        "maxSpeed": 80,
+        "structure": "underground",
+        "status": "open"
+      },
+      "sections": [
+        {},
+        {},
+        {},
+        {},
+        {}
+      ],
+      "numbering": {
+        "enabled": true,
+        "prefix": "",
+        "separator": "",
+        "start": 1,
+        "step": 1,
+        "digits": 2,
+        "fromEnd": false,
+        "mode": "auto"
+      },
+      "status": "open",
+      "id": "ln_cf0kyg",
+      "operatorId": "op_t5bpqs",
+      "name": "1号線",
+      "order": 1,
+      "displayName": "南北線"
+    },
+    {
+      "names": {
+        "en": "Line 2 (East-West)"
+      },
+      "kind": "subway",
+      "color": "#7A4FBF",
+      "symbol": "B",
+      "isLoop": false,
+      "upDirection": "toStart",
+      "stops": [
+        {
+          "stationId": "st_bvfcgn"
+        },
+        {
+          "stationId": "st_k1dezp"
+        },
+        {
+          "stationId": "st_s2j8mc"
+        },
+        {
+          "stationId": "st_58t7hm"
+        },
+        {
+          "stationId": "st_tibrsq"
+        },
+        {
+          "stationId": "st_pqr2g1"
+        }
+      ],
+      "defaults": {
+        "gauge": 1067,
+        "electrification": "dc1500",
+        "collection": "overhead",
+        "tracks": 2,
+        "maxSpeed": 80,
+        "structure": "underground",
+        "status": "open"
+      },
+      "sections": [
+        {},
+        {},
+        {},
+        {},
+        {}
+      ],
+      "numbering": {
+        "enabled": true,
+        "prefix": "",
+        "separator": "",
+        "start": 1,
+        "step": 1,
+        "digits": 2,
+        "fromEnd": false,
+        "mode": "auto"
+      },
+      "status": "open",
+      "id": "ln_v8eoce",
+      "operatorId": "op_t5bpqs",
+      "name": "2号線",
+      "order": 2,
+      "displayName": "東西線"
+    },
+    {
+      "names": {
+        "en": "Minato Express Main Line"
+      },
+      "kind": "conventional",
+      "color": "#E8541E",
+      "symbol": "MK",
+      "isLoop": false,
+      "upDirection": "toStart",
+      "stops": [
+        {
+          "stationId": "st_k8m6h7"
+        },
+        {
+          "stationId": "st_qbitye"
+        },
+        {
+          "stationId": "st_nc8c64"
+        },
+        {
+          "stationId": "st_ppgehm"
+        },
+        {
+          "stationId": "st_wghdhn"
+        },
+        {
+          "stationId": "st_5tx7rg"
+        }
+      ],
+      "defaults": {
+        "gauge": 1067,
+        "electrification": "dc1500",
+        "collection": "overhead",
+        "tracks": 2,
+        "maxSpeed": 100,
+        "structure": "ground",
+        "status": "open"
+      },
+      "sections": [
+        {},
+        {},
+        {},
+        {},
+        {}
+      ],
+      "numbering": {
+        "enabled": true,
+        "prefix": "",
+        "separator": "",
+        "start": 1,
+        "step": 1,
+        "digits": 2,
+        "fromEnd": false,
+        "mode": "auto"
+      },
+      "status": "open",
+      "id": "ln_x3xw32",
+      "operatorId": "op_3700yg",
+      "name": "みなと急行本線",
+      "order": 3
+    },
+    {
+      "names": {
+        "en": "Midorigaoka Line"
+      },
+      "kind": "conventional",
+      "color": "#1E6FD9",
+      "symbol": "MG",
+      "isLoop": false,
+      "upDirection": "toStart",
+      "stops": [
+        {
+          "stationId": "st_dpsxwg"
+        },
+        {
+          "stationId": "st_rar7zq"
+        },
+        {
+          "stationId": "st_bp04am"
+        },
+        {
+          "stationId": "st_ag5ee3"
+        },
+        {
+          "stationId": "st_307uz9"
+        }
+      ],
+      "defaults": {
+        "gauge": 1067,
+        "electrification": "dc1500",
+        "collection": "overhead",
+        "tracks": 2,
+        "maxSpeed": 100,
+        "structure": "ground",
+        "status": "open"
+      },
+      "sections": [
+        {},
+        {},
+        {},
+        {}
+      ],
+      "numbering": {
+        "enabled": true,
+        "prefix": "",
+        "separator": "",
+        "start": 1,
+        "step": 1,
+        "digits": 2,
+        "fromEnd": false,
+        "mode": "auto"
+      },
+      "status": "open",
+      "id": "ln_wr22bq",
+      "operatorId": "op_spv2zn",
+      "name": "緑ヶ丘線",
+      "order": 4
+    }
+  ],
+  "stations": [
+    {
+      "name": "中央",
+      "reading": "ちゅうおう",
+      "names": {
+        "en": "Chuo"
+      },
+      "autoRomanize": true,
+      "rank": "terminal",
+      "structure": "ground",
+      "facilities": [
+        "busTerminal"
+      ],
+      "geo": null,
+      "schematic": {
+        "x": 0,
+        "y": -8
+      },
+      "label": {
+        "schematic": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        },
+        "geo": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        }
+      },
+      "id": "st_xmj5ay"
+    },
+    {
+      "name": "青葉通",
+      "reading": "あおばどおり",
+      "names": {
+        "en": "Aobadori"
+      },
+      "autoRomanize": true,
+      "rank": "normal",
+      "structure": "ground",
+      "facilities": [],
+      "geo": null,
+      "schematic": {
+        "x": 4,
+        "y": -8
+      },
+      "label": {
+        "schematic": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        },
+        "geo": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        }
+      },
+      "id": "st_ys6erq"
+    },
+    {
+      "name": "北野",
+      "reading": "きたの",
+      "names": {
+        "en": "Kitano"
+      },
+      "autoRomanize": true,
+      "rank": "normal",
+      "structure": "ground",
+      "facilities": [],
+      "geo": null,
+      "schematic": {
+        "x": 8,
+        "y": -4
+      },
+      "label": {
+        "schematic": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        },
+        "geo": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        }
+      },
+      "id": "st_ost4rd"
+    },
+    {
+      "name": "東湾",
+      "reading": "とうわん",
+      "names": {
+        "en": "Towan"
+      },
+      "autoRomanize": true,
+      "rank": "major",
+      "structure": "ground",
+      "facilities": [],
+      "geo": null,
+      "schematic": {
+        "x": 8,
+        "y": 1
+      },
+      "label": {
+        "schematic": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        },
+        "geo": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        }
+      },
+      "id": "st_pqr2g1"
+    },
+    {
+      "name": "桜台",
+      "reading": "さくらだい",
+      "names": {
+        "en": "Sakuradai"
+      },
+      "autoRomanize": true,
+      "rank": "normal",
+      "structure": "ground",
+      "facilities": [],
+      "geo": null,
+      "schematic": {
+        "x": 6,
+        "y": 6
+      },
+      "label": {
+        "schematic": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        },
+        "geo": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        }
+      },
+      "id": "st_aa79za"
+    },
+    {
+      "name": "港町",
+      "reading": "みなとまち",
+      "names": {
+        "en": "Minatomachi"
+      },
+      "autoRomanize": true,
+      "rank": "major",
+      "structure": "ground",
+      "facilities": [
+        "port"
+      ],
+      "geo": null,
+      "schematic": {
+        "x": 0,
+        "y": 8
+      },
+      "label": {
+        "schematic": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        },
+        "geo": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        }
+      },
+      "id": "st_iuq5o6"
+    },
+    {
+      "name": "西浜",
+      "reading": "にしはま",
+      "names": {
+        "en": "Nishihama"
+      },
+      "autoRomanize": true,
+      "rank": "normal",
+      "structure": "ground",
+      "facilities": [],
+      "geo": null,
+      "schematic": {
+        "x": -6,
+        "y": 6
+      },
+      "label": {
+        "schematic": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        },
+        "geo": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        }
+      },
+      "id": "st_1g8l6a"
+    },
+    {
+      "name": "川端",
+      "reading": "かわばた",
+      "names": {
+        "en": "Kawabata"
+      },
+      "autoRomanize": true,
+      "rank": "normal",
+      "structure": "ground",
+      "facilities": [],
+      "geo": null,
+      "schematic": {
+        "x": -8,
+        "y": 1
+      },
+      "label": {
+        "schematic": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        },
+        "geo": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        }
+      },
+      "id": "st_k1dezp"
+    },
+    {
+      "name": "旭町",
+      "reading": "あさひまち",
+      "names": {
+        "en": "Asahimachi"
+      },
+      "autoRomanize": true,
+      "rank": "normal",
+      "structure": "ground",
+      "facilities": [],
+      "geo": null,
+      "schematic": {
+        "x": -6,
+        "y": -6
+      },
+      "label": {
+        "schematic": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        },
+        "geo": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        }
+      },
+      "id": "st_bsr3sd"
+    },
+    {
+      "name": "北公園",
+      "reading": "きたこうえん",
+      "names": {
+        "en": "Kitakoen"
+      },
+      "autoRomanize": true,
+      "rank": "normal",
+      "structure": "ground",
+      "facilities": [],
+      "geo": null,
+      "schematic": {
+        "x": 0,
+        "y": -12
+      },
+      "label": {
+        "schematic": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        },
+        "geo": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        }
+      },
+      "id": "st_s1uji3"
+    },
+    {
+      "name": "市役所前",
+      "reading": "しやくしょ・まえ",
+      "names": {
+        "en": "Shiyakusho-mae"
+      },
+      "autoRomanize": true,
+      "rank": "normal",
+      "structure": "ground",
+      "facilities": [],
+      "geo": null,
+      "schematic": {
+        "x": 0,
+        "y": -4
+      },
+      "label": {
+        "schematic": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        },
+        "geo": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        }
+      },
+      "id": "st_ba0p9e"
+    },
+    {
+      "name": "本町",
+      "reading": "ほんちょう",
+      "names": {
+        "en": "Honcho"
+      },
+      "autoRomanize": true,
+      "rank": "major",
+      "structure": "ground",
+      "facilities": [],
+      "geo": null,
+      "schematic": {
+        "x": 0,
+        "y": 1
+      },
+      "label": {
+        "schematic": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        },
+        "geo": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        }
+      },
+      "id": "st_58t7hm"
+    },
+    {
+      "name": "県庁前",
+      "reading": "けんちょう・まえ",
+      "names": {
+        "en": "Kencho-mae"
+      },
+      "autoRomanize": true,
+      "rank": "normal",
+      "structure": "ground",
+      "facilities": [],
+      "geo": null,
+      "schematic": {
+        "x": 0,
+        "y": 5
+      },
+      "label": {
+        "schematic": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        },
+        "geo": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        }
+      },
+      "id": "st_qpb6do"
+    },
+    {
+      "name": "西公園",
+      "reading": "にしこうえん",
+      "names": {
+        "en": "Nishikoen"
+      },
+      "autoRomanize": true,
+      "rank": "normal",
+      "structure": "ground",
+      "facilities": [],
+      "geo": null,
+      "schematic": {
+        "x": -12,
+        "y": 1
+      },
+      "label": {
+        "schematic": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        },
+        "geo": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        }
+      },
+      "id": "st_bvfcgn"
+    },
+    {
+      "name": "大通",
+      "reading": "おおどおり",
+      "names": {
+        "en": "Odori"
+      },
+      "autoRomanize": true,
+      "rank": "normal",
+      "structure": "ground",
+      "facilities": [],
+      "geo": null,
+      "schematic": {
+        "x": -4,
+        "y": 1
+      },
+      "label": {
+        "schematic": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        },
+        "geo": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        }
+      },
+      "id": "st_s2j8mc"
+    },
+    {
+      "name": "東町",
+      "reading": "ひがしまち",
+      "names": {
+        "en": "Higashimachi"
+      },
+      "autoRomanize": true,
+      "rank": "normal",
+      "structure": "ground",
+      "facilities": [],
+      "geo": null,
+      "schematic": {
+        "x": 4,
+        "y": 1
+      },
+      "label": {
+        "schematic": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        },
+        "geo": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        }
+      },
+      "id": "st_tibrsq"
+    },
+    {
+      "name": "東湾",
+      "reading": "とうわん",
+      "names": {
+        "en": "Towan"
+      },
+      "autoRomanize": true,
+      "rank": "normal",
+      "structure": "ground",
+      "facilities": [],
+      "geo": null,
+      "schematic": {
+        "x": 10,
+        "y": 3
+      },
+      "label": {
+        "schematic": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        },
+        "geo": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        }
+      },
+      "id": "st_k8m6h7"
+    },
+    {
+      "name": "海岸通",
+      "reading": "かいがんどおり",
+      "names": {
+        "en": "Kaigandori"
+      },
+      "autoRomanize": true,
+      "rank": "normal",
+      "structure": "ground",
+      "facilities": [],
+      "geo": null,
+      "schematic": {
+        "x": 13,
+        "y": 3
+      },
+      "label": {
+        "schematic": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        },
+        "geo": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        }
+      },
+      "id": "st_qbitye"
+    },
+    {
+      "name": "臨海公園",
+      "reading": "りんかいこうえん",
+      "names": {
+        "en": "Rinkaikoen"
+      },
+      "autoRomanize": true,
+      "rank": "normal",
+      "structure": "ground",
+      "facilities": [],
+      "geo": null,
+      "schematic": {
+        "x": 16,
+        "y": 3
+      },
+      "label": {
+        "schematic": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        },
+        "geo": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        }
+      },
+      "id": "st_nc8c64"
+    },
+    {
+      "name": "若葉",
+      "reading": "わかば",
+      "names": {
+        "en": "Wakaba"
+      },
+      "autoRomanize": true,
+      "rank": "normal",
+      "structure": "ground",
+      "facilities": [],
+      "geo": null,
+      "schematic": {
+        "x": 19,
+        "y": 0
+      },
+      "label": {
+        "schematic": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        },
+        "geo": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        }
+      },
+      "id": "st_ppgehm"
+    },
+    {
+      "name": "みなと台",
+      "reading": "みなとだい",
+      "names": {
+        "en": "Minatodai"
+      },
+      "autoRomanize": true,
+      "rank": "normal",
+      "structure": "ground",
+      "facilities": [],
+      "geo": null,
+      "schematic": {
+        "x": 22,
+        "y": 0
+      },
+      "label": {
+        "schematic": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        },
+        "geo": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        }
+      },
+      "id": "st_wghdhn"
+    },
+    {
+      "name": "臨海空港",
+      "reading": "りんかいくうこう",
+      "names": {
+        "en": "Rinkaikuko"
+      },
+      "autoRomanize": true,
+      "rank": "terminal",
+      "structure": "ground",
+      "facilities": [
+        "airport"
+      ],
+      "geo": null,
+      "schematic": {
+        "x": 25,
+        "y": 0
+      },
+      "label": {
+        "schematic": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        },
+        "geo": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        }
+      },
+      "id": "st_5tx7rg"
+    },
+    {
+      "name": "旭町",
+      "reading": "あさひまち",
+      "names": {
+        "en": "Asahimachi"
+      },
+      "autoRomanize": true,
+      "rank": "normal",
+      "structure": "ground",
+      "facilities": [],
+      "geo": null,
+      "schematic": {
+        "x": -8,
+        "y": -8
+      },
+      "label": {
+        "schematic": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        },
+        "geo": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        }
+      },
+      "id": "st_dpsxwg"
+    },
+    {
+      "name": "桜井",
+      "reading": "さくらい",
+      "names": {
+        "en": "Sakurai"
+      },
+      "autoRomanize": true,
+      "rank": "normal",
+      "structure": "ground",
+      "facilities": [],
+      "geo": null,
+      "schematic": {
+        "x": -11,
+        "y": -11
+      },
+      "label": {
+        "schematic": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        },
+        "geo": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        }
+      },
+      "id": "st_rar7zq"
+    },
+    {
+      "name": "丘の上",
+      "reading": "おかのうえ",
+      "names": {
+        "en": "Okanoue"
+      },
+      "autoRomanize": false,
+      "rank": "normal",
+      "structure": "ground",
+      "facilities": [],
+      "geo": null,
+      "schematic": {
+        "x": -14,
+        "y": -14
+      },
+      "label": {
+        "schematic": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        },
+        "geo": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        }
+      },
+      "id": "st_bp04am"
+    },
+    {
+      "name": "緑ヶ丘",
+      "reading": "みどりがおか",
+      "names": {
+        "en": "Midorigaoka"
+      },
+      "autoRomanize": true,
+      "rank": "normal",
+      "structure": "ground",
+      "facilities": [],
+      "geo": null,
+      "schematic": {
+        "x": -18,
+        "y": -14
+      },
+      "label": {
+        "schematic": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        },
+        "geo": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        }
+      },
+      "id": "st_ag5ee3"
+    },
+    {
+      "name": "森林公園",
+      "reading": "しんりんこうえん",
+      "names": {
+        "en": "Shinrinkoen"
+      },
+      "autoRomanize": true,
+      "rank": "terminal",
+      "structure": "ground",
+      "facilities": [],
+      "geo": null,
+      "schematic": {
+        "x": -22,
+        "y": -14
+      },
+      "label": {
+        "schematic": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        },
+        "geo": {
+          "pos": "auto",
+          "orientation": "horizontal"
+        }
+      },
+      "id": "st_307uz9"
+    }
+  ],
+  "interchanges": [
+    {
+      "walkMinutes": 3,
+      "showConnector": true,
+      "id": "ic_xkn4bl",
+      "stationIds": [
+        "st_pqr2g1",
+        "st_k8m6h7"
+      ]
+    },
+    {
+      "walkMinutes": 4,
+      "showConnector": true,
+      "id": "ic_u9jpq1",
+      "stationIds": [
+        "st_bsr3sd",
+        "st_dpsxwg"
+      ]
+    }
+  ],
+  "serviceTypes": [],
+  "services": [],
+  "rollingStock": [],
+  "fareTables": [],
+  "style": {
+    "preset": "urban",
+    "lineWidth": 6,
+    "lineGap": 2,
+    "cornerRadius": 8,
+    "stationRadius": 5,
+    "fontFamily": "gothic",
+    "fontSize": 12,
+    "showSubNames": true,
+    "showNumbering": true,
+    "stationStroke": "black",
+    "background": "#FFFFFF",
+    "showGrid": true,
+    "showAbolished": false
+  },
+  "settings": {
+    "romaji": {
+      "longVowel": "omit",
+      "nBeforeBmp": "m",
+      "capitalizeAfterHyphen": false
+    },
+    "curveFactor": 1.1,
+    "viaCurveFactor": 1.03,
+    "runtimeMargin": 0.05
+  },
+  "view": {
+    "schematic": {
+      "cx": 24,
+      "cy": -48,
+      "zoom": 1
+    },
+    "geo": {
+      "cx": 0,
+      "cy": 0,
+      "zoom": 1
+    }
+  },
+  "meta": {},
+  "author": "架空路線図メーカー"
+}

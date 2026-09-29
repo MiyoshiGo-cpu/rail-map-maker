@@ -13,6 +13,11 @@ import { listProjectMeta, getProject, putProject, deleteProject } from '../stora
 import { exportFilename, serializeProject, saveTextFile, parseProjectText, pickTextFile } from '../storage/file-io.js';
 import { InvalidFileError, NewerVersionError } from '../core/migrate.js';
 import { openRestorePoints } from './restore-view.js';
+import { generateDebugProject } from '../core/debug-data.js';
+
+const SAMPLE_URL = 'samples/sample-metro.railmap.json';
+/** ?debug=1 のときだけ、性能確認用のデータを作るボタンを出す（隠しコマンド） */
+const DEBUG = new URLSearchParams(location.search).has('debug');
 
 /**
  * @param {{ onOpen: (id: string) => void }} opt
@@ -25,6 +30,10 @@ export function createProjectList(opt) {
     icon('plus'), h('span', {}, t('plist.new')));
   const importBtn = h('button', { class: 'btn btn-sign', type: 'button', on: { click: () => importFile() } },
     icon('import'), h('span', {}, t('plist.import')));
+  const extras = h('div', { class: 'plist-extras' },
+    h('button', { class: 'btn', type: 'button', on: { click: () => openSample() } }, t('plist.openSample')),
+    DEBUG ? h('button', { class: 'btn', type: 'button', on: { click: () => makeDebug() } }, t('plist.debugData')) : null,
+  );
   const el = h('div', { class: 'plist' },
     h('header', { class: 'plist-header on-sign' },
       h('h1', { class: 'plist-title' }, t('app.title')),
@@ -32,9 +41,37 @@ export function createProjectList(opt) {
       headerNewBtn,
     ),
     h('main', { class: 'plist-body' },
-      h('div', { class: 'plist-inner' }, listEl),
+      h('div', { class: 'plist-inner' }, listEl, extras),
     ),
   );
+
+  /** サンプルを新しいプロジェクトとして追加して開く */
+  async function addSample() {
+    const res = await fetch(SAMPLE_URL);
+    if (!res.ok) throw new Error(`sample ${res.status}`);
+    const p = parseProjectText(await res.text());
+    const now = new Date().toISOString();
+    const copy = { ...p, id: newId(ID_PREFIX.project), createdAt: now, updatedAt: now, meta: {} };
+    await putProject(copy);
+    return copy;
+  }
+
+  async function openSample() {
+    try {
+      const p = await addSample();
+      opt.onOpen(p.id);
+    } catch (e) {
+      console.error(e);
+      toast(t('plist.sampleFailed'), { kind: 'error' });
+    }
+  }
+
+  async function makeDebug() {
+    const now = new Date().toISOString();
+    const p = { ...generateDebugProject({ name: t('plist.debugName'), now }), id: newId(ID_PREFIX.project) };
+    await putProject(p);
+    opt.onOpen(p.id);
+  }
 
   async function refresh() {
     let metas;
@@ -98,12 +135,18 @@ export function createProjectList(opt) {
     const name = /** @type {HTMLInputElement} */ (h('input', { class: 'input', type: 'text', value: mt('map.default.projectName'), autocomplete: 'off' }));
     const author = /** @type {HTMLInputElement} */ (h('input', { class: 'input', type: 'text', autocomplete: 'off' }));
     const err = h('p', { class: 'field-error', hidden: true });
+    const templateEmpty = /** @type {HTMLInputElement} */ (h('input', { type: 'radio', name: 'template', value: 'empty', checked: true }));
     const body = [
       h('label', { class: 'field' }, h('span', { class: 'field-label' }, t('newProject.name')), name, err),
       h('label', { class: 'field' }, h('span', { class: 'field-label' }, t('newProject.author')), author),
       h('fieldset', { class: 'field fieldset' },
         h('legend', { class: 'field-label' }, t('newProject.world')),
         h('label', { class: 'check' }, h('input', { type: 'radio', name: 'world', value: 'none', checked: true }), t('newProject.world.none')),
+      ),
+      h('fieldset', { class: 'field fieldset' },
+        h('legend', { class: 'field-label' }, t('newProject.template')),
+        h('label', { class: 'check' }, templateEmpty, t('newProject.template.empty')),
+        h('label', { class: 'check' }, h('input', { type: 'radio', name: 'template', value: 'sample' }), t('newProject.template.sample')),
       ),
     ];
     const v = await openDialog({
@@ -124,6 +167,19 @@ export function createProjectList(opt) {
       },
     });
     if (v !== 'ok') return;
+    // テンプレートがサンプルなら、サンプルの中身に名前と作者を入れて作る
+    if (!templateEmpty.checked) {
+      try {
+        const s = await addSample();
+        const renamed = { ...s, name: name.value.trim(), author: author.value.trim() || undefined };
+        await putProject(renamed);
+        opt.onOpen(renamed.id);
+      } catch (e) {
+        console.error(e);
+        toast(t('plist.sampleFailed'), { kind: 'error' });
+      }
+      return;
+    }
     const p = createProject({ name: name.value.trim(), author: author.value.trim() || undefined, regionId: region.id });
     try {
       await putProject(p);

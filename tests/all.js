@@ -20,4 +20,5 @@ export const files = [
   'numbering.test.js',
   'search.test.js',
   'file-io.test.js',
+  'sample.test.js',
 ];

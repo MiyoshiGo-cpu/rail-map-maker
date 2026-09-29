@@ -67,13 +67,13 @@
 
 作業の区切りごとに書き換える。どこまで進んだか、次にやること、未解決の問題を3〜8行で書き、セッションが変わってもここを読めば続きから再開できるようにする。
 
-- フェーズ1を17ステップで実装中（計画は承認済み。止まって確認をもらうのはステップ4・9・13・16・17 の後）。ステップ13の区切りの報告を出して確認待ち。
-- 済：1〜9（土台・テスト・i18n・データ・保存・キャンバス・駅と路線・並走と駅記号・選択/移動/削除/ショートカット）、10 パネルの全項目（事業者・路線・駅・区間・経由点・ボトムシートのドラッグ）、11 英字の自動生成（core/romaji.js）と駅名ラベルの自動配置（render/labels.js）、12 駅ナンバリング（core/numbering.js）とバッジ、13 乗換グループ（連絡線・パネル・駅を選んでグループにする）。
-- 次：ステップ14（データ表：事業者・路線・駅・乗換の4タブ。PC は表、スマホはカード。駅の並べ替え・営業キロ・並走順・路線の複製）。その後15（JSON 書き出し/読み込み・復元ポイント・バックアップの案内・チェック・駅の検索・設定/ヘルプ）、16（サンプル・?debug=1 の駅200・路線20・README）→ 区切り。
-- 描画：core/schematic.js（形）→ core/parallel.js（並走）→ render/scene-schematic.js（表示リスト。連絡線・駅記号・ラベル）→ render/backend-canvas.js。操作：ui/editor.js がツール（ui/tools/）とパネル（ui/panel-host.js・ui/panels/）を組み立てる。
-- css/components.css が550行を超えたので、次の部品の CSS は新しいファイル（例：css/table.css）に分けて index.html に足す。ui/editor.js も約550行なので、足すときは別ファイルに分ける。
-- 確認用：`?debug=1` で window.rmmDebug（store・es・canvasView・getScene）。アプリ内ブラウザは隠れていると描画・タイマーが止まり、スクリーンショットが古い画面のことがある（撮り直すと直る）。
-- 起動：`py tools/serve.py` → http://localhost:8000/（同じネットワークの iPhone からは http://192.168.0.181:8000/）、テスト：`npm test`、検査：`node tools/check-i18n.js`。
+- フェーズ1を17ステップで実装中（計画は承認済み。止まって確認をもらうのはステップ4・9・13・16・17 の後）。
+- 済：1〜15（土台〜書き出し・復元ポイント・チェック・検索・設定・ヘルプ）。16 は途中：サンプル（tools/make-sample.js → samples/sample-metro.railmap.json、一覧の「サンプルを開く」と新規作成のテンプレート）と、?debug=1 の「性能確認用のデータを作る」（core/debug-data.js、駅200・路線20）まで作ってテスト済み（145件成功）。
+- 次（16 の残り）：ブラウザで性能確認（駅200・路線20でパン・ズームが引っかからないか。描画時間を計る）、README の更新（使い方・サンプル・バックアップ・iPhone の注意）、幅390/1280 の確認 → コミット → 区切りの報告（ステップ14〜16）で確認待ち。その後 17（完了条件13個の総点検、SPEC §10 の追記、push の許可をもらって公開手順の案内）。
+- 描画：core/schematic.js → core/parallel.js → render/scene-schematic.js（連絡線・駅記号・labels.js のラベル）→ render/backend-canvas.js。操作：ui/editor.js（約540行）＋ editor-header.js・editor-commands.js・editor-state.js・tools/・panels/・data-view.js・check-view.js。
+- CSS は app.css・components.css（約555行、これ以上足さない）・table.css。カタログは ja.js（約490行）＋ ja-help.js。
+- 確認用：`?debug=1` で window.rmmDebug（store・es・canvasView・getScene・commands）。アプリ内ブラウザは隠れていると描画・タイマーが止まり、スクリーンショットが古い画面のことがある。
+- 起動：`py tools/serve.py` → http://localhost:8000/（iPhone は同じネットワークで http://192.168.0.181:8000/）、テスト：`npm test`、検査：`node tools/check-i18n.js`。
 
 ## 決定事項ログ
 
@@ -109,3 +109,4 @@
 - 2026-09-29 データ表とチェックは同じ場所（PC は画面下、スマホは全面）にどちらか一方だけ開く。
 - 2026-09-29 読み込み：ファイルの ID がまだ無ければそのまま、あれば新しい ID で追加する。自動で開かず一覧に足す。
 - 2026-09-29 復元ポイントを作る時機：10分ごと（変更があれば）、2駅以上をまとめて削除する前、路線を削除する前、英字の規則を変える前、復元する前。
+- 2026-09-29 サンプルの「丘の上（おかのうえ）」は §6.1 の長音の規則だと Okanoe になるため、英字の自動生成を切って Okanoue と手で入れた（語の切れ目にまたがる「のう」は規則では区別しない）。
