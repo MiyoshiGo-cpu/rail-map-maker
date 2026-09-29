@@ -100,7 +100,7 @@
 
 - フェーズ1は完了（2026-09-29）。完了条件13個をすべて確認し、公開版を PC と iPhone（Safari・ホーム画面）で確認済み。未計測なのは iPhone 実機での駅200・路線20の操作感だけ（任意）。
 - フェーズ2は完了（2026-09-29）。計画のステップ0〜10をすべて終え、完了条件5つを確かめ、公開版を iPhone で確認してもらった。
-- フェーズ3（見た目と書き出し）はまだ始めていない（計画も未作成）。
+- フェーズ3（見た目と書き出し）は計画を承認済み（2026-09-29。下の「フェーズ3の計画」）。ステップ1から進めている。
 - 性能（PC）：駅200・路線20で、パン・ズームの描画1回が中央値0.8〜3.5ms（3倍の画素数）、ラベル込みの表示リスト作成が約9ms。
 - 描画：core/schematic.js → core/parallel.js → render/scene-schematic.js（連絡線・駅記号・labels.js のラベル）→ render/backend-canvas.js。操作：ui/editor.js（約555行。これ以上は editor-views.js などに分ける）＋ editor-header.js・editor-commands.js・editor-state.js・tools/・panels/・data-view.js・check-view.js。起動と画面の切り替え・iPhone 向けの処理は js/main.js。
 - 型は core/schema.js、既定値と補完は defaults.js、アクションは core/actions/、保存は js/storage/。CSS は app.css・components.css・table.css・services.css（フェーズ2）、カタログは js/i18n/ja.js（約490行）＋ ja-help.js ＋ ja-services.js（フェーズ2）。営業キロは core/distance.js、種別は core/actions/service-types.js・ui/panels/service-type-panel.js・ui/data-tabs-services.js。系統：経路の展開・停車駅・直通の判定は core/services.js、経路の候補は core/network.js、所要時間は core/runtime.js、アクションと後始末は core/actions/services.js、チェックは core/validate-services.js。画面は ui/panels/service-panel.js・service-new-panel.js・ui/route-picker.js・service-ui.js・pending-pick.js（地図のタップで駅を選ぶ）・service-overlay.js（路線図の強調）。停車駅案内図は core/stopchart.js（中身）→ render/scene-stopchart.js（表示リスト。横・縦）→ ui/stopchart-view.js（ビュー）、ビューの切り替えは ui/editor-views.js。
@@ -117,8 +117,29 @@
 
 ### 次にやること（この順番で）
 
-1. （任意）iPhone で大きな路線図の操作感を確かめてもらう（「iPhone での確認手順」の5）。
-2. フェーズ3「見た目と書き出し」の計画を立てて出す。コードはまだ書かない。SPEC §7 フェーズ3 と §5.6〜5.9（駅名標・凡例・スタイル・書き出し）を読み、作るファイル・ステップと区切り・質問・リスク・確認方法をまとめて承認を待つ。停車駅案内図の書き出し（表示リストは render/scene-stopchart.js にある）も含めるか確認する。
+1. 下の「フェーズ3の計画」をステップ順に進める。ステップごとに実装 → テスト → check-i18n → ブラウザ確認 → コミット。区切りでは main に反映し、iPhone での確認手順を伝えて、確認を待つ。
+2. 完了条件（SPEC §7 フェーズ3 の5つ）を総点検 → main に反映して公開 → iPhone で確認 → 「進捗」にチェックし、このファイルを更新。
+3. （任意）iPhone で大きな路線図の操作感を確かめてもらう（「iPhone での確認手順」の5）。
+
+### フェーズ3の計画（2026-09-29 承認）
+
+| # | ステップ | 主なファイル |
+|---|---|---|
+| 1 | スタイル：プリセット（都市鉄道＝既定・広域・モノクロ印刷・夜間。地域パックに置く）と詳細設定（線の太さ・駅記号の大きさ・角の半径・書体・文字サイズ・英字と駅番号・背景色・格子）。広域は一般駅を線上の目盛りに、モノクロは灰色の濃淡と破線の種類で区別。案内図にも同じ色づかい | core/map-style.js、ui/style-settings.js、render/styles.js |
+| 2 | ラインカラーのパレット（よく使われる約20色は地域パック・最近使った色は localStorage `rmm:recentColors` に最大8色・16進数）と、似た色の警告（同じ駅を通る路線どうしで CIEDE2000 の ΔE＜10） | ui/color-palette.js、core/color.js |
+| 3 | 駅名の縦書き・回転の仕上げ（縦書きの英字・駅番号の位置、回した札の当たり判定とドラッグ） | render/labels.js |
+| 区切り1 | main に反映 → iPhone で確認 | |
+| 4 | 凡例とタイトル（事業者ごとの路線一覧・種別・記号の説明・タイトル・作者・日付）。地図の外側に置く（上の角なら地図の上、下の角なら地図の下）。MapStyle に設定を持つ | render/scene-legend.js |
+| 5 | PNG の書き出し：「書き出す」でシート（形式・倍率1〜4・透過。JSON もここ）。約1,600万画素を超えたら案内と「倍率を下げて書き出す」。iPhone は共有シート。書き出し後は canvas を解放 | ui/export-view.js、ui/exporter.js、core/export-size.js |
+| 6 | SVG の書き出し（同じ表示リストから。文字は text のまま、フォントは埋め込まない） | render/backend-svg.js |
+| 7 | 印刷（SVG をページに入れ、印刷用 CSS で A4／A3 横） | ui/print.js、css/export.css |
+| 区切り2 | main に反映 → iPhone で確認 | |
+| 8 | 駅名標ビュー（ヘッダーに「駅名標」、キー 4）。テンプレート3つ（帯型・ナンバリング強調型・ひらがな主体型）、駅と路線と表示項目を選ぶ。前後の駅は左＝起点側・右＝終点側、終端は片側、環状線は一周でつなぐ。テンプレートと表示項目は MapStyle に保存、表示中の駅・路線は保存しない | core/signboard.js、render/scene-signboard.js、ui/signboard-view.js |
+| 9 | 総点検：完了条件5つ、SPEC §10・README・ヘルプ・CLAUDE.md | |
+| 区切り3 | main に反映 → iPhone で最終確認 → フェーズ3完了 | |
+
+- 書き出しの対象は今表示しているビュー（路線図・案内図・駅名標）。書き出す画像には格子を入れず、駅名はズームに関係なくすべて出す。PNG の既定の倍率は2倍。
+- 文言は js/i18n/ja-export.js、CSS は css/export.css に書く（editor.js は約555行なので、ビューと書き出しは別ファイルに分ける）。
 
 ### フェーズ2の計画（2026-09-29 承認・すべて実施）
 
@@ -192,3 +213,4 @@
 - 2026-09-29 停車駅案内図：行は停車駅と種別の名前が同じ系統をまとめる（事業者ごとの「各駅停車」も1行。種別の札は名前が変わる所だけ）。直通の並びの案内図は、手本の系統の経路に、最初と最後の路線を端の駅まで足して並べる。案内図の路線の中で続く（環状線を回り続けるなど）のは直通の印を出さない。行を押すとその系統を選ぶ。
 - 2026-09-29 スマホのヘッダーは2段（上：戻る・名前・↶↷⋯、下：路線図・案内図）。そのため --header-h を 88px にした。ビューを切り替えたときはシートを見出しだけに下げる。
 - 2026-09-29 サンプル：2号線の東の終点をみなと急行の東湾（(10,-1) に移動）、緑ヶ丘線の起点を2号線の西公園にして、緑ヶ丘線 → 2号線 → みなと急行本線 の直通急行（2号線内は各駅停車）を入れた。JR の東湾・旭町との乗換グループは残した。営業キロは路線図の上の距離から1マス0.8kmで入れ、使っていない種別は外した。
+- 2026-09-29 フェーズ3の方針（計画の承認時に決めた）：凡例とタイトルは地図の外側（上の角なら上、下の角なら下）に置いて重ならないようにする。書き出しは今表示しているビューをそのまま。駅名標のテンプレートと表示項目はプロジェクト（MapStyle）に保存し、表示中の駅・路線は保存しない。スタイルプリセットを選ぶと詳細設定をまとめて書き換える。モノクロ印刷・夜間は案内図と駅名標にも当てる。「書き出す」ボタンはシートを開き（JSON もそこで選べる）、Ctrl+S は JSON のまま。
