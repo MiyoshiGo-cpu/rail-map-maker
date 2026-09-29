@@ -33,4 +33,5 @@ export const files = [
   'export-size.test.js',
   'backend-svg.test.js',
   'signboard.test.js',
+  'terrain.test.js',
 ];
