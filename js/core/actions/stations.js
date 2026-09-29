@@ -17,7 +17,7 @@ import { removeStop } from '../lines.js';
 export function addStationTo(tx, ctx, pos, fields = {}) {
   const st = createStation(ctx.region, {
     id: ctx.newId(ID_PREFIX.station),
-    schematic: { x: Math.round(pos.x), y: Math.round(pos.y) },
+    schematic: { x: Math.round(pos.x) + 0, y: Math.round(pos.y) + 0 },
     ...fields,
   });
   tx.push(['stations'], st);
@@ -95,12 +95,28 @@ export const stationReducers = {
       const p = positions[st.id];
       if (!p) return;
       if (st.schematic && st.schematic.x === p.x && st.schematic.y === p.y) return;
-      tx.set(['stations', i, 'schematic'], { x: Math.round(p.x), y: Math.round(p.y) });
+      tx.set(['stations', i, 'schematic'], { x: Math.round(p.x) + 0, y: Math.round(p.y) + 0 });
     });
   },
 
   /** { ids } */
   'station/delete'(tx, { ids }) {
     deleteStationsFrom(tx, ids);
+  },
+
+  /** 駅を複製して (dx, dy) ずらした位置に置く { ids, dx, dy } → 新しい ID の配列 */
+  'station/duplicate'(tx, { ids, dx = 1, dy = 1 }, ctx) {
+    const out = [];
+    for (const id of ids) {
+      const st = tx.find('stations', id);
+      const copy = {
+        ...st,
+        id: ctx.newId(ID_PREFIX.station),
+        schematic: st.schematic ? { x: st.schematic.x + dx, y: st.schematic.y + dy } : null,
+      };
+      tx.push(['stations'], copy);
+      out.push(copy.id);
+    }
+    return out;
   },
 };

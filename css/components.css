@@ -448,3 +448,9 @@
   font-size: var(--fs-12);
 }
 .color-field .input { flex: 1; min-width: 0; font-variant-numeric: tabular-nums; }
+
+.align-actions .btn { flex: 1 1 calc(50% - 8px); }
+.zoom-ctl .icon-btn[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--accent-text);
+}

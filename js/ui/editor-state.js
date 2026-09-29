@@ -17,6 +17,7 @@
  * @property {{ operatorId: string, name: string, color: string, symbol: string, kind: string }} newLine 新しい路線の入力中の値
  * @property {{ x: number, y: number } | null} hover マウスが指している格子点
  * @property {boolean} rangeMode スマホの範囲選択
+ * @property {{ x0: number, y0: number, x1: number, y1: number } | null} marquee 範囲選択中の四角（世界座標）
  */
 
 /** @param {EditorState} initial */

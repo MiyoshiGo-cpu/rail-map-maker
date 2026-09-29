@@ -29,7 +29,7 @@ const PATHS = {
   arrowUp: 'M12 19V5|M6 11l6-6 6 6',
   arrowDown: 'M12 5v14|M6 13l6 6 6-6',
   copy: 'M9 9h11v11H9z|M5 15H4V4h11v1',
-  range: 'M4 4h4|M4 4v4|M20 4h-4|M20 4v4|M4 20h4|M4 20v-4|M20 20h-4|M20 20v-4',
+  range: 'M4 4h3|M10 4h4|M17 4h3v3|M20 10v4|M20 17v3h-3|M14 20h-4|M7 20H4v-3|M4 14v-4|M4 7V4',
   back: 'M15 6l-6 6 6 6',
   interchange: 'M7 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0|M17 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0|M10 12h4',
   layers: 'M12 3l9 5-9 5-9-5z|M3 13l9 5 9-5',

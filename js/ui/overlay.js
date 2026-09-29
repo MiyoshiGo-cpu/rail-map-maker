@@ -107,6 +107,22 @@ export function drawOverlay(ctx, o) {
     }
   }
 
+  // 範囲選択の四角
+  if (es.marquee) {
+    const m = es.marquee;
+    ctx.beginPath();
+    ctx.rect(Math.min(m.x0, m.x1), Math.min(m.y0, m.y1), Math.abs(m.x1 - m.x0), Math.abs(m.y1 - m.y0));
+    ctx.fillStyle = accent;
+    ctx.globalAlpha = 0.08;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.setLineDash([px(4), px(3)]);
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = px(1.5);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
   // 駅を置く・路線を引くツールで、指している格子点
   if ((es.tool === 'station' || es.tool === 'line') && es.hover) {
     ctx.beginPath();

@@ -14,4 +14,5 @@ export const files = [
   'viewport.test.js',
   'octilinear.test.js',
   'parallel.test.js',
+  'align.test.js',
 ];

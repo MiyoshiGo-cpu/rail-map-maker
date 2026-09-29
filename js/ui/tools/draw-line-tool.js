@@ -5,7 +5,7 @@
 // ・区間をタップすると、駅の挿入と曲がり位置の切り替えのメニューを出す。
 import { t } from '../../i18n/i18n.js';
 import { snapToGrid } from '../../core/viewport.js';
-import { isOctilinear } from '../../core/octilinear.js';
+import { sectionMenuItems } from './section-actions.js';
 
 /**
  * @param {import('../editor.js').ToolContext} ed
@@ -111,53 +111,15 @@ export function createDrawLineTool(ed) {
     if (line) ed.select({ type: 'line', lineId: line.id });
   }
 
-  /** 区間のメニュー：駅の挿入と曲がり位置の切り替え */
-  function sectionMenu(p, w, hit) {
-    const line = store.getState().lines.find((l) => l.id === hit.lineId);
-    if (!line) return;
-    const geom = ed.getScene().geom.get(line.id)?.[hit.index];
-    const sec = line.sections[hit.index] || {};
-    const straight = geom && geom.pts.length === 2 && isOctilinear(geom.pts[1].x - geom.pts[0].x, geom.pts[1].y - geom.pts[0].y);
-    ed.openMenuAt(p, [
-      {
-        label: t('tool.line.insertStation'),
-        onSelect: () => {
-          const g = snapToGrid(w.x, w.y);
-          const existing = ed.stationAt(g);
-          if (existing && line.stops.some((s) => s.stationId === existing)) {
-            ed.toast(t('tool.line.alreadyInLine'));
-            return;
-          }
-          const target = existing ? { stationId: existing } : { newStation: g };
-          store.dispatch({ type: 'line/insertStop', lineId: line.id, sectionIndex: hit.index, ...target });
-        },
-      },
-      {
-        label: t('tool.line.toggleBend'),
-        disabled: straight,
-        onSelect: () => {
-          let cur = sec.schematicBend;
-          if (!cur || cur === 'auto') {
-            // いま描かれている形から、どちらになっているかを読み取る
-            const a = geom.pts[0];
-            const b = geom.pts[1];
-            cur = a.x !== b.x && a.y !== b.y ? 'diagonalFirst' : 'straightFirst';
-          }
-          store.dispatch({
-            type: 'line/section',
-            lineId: line.id,
-            index: hit.index,
-            fields: { schematicBend: cur === 'diagonalFirst' ? 'straightFirst' : 'diagonalFirst' },
-          });
-        },
-      },
-    ]);
-  }
-
   return {
     id: 'line',
     cursor: 'crosshair',
     finish,
+    /** この駅から新しい路線を引き始める（分岐） */
+    branchFrom(stationId) {
+      es.set({ lineChoice: 'new', drawing: null });
+      start({ stationId });
+    },
     /** @param {any} p @param {{ x: number, y: number }} w */
     onTap(p, w) {
       const hit = ed.hitTest(p, w, (tg) => tg.type === 'station' || tg.type === 'label' || tg.type === 'section');
@@ -171,8 +133,11 @@ export function createDrawLineTool(ed) {
         add({ stationId: existing });
         return;
       }
-      if (hit && hit.type === 'section') {
-        sectionMenu(p, w, hit);
+      // 区間のメニューは、引いている途中でなければどの路線でも、引いている途中ならその路線だけに出す
+      // （ほかの路線の区間の上なら、そこに駅を作って追加する）
+      const d = es.get().drawing;
+      if (hit && hit.type === 'section' && (!d || d.lineId === hit.lineId)) {
+        ed.openMenuAt(p, sectionMenuItems(ed, hit, w, { insert: true, bend: true }));
         return;
       }
       add({ newStation: g });

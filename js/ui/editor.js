@@ -12,13 +12,16 @@ import { readableTextColor } from '../core/color.js';
 import { getProject, putProject } from '../storage/idb.js';
 import { createAutosave } from '../storage/autosave.js';
 import { createCanvasView } from './canvas-view.js';
-import { stationBounds, visibleWorldRect, GRID } from '../core/viewport.js';
+import { stationBounds, visibleWorldRect, screenToWorld, GRID } from '../core/viewport.js';
+import { alignHorizontal, alignVertical, alignDiagonal, distributeEvenly, hasCollision } from '../core/align.js';
 import { buildSchematicScene } from '../render/scene-schematic.js';
 import { drawItems, createMeasure } from '../render/backend-canvas.js';
 import { createEditorState, NO_SELECTION } from './editor-state.js';
 import { drawOverlay, drawUnderlay } from './overlay.js';
 import { createPanelHost } from './panel-host.js';
-import { createSelectTool } from './tools/select-tool.js';
+import { createSelectTool, moveStationsSafely } from './tools/select-tool.js';
+import { createDeleteTool } from './tools/delete-tool.js';
+import { attachShortcuts } from './keyboard.js';
 import { createPlaceStationTool } from './tools/place-station-tool.js';
 import { createDrawLineTool } from './tools/draw-line-tool.js';
 
@@ -41,6 +44,11 @@ const HIT_RADIUS = { touch: 22, mouse: 8, pen: 12 };
  * @property {(opt: { title: string, message?: string, okLabel?: string, danger?: boolean }) => Promise<boolean>} confirm
  * @property {(msg: string) => void} toast
  * @property {() => import('../render/scene-schematic.js').SchematicScene} getScene
+ * @property {(p: { x: number, y: number }) => { x: number, y: number }} toWorld 画面の点を世界座標に
+ * @property {(ids: string[], dx: number, dy: number) => boolean} moveStations
+ * @property {(ids: string[]) => void} deleteStations
+ * @property {(lineId: string) => void} deleteLine
+ * @property {(stationId: string) => import('./menu.js').MenuItem[]} stationMenuItems
  */
 
 /**
@@ -83,6 +91,7 @@ export function createEditor(opt) {
       newLine: { operatorId: '', name: '', color: '', symbol: '', kind: '' },
       hover: null,
       rangeMode: false,
+      marquee: null,
     });
 
     // ---------- 保存 ----------
@@ -126,12 +135,14 @@ export function createEditor(opt) {
       { id: 'select', icon: 'select', label: t('tool.select'), title: t('tool.select.title') },
       { id: 'station', icon: 'station', label: t('tool.station'), title: t('tool.station.title') },
       { id: 'line', icon: 'line', label: t('tool.line'), title: t('tool.line.title') },
+      // 削除ツールは PC だけ（スマホは長押しメニューとパネルのボタンで削除する）
+      { id: 'delete', icon: 'delete', label: t('tool.delete'), title: t('tool.delete.title'), pcOnly: true },
     ];
     const toolButtons = new Map();
     const toolsNav = h('nav', { class: 'ed-tools', 'aria-label': t('tool.label') },
       toolDefs.map((d) => {
         const b = h('button', {
-          class: 'badge-btn',
+          class: ['badge-btn', d.pcOnly ? 'pc-only' : ''],
           type: 'button',
           title: d.title,
           'aria-pressed': 'false',
@@ -221,11 +232,34 @@ export function createEditor(opt) {
       },
       confirm: (o) => confirmDialog(o),
       toast: (m) => toast(m),
+      toWorld: (p) => screenToWorld(canvasView.getView(), canvasView.getSize(), p.x, p.y),
+      moveStations: (ids, dx, dy) => moveStationsSafely(store, ids, dx, dy, toast),
+      deleteStations(ids) {
+        if (!ids.length) return;
+        store.dispatch({ type: 'station/delete', ids });
+        es.set({ selection: NO_SELECTION });
+        toast(ids.length === 1 ? t('station.deleted') : t('station.deletedMany', { count: ids.length }));
+      },
+      deleteLine(lineId) {
+        const line = store.getState().lines.find((l) => l.id === lineId);
+        if (!line) return;
+        store.dispatch({ type: 'line/delete', lineId });
+        es.set({ selection: NO_SELECTION, drawing: null });
+        toast(t('line.deleted', { name: line.displayName || line.name }));
+      },
+      stationMenuItems(stationId) {
+        return [
+          { label: t('station.branch'), onSelect: () => { setTool('line'); tools.line.branchFrom(stationId); } },
+          { separator: true },
+          { label: t('station.delete'), danger: true, onSelect: () => toolCtx.deleteStations([stationId]) },
+        ];
+      },
     };
     const tools = {
       select: createSelectTool(toolCtx),
       station: createPlaceStationTool(toolCtx),
       line: createDrawLineTool(toolCtx),
+      delete: createDeleteTool(toolCtx),
     };
     const currentTool = () => tools[es.get().tool] || tools.select;
     canvasView.setInput({
@@ -237,10 +271,48 @@ export function createEditor(opt) {
     });
     canvasView.canvas.addEventListener('pointerleave', () => toolCtx.setHover(null));
 
-    /** @param {'select'|'station'|'line'} id */
+    /** @param {'select'|'station'|'line'|'delete'} id */
     function setTool(id) {
       if (es.get().tool === id) return;
-      es.set({ tool: id, drawing: null, hover: null });
+      es.set({ tool: id, drawing: null, hover: null, rangeMode: false, marquee: null });
+    }
+
+    // スマホの「範囲」ボタン（選択ツールのときだけ出す）
+    const rangeBtn = h('button', {
+      class: 'icon-btn mobile-only',
+      type: 'button',
+      'aria-label': t('range.toggle'),
+      title: t('range.toggle'),
+      'aria-pressed': 'false',
+      on: { click: () => es.set({ rangeMode: !es.get().rangeMode }) },
+    }, icon('range'));
+    canvasView.addControl(rangeBtn);
+
+    /** 選んだ駅を整列する */
+    function align(mode) {
+      const sel = es.get().selection;
+      if (sel.type !== 'stations' || sel.ids.length < 2) return;
+      const stations = store.getState().stations;
+      const pts = sel.ids.map((id) => stations.find((s) => s.id === id)).filter((s) => s && s.schematic)
+        .map((s) => ({ id: s.id, x: s.schematic.x, y: s.schematic.y }));
+      const fn = { horizontal: alignHorizontal, vertical: alignVertical, diagonal: alignDiagonal, even: distributeEvenly }[mode];
+      const positions = fn(pts);
+      if (hasCollision(positions, stations)) {
+        toast(t('align.blocked'));
+        return;
+      }
+      store.dispatch({ type: 'station/place', positions });
+    }
+
+    /** 選んでいるものを削除する（Delete キー） */
+    function deleteSelection() {
+      const sel = es.get().selection;
+      if (sel.type === 'stations') toolCtx.deleteStations(sel.ids);
+      else if (sel.type === 'section') {
+        store.dispatch({ type: 'line/cutSection', lineId: sel.lineId, sectionIndex: sel.index });
+        es.set({ selection: NO_SELECTION });
+        toast(t('section.deleted'));
+      } else if (sel.type === 'line') toolCtx.deleteLine(sel.lineId);
     }
 
     // ---------- パネル ----------
@@ -248,14 +320,10 @@ export function createEditor(opt) {
       store,
       es,
       finishDrawing: () => tools.line.finish(),
-      onDelete: (ids) => {
-        store.dispatch({ type: 'station/delete', ids });
-        es.set({ selection: NO_SELECTION });
-      },
-      onDeleteLine: (lineId) => {
-        store.dispatch({ type: 'line/delete', lineId });
-        es.set({ selection: NO_SELECTION, drawing: null });
-      },
+      onDelete: (ids) => toolCtx.deleteStations(ids),
+      onDeleteLine: (lineId) => toolCtx.deleteLine(lineId),
+      align,
+      deleteSelection,
     });
 
     replaceChildren(el,
@@ -266,22 +334,36 @@ export function createEditor(opt) {
       panels.el,
     );
 
-    // ---------- キーボード（全ショートカットはステップ9） ----------
-    const onKey = (e) => {
-      if (e.isComposing || e.keyCode === 229) return;
-      const tag = /** @type {HTMLElement} */ (e.target).tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || document.querySelector('dialog[open]')) return;
-      if (currentTool().onKey?.(e)) {
-        e.preventDefault();
-        return;
-      }
-      if (e.key === 'Escape' && es.get().selection.type !== 'none') {
-        es.set({ selection: NO_SELECTION });
-        e.preventDefault();
-      }
-    };
-    document.addEventListener('keydown', onKey);
-    cleanups.push(() => document.removeEventListener('keydown', onKey));
+    // ---------- キーボード（§4.5） ----------
+    cleanups.push(attachShortcuts({
+      setTool,
+      undo: () => store.undo(),
+      redo: () => store.redo(),
+      deleteSelection,
+      selectAll() {
+        const ids = store.getState().stations.map((st) => st.id);
+        es.set({ selection: ids.length ? { type: 'stations', ids } : NO_SELECTION });
+      },
+      duplicate() {
+        const sel = es.get().selection;
+        if (sel.type === 'stations' && sel.ids.length) {
+          const ids = store.dispatch({ type: 'station/duplicate', ids: sel.ids, dx: 1, dy: 1 });
+          es.set({ selection: { type: 'stations', ids } });
+        } else if (sel.type === 'line' || sel.type === 'section') {
+          const lineId = store.dispatch({ type: 'line/duplicate', lineId: sel.lineId });
+          es.set({ selection: { type: 'line', lineId } });
+        }
+      },
+      escape() {
+        const s = es.get();
+        if (s.rangeMode || s.marquee) es.set({ rangeMode: false, marquee: null });
+        else if (s.selection.type !== 'none') es.set({ selection: NO_SELECTION });
+      },
+      fit: () => canvasView.fitAll(),
+      zoom: (f) => canvasView.zoomBy(f),
+      toolKey: (e) => !!currentTool().onKey?.(e),
+      view: () => {},
+    }));
 
     // ---------- 画面の更新 ----------
     function accentColor() {
@@ -340,6 +422,8 @@ export function createEditor(opt) {
       undoBtn.disabled = !store.canUndo();
       redoBtn.disabled = !store.canRedo();
       for (const [id, b] of toolButtons) b.setAttribute('aria-pressed', String(s.tool === id));
+      rangeBtn.hidden = s.tool !== 'select';
+      rangeBtn.setAttribute('aria-pressed', String(!!s.rangeMode));
       accent = accentColor();
       el.style.setProperty('--accent', accent);
       el.style.setProperty('--accent-text', readableTextColor(accent));

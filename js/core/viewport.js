@@ -36,7 +36,8 @@ export function screenToWorld(v, size, sx, sy) {
  * @param {number} wx @param {number} wy
  */
 export function snapToGrid(wx, wy) {
-  return { x: Math.round(wx / GRID), y: Math.round(wy / GRID) };
+  // + 0 で -0 を 0 にする（JSON の往復で値が変わらないように）
+  return { x: Math.round(wx / GRID) + 0, y: Math.round(wy / GRID) + 0 };
 }
 
 /**

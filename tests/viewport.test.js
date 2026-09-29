@@ -66,3 +66,9 @@ test('全体表示：隠れている部分（ボトムシート）を除いた�
   assert.ok(top.y >= 9.99, `上端 ${top.y}`);
   assert.ok(bottom.y <= 300 - 150 - 9.99, `下端 ${bottom.y}`);
 });
+
+test('格子へのスナップは -0 を作らない（JSON の往復で値が変わらないように）', () => {
+  const g = snapToGrid(-5, -3);
+  assert.equal(g.x, 0);
+  assert.equal(g.y, 0);
+});

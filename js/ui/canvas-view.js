@@ -34,11 +34,8 @@ export function createCanvasView(opt) {
   const zoomOut = h('button', { class: 'icon-btn', type: 'button', 'aria-label': t('canvas.zoomOut'), title: t('canvas.zoomOut'), on: { click: () => zoomBy(0.8) } }, icon('minus'));
   const fitBtn = h('button', { class: 'icon-btn', type: 'button', 'aria-label': t('canvas.fit'), title: t('canvas.fit'), on: { click: () => fitAll() } }, icon('fit'));
   const hint = h('p', { class: 'ed-hint', hidden: true });
-  const el = h('div', { class: 'canvas-view' },
-    canvas,
-    h('div', { class: 'zoom-ctl on-paper' }, zoomIn, zoomOut, fitBtn),
-    hint,
-  );
+  const controls = h('div', { class: 'zoom-ctl on-paper' }, zoomIn, zoomOut, fitBtn);
+  const el = h('div', { class: 'canvas-view' }, canvas, controls, hint);
 
   const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
   let size = { width: 1, height: 1 };
@@ -148,6 +145,10 @@ export function createCanvasView(opt) {
     /** @param {CanvasInput} next */
     setInput(next) {
       input = next || {};
+    },
+    /** ズームボタンの上にボタンを足す @param {HTMLElement} btn */
+    addControl(btn) {
+      controls.prepend(btn);
     },
     /** @param {(ctx: CanvasRenderingContext2D, view: ViewState, size: { width: number, height: number }, dpr: number) => void} fn */
     addLayer(fn) {

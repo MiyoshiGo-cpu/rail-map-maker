@@ -6,6 +6,7 @@ import { createProjectPanel } from './panels/project-panel.js';
 import { createStationPanel } from './panels/station-panel.js';
 import { createLinePanel } from './panels/line-panel.js';
 import { createLineToolPanel } from './panels/line-tool-panel.js';
+import { createStationsPanel } from './panels/stations-panel.js';
 
 const STAGES = ['peek', 'half', 'full'];
 
@@ -16,6 +17,8 @@ const STAGES = ['peek', 'half', 'full'];
  *   finishDrawing: () => void,
  *   onDelete: (ids: string[]) => void,
  *   onDeleteLine: (lineId: string) => void,
+ *   align: (mode: 'horizontal'|'vertical'|'diagonal'|'even') => void,
+ *   deleteSelection: () => void,
  * }} ctx
  */
 export function createPanelHost(ctx) {
@@ -27,7 +30,7 @@ export function createPanelHost(ctx) {
     body,
   );
   let key = '';
-  /** @type {{ el: HTMLElement, update: (p: any) => void, focusName?: () => void } | null} */
+  /** @type {{ el: HTMLElement, update: (p: any, s?: any) => void, focusName?: () => void } | null} */
   let panel = null;
 
   function cycle() {
@@ -41,6 +44,7 @@ export function createPanelHost(ctx) {
     if (s.tool === 'line') return 'lineTool';
     const sel = s.selection;
     if (sel.type === 'stations' && sel.ids.length === 1) return `station:${sel.ids[0]}`;
+    if (sel.type === 'stations' && sel.ids.length > 1) return 'stations';
     if (sel.type === 'line') return `line:${sel.lineId}`;
     if (sel.type === 'section') return `section:${sel.lineId}:${sel.index}`;
     return 'project';
@@ -51,6 +55,7 @@ export function createPanelHost(ctx) {
     switch (kind) {
       case 'lineTool': return createLineToolPanel(ctx);
       case 'station': return createStationPanel(ctx, a);
+      case 'stations': return createStationsPanel(ctx);
       case 'line': return createLinePanel(ctx, a, null);
       case 'section': return createLinePanel(ctx, a, Number(b));
       default: return createProjectPanel(ctx);
@@ -72,7 +77,7 @@ export function createPanelHost(ctx) {
         else if (wasProject && el.dataset.stage === 'peek') el.dataset.stage = 'half';
       }
       // 見出しの上の帯は --accent（選んでいる路線の色）を使う
-      panel.update(p);
+      panel.update(p, ctx.es.get());
     },
     focusStationName() {
       if (panel && panel.focusName) {

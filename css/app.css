@@ -378,3 +378,11 @@ button { touch-action: manipulation; }
     bottom: auto;
   }
 }
+
+/* PC だけ・スマホだけに出す */
+@media (max-width: 899.98px) {
+  .pc-only { display: none !important; }
+}
+@media (min-width: 900px) {
+  .mobile-only { display: none !important; }
+}
