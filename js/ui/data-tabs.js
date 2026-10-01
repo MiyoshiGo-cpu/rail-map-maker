@@ -13,7 +13,7 @@ import { cells } from './grid.js';
 /**
  * @typedef {object} TabCtx
  * @property {any} store
- * @property {(sel: any, opt?: { reveal?: { x: number, y: number } }) => void} activate
+ * @property {(sel: any, opt?: { reveal?: import('../core/schema.js').Station | null }) => void} activate
  * @property {(lineId: string) => void} openStops
  * @property {(lineId: string, delta: number) => void} moveLineOrder
  */
@@ -218,7 +218,7 @@ export const TABS = {
       title: r.st.name || t('station.unnamed'),
       sub: [r.st.reading, r.st.names.en, r.codes.join(' ')].filter(Boolean).join(t('common.dot')),
     }),
-    activate: (r, ctx) => ctx.activate({ type: 'stations', ids: [r.st.id] }, { reveal: r.st.schematic }),
+    activate: (r, ctx) => ctx.activate({ type: 'stations', ids: [r.st.id] }, { reveal: r.st }),
   },
 
   interchanges: {

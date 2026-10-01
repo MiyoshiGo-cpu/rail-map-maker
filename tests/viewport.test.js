@@ -1,5 +1,5 @@
 import { test, assert } from './harness.js';
-import { worldToScreen, screenToWorld, zoomAt, panBy, fitBounds, snapToGrid, stationBounds, clampZoom, GRID, MAX_ZOOM, MIN_ZOOM } from '../js/core/viewport.js';
+import { worldToScreen, screenToWorld, zoomAt, panBy, fitBounds, snapToGrid, stationBounds, clampZoom, GRID, MAX_ZOOM, MIN_ZOOM, GEO_ZOOM, GEO_UNIT } from '../js/core/viewport.js';
 
 const size = { width: 400, height: 300 };
 
@@ -71,4 +71,13 @@ test('格子へのスナップは -0 を作らない（JSON の往復で値が�
   const g = snapToGrid(-5, -3);
   assert.equal(g.x, 0);
   assert.equal(g.y, 0);
+});
+
+test('表示：地理ビューは倍率の範囲が違い、大サイズの地形全体をスマホの幅に収められる', () => {
+  assert.equal(clampZoom(0.001, GEO_ZOOM), GEO_ZOOM.min);
+  assert.equal(zoomAt({ cx: 0, cy: 0, zoom: GEO_ZOOM.max }, size, 0, 0, 2, GEO_ZOOM).zoom, GEO_ZOOM.max);
+  // 大サイズは 512km 四方
+  const ext = 512 * GEO_UNIT;
+  const v = fitBounds({ minX: 0, minY: 0, maxX: ext, maxY: ext }, { width: 390, height: 600 }, { padding: 16, limits: GEO_ZOOM });
+  assert.ok(ext * v.zoom <= 390 - 32 + 1e-9, String(v.zoom));
 });

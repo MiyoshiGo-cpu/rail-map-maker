@@ -188,7 +188,7 @@ function labelItem(it) {
       body += badgeEl(r);
     } else {
       const o = { text: r.text, x: r.x, y: r.y, rot: r.rot, font: r.font, align: r.align || 'left' };
-      if (it.halo) halo += textEl({ ...o, fill: 'none', stroke: it.halo, strokeWidth: 3 });
+      if (it.halo) halo += textEl({ ...o, fill: 'none', stroke: it.halo, strokeWidth: it.haloWidth || 3 });
       body += textEl({ ...o, fill: r.color });
     }
   }

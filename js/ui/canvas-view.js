@@ -27,6 +27,8 @@ import { zoomAt, panBy, fitBounds, screenToWorld } from '../core/viewport.js';
  *   getBounds: () => ({ minX: number, minY: number, maxX: number, maxY: number } | null),
  *   getInsets?: () => { top: number, right: number, bottom: number, left: number },
  *   label?: string,
+ *   zoomLimits?: import('../core/viewport.js').ZoomLimits,
+ *   fitMaxZoom?: number,
  * }} opt
  */
 export function createCanvasView(opt) {
@@ -81,13 +83,13 @@ export function createCanvasView(opt) {
 
   function zoomBy(factor) {
     currentSize();
-    setView(zoomAt(view, size, size.width / 2, size.height / 2, factor));
+    setView(zoomAt(view, size, size.width / 2, size.height / 2, factor, opt.zoomLimits));
   }
 
   function fitAll() {
     currentSize();
     const insets = opt.getInsets ? opt.getInsets() : undefined;
-    setView(fitBounds(opt.getBounds(), size, { padding: Math.min(48, size.width / 8), insets }));
+    setView(fitBounds(opt.getBounds(), size, { padding: Math.min(48, size.width / 8), insets, limits: opt.zoomLimits, maxZoom: opt.fitMaxZoom }));
   }
 
   /** 大きさをまだ測っていなければ（最初の描画の前など）、その場で測る */
@@ -120,7 +122,7 @@ export function createCanvasView(opt) {
     onTap: (p) => input.onTap && input.onTap(p, world(p)),
     onDoubleTap: (p) => {
       if (input.onDoubleTap && input.onDoubleTap(p, world(p))) return;
-      setView(zoomAt(view, size, p.x, p.y, 1.6));
+      setView(zoomAt(view, size, p.x, p.y, 1.6, opt.zoomLimits));
     },
     onLongPress: (p) => input.onLongPress && input.onLongPress(p, world(p)),
     onDragStart: (p) => (input.onDragStart ? input.onDragStart(p, world(p)) : null),
@@ -138,13 +140,13 @@ export function createCanvasView(opt) {
     },
     onPinch: (e) => {
       let v = panBy(view, e.dx, e.dy);
-      v = zoomAt(v, size, e.cx, e.cy, e.scale);
+      v = zoomAt(v, size, e.cx, e.cy, e.scale, opt.zoomLimits);
       setView(v);
     },
     onWheel: (p, dy, e) => {
       // ホイールは拡大縮小（トラックパッドのピンチは ctrlKey 付きで届く）
       const k = e.ctrlKey ? 0.01 : 0.0015;
-      setView(zoomAt(view, size, p.x, p.y, Math.exp(-dy * k)));
+      setView(zoomAt(view, size, p.x, p.y, Math.exp(-dy * k), opt.zoomLimits));
     },
     onHover: (p) => input.onHover && input.onHover(p, world(p)),
   });

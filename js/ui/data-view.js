@@ -23,7 +23,7 @@ const MOBILE = '(max-width: 899.98px)';
  *   store: any,
  *   es: any,
  *   close: () => void,
- *   activate: (sel: any, opt?: { reveal?: { x: number, y: number } | null }) => void,
+ *   activate: (sel: any, opt?: { reveal?: import('../core/schema.js').Station | null }) => void,
  * }} ctx
  */
 export function createDataView(ctx) {
@@ -229,7 +229,7 @@ export function createDataView(ctx) {
         back: () => { stopsLine = null; rebuild(); },
         activateStation: (id) => {
           const st = store.getState().stations.find((s) => s.id === id);
-          ctx.activate({ type: 'stations', ids: [id] }, { reveal: st && st.schematic });
+          ctx.activate({ type: 'stations', ids: [id] }, { reveal: st });
         },
       }, stopsLine);
       body.replaceChildren(stops.el);

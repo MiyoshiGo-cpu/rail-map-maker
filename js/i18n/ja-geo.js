@@ -32,4 +32,14 @@ export default {
   'terrain.summary': '地形：{shape}・{km}km 四方・都市 {cities}・{admin1} {regions}',
   'newProject.world.fictional': '架空の地形（自動で作る）',
   'restore.reason.terrain': '地形を付ける前',
+
+  // 地理ビュー（§5.4）
+  'views.geo': '地理',
+  'geo.loading': '地形を読み込んでいます…',
+  'geo.failed': '地形を表示できませんでした。画面を開き直してください。',
+  'export.geoNotYet': '地理ビューの書き出しは、このあとの更新で対応します。路線図・案内図・駅名標のビューに切り替えると書き出せます。',
+  // 地図に描く文字（地図の言語）
+  'map.scale.km': '{n} km',
+  'map.scale.mi': '{n} mi',
+  'map.north': 'N',
 };

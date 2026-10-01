@@ -46,10 +46,11 @@ export function createEditorHeader(opt) {
     on: { click: () => opt.onView(v.id) },
   }, h('span', { class: 'badge-label' }, v.label)));
 
+  const tabs = h('nav', { class: ['view-tabs', opt.views.length < 2 ? 'is-single' : ''], role: 'tablist', 'aria-label': t('views.label') }, viewButtons);
   const el = h('header', { class: 'ed-header on-sign' },
     h('button', { class: 'icon-btn', type: 'button', 'aria-label': t('editor.backToList'), title: t('editor.backToList'), on: { click: opt.onExit } }, icon('back')),
     projectBtn,
-    h('nav', { class: ['view-tabs', opt.views.length < 2 ? 'is-single' : ''], role: 'tablist', 'aria-label': t('views.label') }, viewButtons),
+    tabs,
     h('div', { class: 'ed-header-actions' }, undoBtn, redoBtn, saveStatus, exportBtn, moreBtn),
   );
 
@@ -64,9 +65,16 @@ export function createEditorHeader(opt) {
       saveStatus.textContent = t('save.' + s);
       saveStatus.title = message;
     },
-    /** @param {string} name @param {boolean} canUndo @param {boolean} canRedo @param {string} view */
-    update(name, canUndo, canRedo, view) {
-      for (const b of viewButtons) b.setAttribute('aria-selected', String(b.dataset.view === view));
+    /**
+     * @param {string} name @param {boolean} canUndo @param {boolean} canRedo @param {string} view
+     * @param {string[]} [available] 出すビュー（地理は地形があるときだけ）。省略時はすべて
+     */
+    update(name, canUndo, canRedo, view, available) {
+      for (const b of viewButtons) {
+        b.setAttribute('aria-selected', String(b.dataset.view === view));
+        b.hidden = !!available && !available.includes(b.dataset.view);
+      }
+      tabs.classList.toggle('is-single', viewButtons.filter((b) => !b.hidden).length < 2);
       nameEl.textContent = name || t('common.untitled');
       undoBtn.disabled = !canUndo;
       redoBtn.disabled = !canRedo;

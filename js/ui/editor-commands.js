@@ -22,6 +22,7 @@ const MOBILE = '(max-width: 899.98px)';
  *   es: any,
  *   canvasView: ReturnType<typeof import('./canvas-view.js').createCanvasView>,
  *   getViewScene: (view: string) => any,
+ *   revealGeo?: (g: { x: number, y: number }) => void,
  *   onExit: () => void,
  * }} ctx
  */
@@ -75,9 +76,12 @@ export function createEditorCommands(ctx) {
     openExportSheet({ store, es, getViewScene: ctx.getViewScene, onJson: exportJson });
   }
 
-  /** 世界座標の格子点を画面に出す */
-  const reveal = (pos) => {
-    if (pos) canvasView.reveal(pos.x * GRID, pos.y * GRID);
+  /** 駅を画面に出す（地理ビューなら地理の位置、それ以外は路線図の格子点） */
+  const reveal = (st) => {
+    if (!st) return;
+    if (es.get().view === 'geo') {
+      if (st.geo && 'x' in st.geo && ctx.revealGeo) ctx.revealGeo(st.geo);
+    } else if (st.schematic) canvasView.reveal(st.schematic.x * GRID, st.schematic.y * GRID);
   };
 
   /** チェックの項目や検索の結果から、そのものを選んで画面に出す */
@@ -85,17 +89,17 @@ export function createEditorCommands(ctx) {
     const p = store.getState();
     if (target.type === 'station') {
       es.set({ selection: { type: 'stations', ids: [target.id] } });
-      reveal(p.stations.find((s) => s.id === target.id)?.schematic);
+      reveal(p.stations.find((s) => s.id === target.id));
     } else if (target.type === 'line') {
       es.set({ selection: { type: 'line', lineId: target.id } });
       const line = p.lines.find((l) => l.id === target.id);
       const first = line && line.stops[0] && p.stations.find((s) => s.id === line.stops[0].stationId);
-      reveal(first && first.schematic);
+      reveal(first);
     } else if (target.type === 'section') {
       const line = p.lines.find((l) => l.id === target.id);
       if (line && target.index < line.sections.length) {
         es.set({ selection: { type: 'section', lineId: line.id, index: target.index } });
-        reveal(p.stations.find((s) => s.id === line.stops[target.index].stationId)?.schematic);
+        reveal(p.stations.find((s) => s.id === line.stops[target.index].stationId));
       }
     } else if (target.type === 'operator') {
       es.set({ selection: { type: 'operator', id: target.id } });
@@ -160,6 +164,7 @@ export function createEditorCommands(ctx) {
     exportJson,
     openExport,
     goTo,
+    revealStation: reveal,
     search,
     settings,
     menuItems,

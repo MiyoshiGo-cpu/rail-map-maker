@@ -21,11 +21,13 @@ let measure = null;
 /**
  * 今表示しているビューの絵（書き出すものが無ければ null）
  * @param {import('../core/schema.js').Project} p
- * @param {'schematic'|'stopChart'|'signboard'} view
+ * @param {'schematic'|'geo'|'stopChart'|'signboard'} view
  * @param {any} [viewScene] 案内図・駅名標のビューが表示している表示リスト
  * @returns {ExportTarget | null}
  */
 export function exportTarget(p, view, viewScene) {
+  // 地理ビューの書き出し（地形の画像を入れる）はステップ6で対応する
+  if (view === 'geo') return null;
   if (view !== 'schematic') {
     if (!viewScene || !viewScene.items.length) return null;
     return { view, items: viewScene.items, bounds: viewScene.bounds, background: p.style.background };

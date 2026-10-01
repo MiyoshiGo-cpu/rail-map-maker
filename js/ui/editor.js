@@ -33,7 +33,7 @@ import { createPlaceStationTool } from './tools/place-station-tool.js';
 import { createDrawLineTool } from './tools/draw-line-tool.js';
 import { pickPending, pendingHint } from './pending-pick.js';
 import { drawServiceHighlight } from './service-overlay.js';
-import { viewTabs, createViewSwitcher, createOtherViews } from './editor-views.js';
+import { viewTabs, createViewSwitcher, createOtherViews, availableViews } from './editor-views.js';
 
 /** 当たり判定の半径（画面の px。§4.4） */
 const HIT_RADIUS = { touch: 22, mouse: 8, pen: 12 };
@@ -217,14 +217,15 @@ export function createEditor(opt) {
           maxX: Math.max(b.maxX + GRID * 2, l ? l.maxX : -Infinity), maxY: Math.max(b.maxY + GRID * 2, l ? l.maxY : -Infinity),
         };
       },
-      // スマホではボトムシートに隠れる部分を除いて全体を表示する
-      getInsets: () => {
-        const stage = canvasView.el.getBoundingClientRect();
-        const sheet = panels.el.getBoundingClientRect();
-        const covered = getComputedStyle(panels.el).position === 'absolute' ? Math.max(0, stage.bottom - sheet.top) : 0;
-        return { top: 0, right: 0, bottom: covered, left: 0 };
-      },
+      getInsets: () => sheetInsets(canvasView.el),
     });
+    /** スマホではボトムシートに隠れる部分を除いて全体を表示する（地理ビューの縮尺バーもシートの上に出す） */
+    function sheetInsets(stageEl) {
+      const stage = stageEl.getBoundingClientRect();
+      const sheet = panels.el.getBoundingClientRect();
+      const covered = getComputedStyle(panels.el).position === 'absolute' ? Math.max(0, stage.bottom - sheet.top) : 0;
+      return { top: 0, right: 0, bottom: covered, left: 0 };
+    }
     cleanups.push(() => canvasView.dispose());
     let accent = accentFor(store.getState(), es.get());
     canvasView.addLayer((ctx, view, size) => {
@@ -417,7 +418,7 @@ export function createEditor(opt) {
       close: () => es.set({ drawer: null }),
       activate(sel, opt = {}) {
         es.set({ selection: sel });
-        if (opt.reveal) canvasView.reveal(opt.reveal.x * GRID, opt.reveal.y * GRID);
+        if (opt.reveal) commands.revealStation(opt.reveal);
         // スマホでは表を閉じて、詳細のシートを見せる
         if (window.matchMedia('(max-width: 899.98px)').matches) es.set({ drawer: null });
       },
@@ -425,12 +426,12 @@ export function createEditor(opt) {
     cleanups.push(() => dataView.dispose());
 
     // ---------- 書き出し・復元ポイント・検索・チェック ----------
-    commands = createEditorCommands({ store, es, canvasView, getViewScene: (v) => others.get(v)?.getScene() || null, onExit: () => opt.onExit() });
+    commands = createEditorCommands({ store, es, canvasView, getViewScene: (v) => others.get(v)?.getScene() || null, revealGeo: (g) => others.geo.reveal(g), onExit: () => opt.onExit() });
     cleanups.push(() => commands.dispose());
     const checkView = createCheckView({ store, close: () => es.set({ drawer: null }), go: (target) => commands.goTo(target) });
 
     // ---------- 停車駅案内図と駅名標のビュー ----------
-    const others = createOtherViews({ store, es, onSelectService: (id) => es.set({ selection: { type: 'service', id } }) });
+    const others = createOtherViews({ store, es, onSelectService: (id) => es.set({ selection: { type: 'service', id } }), getInsets: () => sheetInsets(others.geo.el) });
     cleanups.push(() => others.dispose());
     const views = createViewSwitcher({ store, es, others });
     /** 路線図ではないビュー（案内図・駅名標）を表示しているなら、そのビュー */
@@ -498,8 +499,8 @@ export function createEditor(opt) {
         es.set(fix);
         return;
       }
-      header.update(p.name, store.canUndo(), store.canRedo(), s.view);
-      // ビュー：案内図・駅名標では描くツールを隠し、そのビューを描き直す
+      header.update(p.name, store.canUndo(), store.canRedo(), s.view, availableViews(p));
+      // ビュー：地理・案内図・駅名標では描くツールを隠し、そのビューを描き直す
       const onOther = s.view !== 'schematic';
       canvasView.el.hidden = onOther;
       for (const b of toolButtons.values()) b.classList.toggle('is-hidden', onOther);

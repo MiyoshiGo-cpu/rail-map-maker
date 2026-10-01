@@ -76,9 +76,10 @@ export function mapFont(style, size, weight = 500) {
  * @param {string} status
  * @param {string} color
  * @param {number} [index] 路線の並び順（モノクロの区別に使う）
+ * @param {number} [unit] 画面の1px に当たる長さ（地理ビューで、決まった太さを縮尺に合わせる）
  * @returns {StrokeStyle}
  */
-export function strokeFor(style, kind, status, color, index = 0) {
+export function strokeFor(style, kind, status, color, index = 0, unit = 1) {
   const w = style.lineWidth;
   const base = lineAppearance(style, color, index);
   /** @type {StrokeStyle} */
@@ -86,7 +87,7 @@ export function strokeFor(style, kind, status, color, index = 0) {
   switch (kind) {
     case 'shinkansen':
       s.width = w * 1.3;
-      s.inner = { color: paperOf(style), width: Math.max(1, w * 0.3) };
+      s.inner = { color: paperOf(style), width: Math.max(unit, w * 0.3) };
       break;
     case 'tram':
       s.width = w * 0.6;

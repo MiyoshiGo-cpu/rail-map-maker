@@ -1,5 +1,6 @@
-// 表示位置と倍率の計算（路線図ビュー）。
+// 表示位置と倍率の計算（路線図ビュー・地理ビュー）。
 // 座標は3種類：格子（整数）→ 世界（ズーム1の px。格子1マス＝GRID px）→ 画面（キャンバスの CSS px）
+// 地理ビューの世界座標は、地理座標（km）× GEO_UNIT。
 // ViewState { cx, cy, zoom } は、画面の中心に来る世界座標と倍率。
 
 /** 格子1マスの大きさ（ズーム1の px。§5.1） */
@@ -7,12 +8,19 @@ export const GRID = 24;
 export const MIN_ZOOM = 0.1;
 export const MAX_ZOOM = 8;
 
+/** 地理ビューの1km の長さ（ズーム1の px） */
+export const GEO_UNIT = 32;
+/** 地理ビューの倍率の範囲（1km が 0.5px〜128px。大サイズの地形全体をスマホの幅に収められるように） */
+export const GEO_ZOOM = { min: 1 / 64, max: 4 };
+
 /** @typedef {import('./schema.js').ViewState} ViewState */
 /** @typedef {{ width: number, height: number }} Size */
 
-/** @param {number} z */
-export function clampZoom(z) {
-  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z));
+/** @typedef {{ min: number, max: number }} ZoomLimits 倍率の範囲 */
+
+/** @param {number} z @param {ZoomLimits} [limits] 省略時は路線図ビューの範囲 */
+export function clampZoom(z, limits) {
+  return Math.min(limits ? limits.max : MAX_ZOOM, Math.max(limits ? limits.min : MIN_ZOOM, z));
 }
 
 /**
@@ -43,10 +51,11 @@ export function snapToGrid(wx, wy) {
 /**
  * 画面の点を動かさずに倍率を変える
  * @param {ViewState} v @param {Size} size @param {number} sx @param {number} sy @param {number} factor
+ * @param {ZoomLimits} [limits]
  * @returns {ViewState}
  */
-export function zoomAt(v, size, sx, sy, factor) {
-  const zoom = clampZoom(v.zoom * factor);
+export function zoomAt(v, size, sx, sy, factor, limits) {
+  const zoom = clampZoom(v.zoom * factor, limits);
   const w = screenToWorld(v, size, sx, sy);
   // 同じ世界座標が同じ画面の点に来るように中心を動かす
   return {
@@ -69,7 +78,7 @@ export function panBy(v, dx, dy) {
  * 世界座標の範囲が画面に収まる表示。insets は画面の端で隠れている部分（スマホのボトムシートなど）
  * @param {{ minX: number, minY: number, maxX: number, maxY: number } | null} b
  * @param {Size} size
- * @param {{ padding?: number, maxZoom?: number, insets?: { top: number, right: number, bottom: number, left: number } }} [opt]
+ * @param {{ padding?: number, maxZoom?: number, limits?: ZoomLimits, insets?: { top: number, right: number, bottom: number, left: number } }} [opt]
  * @returns {ViewState}
  */
 export function fitBounds(b, size, opt = {}) {
@@ -81,7 +90,7 @@ export function fitBounds(b, size, opt = {}) {
   const h = Math.max(b.maxY - b.minY, 1);
   const availW = Math.max(size.width - ins.left - ins.right - padding * 2, 40);
   const availH = Math.max(size.height - ins.top - ins.bottom - padding * 2, 40);
-  const zoom = clampZoom(Math.min(availW / w, availH / h, maxZoom));
+  const zoom = clampZoom(Math.min(availW / w, availH / h, maxZoom), opt.limits);
   // 見えている部分の中心に範囲の中心が来るようにする
   const offX = (ins.left - ins.right) / 2 / zoom;
   const offY = (ins.top - ins.bottom) / 2 / zoom;

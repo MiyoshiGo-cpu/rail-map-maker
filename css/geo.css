@@ -20,3 +20,8 @@
 @media (prefers-reduced-motion: reduce) {
   .terrain-preview { transition: none; }
 }
+
+/* ---------- 地理ビュー ---------- */
+
+.geo-view { position: absolute; inset: 0; }
+.geo-view[hidden] { display: none; }

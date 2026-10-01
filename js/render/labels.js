@@ -75,26 +75,28 @@ function badgeRuns(badges, style, size, measure) {
 /**
  * 札の中身を組み立てる。座標は札の左上を原点にする
  * @param {import('../core/schema.js').Station} st
- * @param {{ style: import('../core/schema.js').MapStyle, subLanguages: string[], measure: Measure, level: number, align: 'left'|'center'|'right', vertical: boolean, badges?: BadgeSpec[] }} o
+ * @param {{ style: import('../core/schema.js').MapStyle, subLanguages: string[], measure: Measure, level: number, align: 'left'|'center'|'right', vertical: boolean, badges?: BadgeSpec[], labelKey?: 'schematic'|'geo', unit?: number }} o
+ *   labelKey はどのビューの札の設定を使うか（既定は路線図）。unit は画面の1px に当たる長さ（地理ビュー）
  */
 export function buildBlock(st, o) {
   const { style, measure } = o;
+  const u = o.unit || 1;
   const size = style.fontSize * (st.rank === 'terminal' ? 1.15 : st.rank === 'unstaffed' || st.rank === 'temporary' ? 0.9 : 1);
   // 広域のスタイル（目盛りの駅）では、一般駅の駅名を細くして主要駅を目立たせる
   const weight = MAJOR_RANKS.has(st.rank) ? 700 : style.stationSymbol === 'tick' ? 500 : 600;
   const font = mapFont(style, size, weight);
-  const subSize = Math.max(6, size * 0.62);
+  const subSize = Math.max(6 * u, size * 0.62);
   const subFont = mapFont(style, subSize, 500);
   const minor = !MAJOR_RANKS.has(st.rank);
   const showSub = style.showSubNames && !(minor && o.level >= 1);
-  const text = st.label.schematic.text || st.name;
+  const text = st.label[o.labelKey || 'schematic'].text || st.name;
   const mainLines = text.split('\n').filter((s) => s !== '');
   const subs = showSub ? o.subLanguages.slice(0, 2).map((l) => st.names[l]).filter(Boolean) : [];
   const icons = st.facilities || [];
   const iconSize = size * 0.95;
   const runs = [];
   const badges = badgeRuns(o.badges || [], style, size, o.measure);
-  const badgeW = badges.reduce((s, b) => s + b.w, 0) + Math.max(0, badges.length - 1) * 2;
+  const badgeW = badges.reduce((s, b) => s + b.w, 0) + Math.max(0, badges.length - 1) * 2 * u;
   const badgeH = badges.reduce((m, b) => Math.max(m, b.h), 0);
 
   if (o.vertical) {
@@ -102,10 +104,10 @@ export function buildBlock(st, o) {
     let bx = 0;
     for (const b of badges) {
       runs.push({ ...b, x: bx, y: 0 });
-      bx += b.w + 2;
+      bx += b.w + 2 * u;
     }
-    const top = badges.length ? badgeH + 3 : 0;
-    const inner = verticalRuns({ ...o, size, font, subFont, subSize, subs, mainLines, icons, iconSize });
+    const top = badges.length ? badgeH + 3 * u : 0;
+    const inner = verticalRuns({ ...o, u, size, font, subFont, subSize, subs, mainLines, icons, iconSize });
     for (const r of inner.runs) runs.push({ ...r, y: r.y + top });
     return { runs, w: Math.max(inner.w, badgeW), h: inner.h + top, size };
   }
@@ -113,14 +115,14 @@ export function buildBlock(st, o) {
   // 横書き：バッジは左に、主表記の1行目の高さにそろえる
   const lineH0 = size * 1.25;
   const hasText = mainLines.length > 0 || subs.length > 0 || icons.length > 0;
-  const textX = badges.length && hasText ? badgeW + 3 : 0;
+  const textX = badges.length && hasText ? badgeW + 3 * u : 0;
   const textY = badges.length ? Math.max(0, (badgeH - lineH0) / 2) : 0;
   let bx = 0;
   for (const b of badges) {
     runs.push({ ...b, x: bx, y: textY + lineH0 / 2 - b.h / 2 });
-    bx += b.w + 2;
+    bx += b.w + 2 * u;
   }
-  const inner = horizontalRuns({ ...o, size, font, subFont, subSize, subs, mainLines, icons, iconSize });
+  const inner = horizontalRuns({ ...o, u, size, font, subFont, subSize, subs, mainLines, icons, iconSize });
   for (const r of inner.runs) runs.push({ ...r, x: r.x + textX, y: r.y + textY });
   // 駅名が空でバッジだけのときは、バッジの幅だけにする
   const w = hasText ? textX + inner.w : badgeW;
@@ -129,7 +131,7 @@ export function buildBlock(st, o) {
 
 /** 縦書きの文字の並び：主表記を1文字ずつ縦に並べ、副表記は右に90°回して置く */
 function verticalRuns(o) {
-  const { size, font, subFont, subSize, subs, mainLines, icons, iconSize, measure } = o;
+  const { u, size, font, subFont, subSize, subs, mainLines, icons, iconSize, measure } = o;
   const runs = [];
   const chars = [...mainLines.join('')];
   const step = size * 1.05;
@@ -139,7 +141,7 @@ function verticalRuns(o) {
     runs.push({ kind: 'text', text: ch, font, color: inkOf(o.style), x: size / 2 + g.dx * size, y: y + step / 2 + g.dy * size, align: 'center', rot: g.rot });
     y += step;
   }
-  let x = size + 2;
+  let x = size + 2 * u;
   let hgt = y;
   for (const s of subs) {
     const w = measure(subFont, s);
@@ -147,18 +149,18 @@ function verticalRuns(o) {
     x += subSize * 1.25;
     hgt = Math.max(hgt, w);
   }
-  icons.forEach((ic, i) => runs.push({ kind: 'icon', icon: ic, x: 0, y: hgt + 2 + i * (iconSize + 2), size: iconSize, color: inkOf(o.style) }));
-  if (icons.length) hgt += 2 + icons.length * (iconSize + 2);
+  icons.forEach((ic, i) => runs.push({ kind: 'icon', icon: ic, x: 0, y: hgt + 2 * u + i * (iconSize + 2 * u), size: iconSize, color: inkOf(o.style) }));
+  if (icons.length) hgt += 2 * u + icons.length * (iconSize + 2 * u);
   return { runs, w: x, h: hgt };
 }
 
 /** 横書きの文字の並び */
 function horizontalRuns(o) {
-  const { size, font, subFont, subSize, subs, mainLines, icons, iconSize, measure } = o;
+  const { u, size, font, subFont, subSize, subs, mainLines, icons, iconSize, measure } = o;
   const runs = [];
   const lineH = size * 1.25;
   const subH = subSize * 1.3;
-  const widths = mainLines.map((s, i) => measure(font, s) + (i === 0 && icons.length ? icons.length * (iconSize + 2) + 2 : 0));
+  const widths = mainLines.map((s, i) => measure(font, s) + (i === 0 && icons.length ? icons.length * (iconSize + 2 * u) + 2 * u : 0));
   const subWidths = subs.map((s) => measure(subFont, s));
   const w = Math.max(1, ...widths, ...subWidths);
   const xOf = (lw) => (o.align === 'left' ? 0 : o.align === 'right' ? w - lw : (w - lw) / 2);
@@ -167,10 +169,10 @@ function horizontalRuns(o) {
     const x0 = xOf(widths[i]);
     runs.push({ kind: 'text', text: s, font, color: inkOf(o.style), x: x0, y: y + lineH / 2, align: 'left' });
     if (i === 0) {
-      let ix = x0 + measure(font, s) + 3;
+      let ix = x0 + measure(font, s) + 3 * u;
       for (const ic of icons) {
         runs.push({ kind: 'icon', icon: ic, x: ix, y: y + (lineH - iconSize) / 2, size: iconSize, color: inkOf(o.style) });
-        ix += iconSize + 2;
+        ix += iconSize + 2 * u;
       }
     }
     y += lineH;
@@ -256,15 +258,24 @@ function rotatedBox(x, y, w, h, ax, ay, angle) {
  *   passes: Map<string, { dirs: { x: number, y: number }[], lineIds: Set<string> }>,
  *   obstacles: any[],
  *   badgesOf?: (stationId: string) => BadgeSpec[],
- * }} o obstacles は線と駅記号の表示リスト
- * @returns {{ items: any[], info: Map<string, { pos: string, box: Box }> }}
+ *   labelKey?: 'schematic'|'geo',
+ *   style?: import('../core/schema.js').MapStyle,
+ *   unit?: number,
+ *   skipOverlap?: boolean,
+ * }} o obstacles は線と駅記号の表示リスト。
+ *   地理ビューでは labelKey に 'geo'、style に縮尺に合わせた見た目、unit に画面の1px に当たる長さを渡し、
+ *   skipOverlap でほかの札と重なる札を出さない
+ * @returns {{ items: any[], info: Map<string, { pos: string, box: Box }>, placed: ReturnType<typeof createSpatialIndex> }}
  */
 export function layoutLabels(p, o) {
-  const style = p.style;
-  const gap = 3;
-  const obstacleIndex = createSpatialIndex();
+  const style = o.style || p.style;
+  const key = o.labelKey || 'schematic';
+  const unit = o.unit || 1;
+  const gap = 3 * unit;
+  // 格子の大きさも縮尺に合わせる（地理ビューで縮小したとき、1つの札が多くのマスにまたがらないように）
+  const obstacleIndex = createSpatialIndex(96 * unit);
   for (const it of o.obstacles) obstacleIndex.insert(it);
-  const placed = createSpatialIndex();
+  const placed = createSpatialIndex(96 * unit);
   const items = [];
   const info = new Map();
 
@@ -272,10 +283,10 @@ export function layoutLabels(p, o) {
   const badgeMap = new Map(p.stations.map((st) => [st.id, o.badgesOf ? o.badgesOf(st.id) : []]));
   const stations = p.stations
     .filter((st) => {
-      const hasText = st.name || st.label.schematic.text || p.locale.subLanguages.some((l) => st.names[l]);
+      const hasText = st.name || st.label[key].text || p.locale.subLanguages.some((l) => st.names[l]);
       if (!hasText && !badgeMap.get(st.id).length) return false;
       if (!o.symbols.has(st.id)) return false;
-      const lb = st.label.schematic;
+      const lb = st.label[key];
       if (lb.hidden === true) return false;
       if (st.rank === 'signal' && lb.hidden !== false) return false; // 信号場は既定で出さない
       if (o.level >= 2 && !MAJOR_RANKS.has(st.rank)) return false;
@@ -286,7 +297,7 @@ export function layoutLabels(p, o) {
       || (a.id < b.id ? -1 : 1));
 
   for (const st of stations) {
-    const lb = st.label.schematic;
+    const lb = st.label[key];
     const sym = o.symbols.get(st.id).bbox;
     const vertical = lb.orientation === 'vertical';
     const angle = lb.orientation === 'rot45' ? -Math.PI / 4 : lb.orientation === 'rotMinus45' ? Math.PI / 4 : 0;
@@ -299,14 +310,16 @@ export function layoutLabels(p, o) {
 
     let best = null;
     candidates.forEach((dir, order) => {
-      const probe = buildBlock(st, { style, subLanguages: p.locale.subLanguages, measure: o.measure, level: o.level, align: 'left', vertical, badges });
+      const probe = buildBlock(st, { style, subLanguages: p.locale.subLanguages, measure: o.measure, level: o.level, align: 'left', vertical, badges, labelKey: key, unit });
       const at = placeAt(dir, sym, probe.w, probe.h, gap);
-      const x = at.x + (lb.dx || 0);
-      const y = at.y + (lb.dy || 0);
-      const ax = at.ax + (lb.dx || 0);
-      const ay = at.ay + (lb.dy || 0);
+      const x = at.x + (lb.dx || 0) * unit;
+      const y = at.y + (lb.dy || 0) * unit;
+      const ax = at.ax + (lb.dx || 0) * unit;
+      const ay = at.ay + (lb.dy || 0) * unit;
       const box = angle ? rotatedBox(x, y, probe.w, probe.h, ax, ay, angle) : { minX: x, minY: y, maxX: x + probe.w, maxY: y + probe.h };
       let score = order * 0.5;
+      let hidden = false;
+      if (o.skipOverlap) for (const other of placed.query(box)) if (overlapArea(box, other.bbox) > 0) hidden = true;
       if (candidates.length > 1) {
         // 線の向きに沿う側は避ける（直交する側を優先）
         const u = UNIT[dir];
@@ -327,10 +340,13 @@ export function layoutLabels(p, o) {
           }
         }
       }
-      if (!best || score < best.score) best = { dir, x, y, ax, ay, box, score, align: at.align };
+      // 重ならない位置があれば、重なる位置より優先する
+      if (hidden) score += 1e6;
+      if (!best || score < best.score) best = { dir, x, y, ax, ay, box, score, align: at.align, hidden };
     });
+    if (best.hidden) continue;
 
-    const block = buildBlock(st, { style, subLanguages: p.locale.subLanguages, measure: o.measure, level: o.level, align: best.align, vertical, badges });
+    const block = buildBlock(st, { style, subLanguages: p.locale.subLanguages, measure: o.measure, level: o.level, align: best.align, vertical, badges, labelKey: key, unit });
     const item = {
       kind: 'label',
       x: best.x,
@@ -340,6 +356,7 @@ export function layoutLabels(p, o) {
       ay: best.ay,
       runs: block.runs,
       halo: paperOf(style),
+      haloWidth: 3 * unit,
       target: { type: 'label', id: st.id },
       bbox: best.box,
     };
@@ -347,5 +364,5 @@ export function layoutLabels(p, o) {
     placed.insert(item);
     info.set(st.id, { pos: best.dir, box: best.box });
   }
-  return { items, info };
+  return { items, info, placed };
 }

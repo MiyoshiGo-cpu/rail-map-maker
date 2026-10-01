@@ -36,4 +36,6 @@ export const files = [
   'terrain.test.js',
   'world.test.js',
   'geo-layout.test.js',
+  'geo-lines.test.js',
+  'scene-geo.test.js',
 ];

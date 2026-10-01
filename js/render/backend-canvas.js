@@ -256,7 +256,7 @@ function drawLabelItem(ctx, it) {
       if (pass === 0) {
         if (it.halo) {
           ctx.strokeStyle = it.halo;
-          ctx.lineWidth = 3;
+          ctx.lineWidth = it.haloWidth || 3;
           ctx.strokeText(r.text, 0, 0);
         }
       } else {

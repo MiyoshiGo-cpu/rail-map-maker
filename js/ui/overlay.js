@@ -41,45 +41,53 @@ export function drawUnderlay(ctx, o) {
 }
 
 /**
- * 表示リストの上に描く目印
+ * 駅の記号に付ける輪（アクセント色）
  * @param {CanvasRenderingContext2D} ctx
- * @param {Parameters<typeof drawUnderlay>[1]} o
+ * @param {{ stationItems: Map<string, any> }} scene
+ * @param {string} id
+ * @param {string} color
+ * @param {number} zoom
  */
-export function drawOverlay(ctx, o) {
-  const { project: p, scene, es, zoom, accent } = o;
-  const px = (n) => n / zoom; // 画面の px を世界座標にする
-  const sel = es.selection;
+function stationRing(ctx, scene, id, color, zoom) {
+  const px = (n) => n / zoom;
+  const st = scene.stationItems.get(id);
+  if (!st) return;
+  ctx.beginPath();
+  if (st.kind === 'capsule') {
+    const r = st.r + px(4);
+    const len = Math.hypot(st.x2 - st.x1, st.y2 - st.y1);
+    const ang = Math.atan2(st.y2 - st.y1, st.x2 - st.x1);
+    ctx.save();
+    ctx.translate(st.x1, st.y1);
+    ctx.rotate(ang);
+    ctx.roundRect(-r, -r, len + r * 2, r * 2, r);
+    ctx.restore();
+  } else if (st.kind === 'rrect') {
+    const m = px(4);
+    ctx.save();
+    ctx.translate(st.x, st.y);
+    ctx.roundRect(-st.w / 2 - m, -st.h / 2 - m, st.w + m * 2, st.h + m * 2, (st.r || 0) + m);
+    ctx.restore();
+  } else if (st.kind === 'circle') {
+    ctx.arc(st.x, st.y, st.r + px(4), 0, Math.PI * 2);
+  } else {
+    const b = st.bbox;
+    ctx.arc((b.minX + b.maxX) / 2, (b.minY + b.maxY) / 2, Math.hypot(b.maxX - b.minX, b.maxY - b.minY) / 2 + px(3), 0, Math.PI * 2);
+  }
+  ctx.strokeStyle = color;
+  ctx.lineWidth = px(3);
+  ctx.stroke();
+}
 
-  // 駅の選択（アクセント色の輪）
-  const ring = (id, color) => {
-    const st = scene.stationItems.get(id);
-    if (!st) return;
-    ctx.beginPath();
-    if (st.kind === 'capsule') {
-      const r = st.r + px(4);
-      const len = Math.hypot(st.x2 - st.x1, st.y2 - st.y1);
-      const ang = Math.atan2(st.y2 - st.y1, st.x2 - st.x1);
-      ctx.save();
-      ctx.translate(st.x1, st.y1);
-      ctx.rotate(ang);
-      ctx.roundRect(-r, -r, len + r * 2, r * 2, r);
-      ctx.restore();
-    } else if (st.kind === 'rrect') {
-      const m = px(4);
-      ctx.save();
-      ctx.translate(st.x, st.y);
-      ctx.roundRect(-st.w / 2 - m, -st.h / 2 - m, st.w + m * 2, st.h + m * 2, (st.r || 0) + m);
-      ctx.restore();
-    } else if (st.kind === 'circle') {
-      ctx.arc(st.x, st.y, st.r + px(4), 0, Math.PI * 2);
-    } else {
-      const b = st.bbox;
-      ctx.arc((b.minX + b.maxX) / 2, (b.minY + b.maxY) / 2, Math.hypot(b.maxX - b.minX, b.maxY - b.minY) / 2 + px(3), 0, Math.PI * 2);
-    }
-    ctx.strokeStyle = color;
-    ctx.lineWidth = px(3);
-    ctx.stroke();
-  };
+/**
+ * 選んだ駅・乗換グループの駅・乗換グループにする元の駅の輪（路線図と地理ビューで使う）
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {{ project: import('../core/schema.js').Project, scene: { stationItems: Map<string, any> }, es: import('./editor-state.js').EditorState, zoom: number, accent: string }} o
+ */
+export function drawSelectionRings(ctx, o) {
+  const { project: p, scene, es, zoom, accent } = o;
+  const sel = es.selection;
+  const ring = (id, color) => stationRing(ctx, scene, id, color, zoom);
   if (sel.type === 'stations') for (const id of sel.ids) ring(id, accent);
   // 乗換グループ：所属する駅に輪を付ける
   if (sel.type === 'interchange') {
@@ -92,6 +100,19 @@ export function drawOverlay(ctx, o) {
       : (p.interchanges.find((x) => x.id === es.pending.interchangeId)?.stationIds || []);
     for (const id of ids) ring(id, accent);
   }
+}
+
+/**
+ * 表示リストの上に描く目印
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {Parameters<typeof drawUnderlay>[1]} o
+ */
+export function drawOverlay(ctx, o) {
+  const { project: p, scene, es, zoom, accent } = o;
+  const px = (n) => n / zoom; // 画面の px を世界座標にする
+  const sel = es.selection;
+  const ring = (id, color) => stationRing(ctx, scene, id, color, zoom);
+  drawSelectionRings(ctx, o);
 
   // 路線を引いている途中：端の駅と、指している点までの予告線
   if (es.tool === 'line' && es.drawing) {

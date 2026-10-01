@@ -55,7 +55,7 @@ function runHere(job, p) {
 
 /**
  * 地形の仕事を頼む
- * @param {{ kind: 'preview'|'world', seed: string, params: any, regionId?: string, resolution?: number, romaji?: any }} job
+ * @param {{ kind: 'preview'|'world'|'analyze', seed?: string, params?: any, regionId?: string, resolution?: number, romaji?: any, world?: any }} job
  * @param {(ratio: number) => void} [onProgress]
  * @returns {Promise<any>}
  */

@@ -23,7 +23,7 @@
  * @property {{ kind: 'interchange', stationId?: string, interchangeId?: string } | { kind: 'routeEnd', which: 'from'|'to' } | null} pending 次にタップする駅を待っている操作
  * @property {RouteDraft | null} routeDraft 系統の経路を選んでいる途中（serviceId が null なら新しい系統）
  * @property {null|'data'|'check'} drawer 開いている一覧（データ表かチェック）
- * @property {'schematic'|'stopChart'|'signboard'} view 表示しているビュー
+ * @property {'schematic'|'geo'|'stopChart'|'signboard'} view 表示しているビュー
  * @property {string} chartTarget 停車駅案内図の対象（'line:…' か 'chain:…'）
  * @property {'auto'|'horizontal'|'vertical'} chartLayout 停車駅案内図の並べ方（auto はスマホの幅なら縦）
  * @property {string} signStation 駅名標の駅（保存しない）
@@ -117,6 +117,8 @@ export function repairFor(p, s) {
     if (d.via.some((id) => !hasLine(id))) return { routeDraft: { ...d, via: d.via.filter(hasLine) } };
   }
   if (s.drawing && !hasLine(s.drawing.lineId)) return { drawing: null };
+  // 地形が無くなったら（地形を付けたのを取り消したときなど）、地理ビューから路線図に戻る
+  if (s.view === 'geo' && p.world.mode !== 'fictional') return { view: 'schematic' };
   if (s.lineChoice !== 'new' && !hasLine(s.lineChoice)) return { lineChoice: 'new' };
   return null;
 }
