@@ -1,4 +1,5 @@
-// 複数の駅を選んだときのパネル：整列（横一列・縦一列・斜め一列・等間隔）と削除
+// 複数の駅を選んだときのパネル：整列（横一列・縦一列・斜め一列・等間隔）と削除。
+// 整列は路線図の格子の操作なので、地理ビューでは出さない
 import { h } from '../dom.js';
 import { t } from '../../i18n/i18n.js';
 
@@ -8,17 +9,18 @@ import { t } from '../../i18n/i18n.js';
 export function createStationsPanel(ctx) {
   const title = h('h2', { class: 'panel-title' });
   const btn = (label, onClick, cls = '') => h('button', { class: ['btn', cls], type: 'button', on: { click: onClick } }, label);
+  const alignSection = h('div', { class: 'panel-section' },
+    h('h3', {}, t('align.title')),
+    h('div', { class: 'panel-actions align-actions' },
+      btn(t('align.horizontal'), () => ctx.align('horizontal')),
+      btn(t('align.vertical'), () => ctx.align('vertical')),
+      btn(t('align.diagonal'), () => ctx.align('diagonal')),
+      btn(t('align.even'), () => ctx.align('even')),
+    ),
+  );
   const el = h('div', {},
     h('div', { class: 'panel-head' }, title),
-    h('div', { class: 'panel-section' },
-      h('h3', {}, t('align.title')),
-      h('div', { class: 'panel-actions align-actions' },
-        btn(t('align.horizontal'), () => ctx.align('horizontal')),
-        btn(t('align.vertical'), () => ctx.align('vertical')),
-        btn(t('align.diagonal'), () => ctx.align('diagonal')),
-        btn(t('align.even'), () => ctx.align('even')),
-      ),
-    ),
+    alignSection,
     h('div', { class: 'panel-section' },
       h('div', { class: 'panel-actions' },
         btn(t('interchange.make'), () => {
@@ -35,6 +37,7 @@ export function createStationsPanel(ctx) {
     update(_p, s) {
       const n = s && s.selection.type === 'stations' ? s.selection.ids.length : 0;
       title.textContent = t('stations.selected', { count: n });
+      alignSection.hidden = !!s && s.view === 'geo';
     },
   };
 }

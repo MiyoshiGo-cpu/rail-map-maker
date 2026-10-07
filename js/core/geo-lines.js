@@ -153,3 +153,50 @@ export function computeGeoSections(p) {
   }
   return out;
 }
+
+/**
+ * 地理の経由点を足す位置（通る点の折れ線のうち、点にいちばん近い辺の番号＝ geoVia に入れる位置）
+ * @param {Pt[]} ctrl 通る点（駅・経由点・駅）
+ * @param {Pt} q
+ * @returns {number} 0 なら最初の経由点の前
+ */
+export function viaInsertIndex(ctrl, q) {
+  let best = 0;
+  let bd = Infinity;
+  for (let i = 0; i + 1 < ctrl.length; i++) {
+    const a = ctrl[i];
+    const b = ctrl[i + 1];
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const len2 = dx * dx + dy * dy;
+    const t = len2 ? Math.max(0, Math.min(1, ((q.x - a.x) * dx + (q.y - a.y) * dy) / len2)) : 0;
+    const d = Math.hypot(q.x - (a.x + dx * t), q.y - (a.y + dy * t));
+    if (d < bd) {
+      bd = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/**
+ * 区間のパネルの「経由点を追加」で足す点：通る点の折れ線のいちばん長い辺の中点
+ * @param {Pt[]} ctrl
+ * @returns {{ index: number, point: Pt } | null} 辺が短すぎれば null
+ */
+export function nextGeoViaPoint(ctrl) {
+  let best = -1;
+  let bestLen = 0;
+  for (let i = 0; i + 1 < ctrl.length; i++) {
+    const len = Math.hypot(ctrl[i + 1].x - ctrl[i].x, ctrl[i + 1].y - ctrl[i].y);
+    if (len > bestLen) {
+      bestLen = len;
+      best = i;
+    }
+  }
+  if (best < 0 || bestLen < 0.05) return null;
+  const a = ctrl[best];
+  const b = ctrl[best + 1];
+  const r = (v) => Math.round(v * 1000) / 1000 + 0;
+  return { index: best, point: { x: r((a.x + b.x) / 2), y: r((a.y + b.y) / 2) } };
+}

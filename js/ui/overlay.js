@@ -48,7 +48,7 @@ export function drawUnderlay(ctx, o) {
  * @param {string} color
  * @param {number} zoom
  */
-function stationRing(ctx, scene, id, color, zoom) {
+export function stationRing(ctx, scene, id, color, zoom) {
   const px = (n) => n / zoom;
   const st = scene.stationItems.get(id);
   if (!st) return;

@@ -80,7 +80,8 @@ function withNumbers(line, numbers) {
 /**
  * 駅を指定するか、新しい駅を作ってその ID を返す
  * @param {Tx} tx @param {Ctx} ctx
- * @param {{ stationId?: string, newStation?: { x: number, y: number, fields?: object } }} a
+ * @param {{ stationId?: string, newStation?: { x: number, y: number, fields?: object } | { geo: { x: number, y: number }, fields?: object } }} a
+ *   newStation は路線図の格子座標か、地理座標（geo、km）
  */
 function resolveStation(tx, ctx, a) {
   if (a.stationId) return a.stationId;

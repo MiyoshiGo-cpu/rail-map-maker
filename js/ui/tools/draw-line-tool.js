@@ -1,10 +1,9 @@
 // 「路線を引く」ツール（§4.4）
-// ・駅を順にタップすると追加。空いた格子点をタップすると駅を作って追加する。
+// ・駅を順にタップすると追加。空いた所（路線図は格子点、地理ビューは地理の位置）をタップすると駅を作って追加する。
 // ・完了ボタン・Enter・最後の駅のダブルタップで終了。始点の駅をタップすると環状線にするかを尋ねる。
 // ・既存の路線の端の駅から続けてタップすると延長になる。
 // ・区間をタップすると、駅の挿入と曲がり位置の切り替えのメニューを出す。
 import { t } from '../../i18n/i18n.js';
-import { snapToGrid } from '../../core/viewport.js';
 import { sectionMenuItems } from './section-actions.js';
 
 /**
@@ -77,7 +76,7 @@ export function createDrawLineTool(ed) {
     ed.select({ type: 'line', lineId: line.id });
   }
 
-  /** @param {{ stationId?: string, newStation?: { x: number, y: number } }} target */
+  /** @param {{ stationId?: string, newStation?: { x: number, y: number } | { geo: { x: number, y: number } } }} target */
   async function add(target) {
     const d = es.get().drawing;
     const line = currentLine();
@@ -122,16 +121,15 @@ export function createDrawLineTool(ed) {
     },
     /** @param {any} p @param {{ x: number, y: number }} w */
     onTap(p, w) {
-      // 駅名の札は当たり判定に使わない（札の下の空いた格子点に駅を作れるように）
+      // 駅名の札は当たり判定に使わない（札の下の空いた所に駅を作れるように）
       const hit = ed.hitTest(p, w, (tg) => tg.type === 'station' || tg.type === 'section');
       if (hit && hit.type === 'station') {
         add({ stationId: hit.id });
         return;
       }
-      const g = snapToGrid(w.x, w.y);
-      const existing = ed.stationAt(g);
-      if (existing) {
-        add({ stationId: existing });
+      const spot = ed.spotAt(w);
+      if (spot.stationId) {
+        add({ stationId: spot.stationId });
         return;
       }
       // 区間のメニューは、引いている途中でなければどの路線でも、引いている途中ならその路線だけに出す
@@ -141,7 +139,7 @@ export function createDrawLineTool(ed) {
         ed.openMenuAt(p, sectionMenuItems(ed, hit, w, { insert: true, bend: true }));
         return;
       }
-      add({ newStation: g });
+      add({ newStation: spot.newStation });
     },
     /** 最後の駅のダブルタップで終了 */
     onDoubleTap(p, w) {
@@ -149,13 +147,13 @@ export function createDrawLineTool(ed) {
       if (!d) return false;
       const line = currentLine();
       const hit = ed.hitTest(p, w, (tg) => tg.type === 'station');
-      const id = hit ? hit.id : ed.stationAt(snapToGrid(w.x, w.y));
+      const id = hit ? hit.id : ed.spotAt(w).stationId;
       if (line && id && id === endStation(line, d.atStart)) finish();
       return true;
     },
     /** @param {any} p @param {{ x: number, y: number }} w */
     onHover(p, w) {
-      ed.setHover(snapToGrid(w.x, w.y));
+      ed.setHover(ed.spotAt(w).hover);
     },
     /** @param {KeyboardEvent} e */
     onKey(e) {

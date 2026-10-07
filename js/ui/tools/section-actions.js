@@ -1,7 +1,6 @@
 // 区間に対する操作（駅の挿入・曲がり位置の切り替え・区間の削除・路線の削除）。
 // 路線を引くツール・削除ツール・長押しメニューで共通に使う。
 import { t } from '../../i18n/i18n.js';
-import { snapToGrid } from '../../core/viewport.js';
 import { isOctilinear } from '../../core/octilinear.js';
 import { openDialog } from '../dialog.js';
 
@@ -43,20 +42,21 @@ export function sectionMenuItems(ed, hit, w, which) {
     items.push({
       label: t('tool.line.insertStation'),
       onSelect: () => {
-        const g = snapToGrid(w.x, w.y);
-        const existing = ed.stationAt(g);
+        const spot = ed.spotAt(w);
+        const existing = spot.stationId;
         if (existing && line.stops.some((s) => s.stationId === existing)) {
           ed.toast(t('tool.line.alreadyInLine'));
           return;
         }
-        const target = existing ? { stationId: existing } : { newStation: g };
+        const target = existing ? { stationId: existing } : { newStation: spot.newStation };
         insertWithNumbering(line, (numbering) => {
           store.dispatch({ type: 'line/insertStop', lineId: line.id, sectionIndex: hit.index, ...target, numbering });
         });
       },
     });
   }
-  if (which.bend) {
+  // 曲がり位置は路線図だけ（地理ビューの表示リストには geom が無い）
+  if (which.bend && ed.getScene().geom) {
     const geom = ed.getScene().geom.get(line.id)?.[hit.index];
     const sec = line.sections[hit.index] || {};
     const straight = !geom || (geom.pts.length === 2 && isOctilinear(geom.pts[1].x - geom.pts[0].x, geom.pts[1].y - geom.pts[0].y));

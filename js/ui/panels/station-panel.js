@@ -69,7 +69,9 @@ export function createStationPanel(ctx, stationId) {
   const note = textArea({ onChange: (v) => set({ note: opt(v) }) });
 
   // ---------- 駅名ラベル（路線図） ----------
-  const setLabel = (fields) => store.dispatch({ type: 'station/label', stationId, fields });
+  // 駅名の札の設定は、地理ビューでは地理の札（label.geo）を変える
+  const labelView = () => (es.get().view === 'geo' ? 'geo' : 'schematic');
+  const setLabel = (fields) => store.dispatch({ type: 'station/label', stationId, view: labelView(), fields });
   const lPos = selectInput({ options: enumOptions(LABEL_POSITIONS, (v) => t('labelPos.' + v)), onChange: (v) => setLabel({ pos: v }) });
   const lOrient = selectInput({ options: enumOptions(LABEL_ORIENTATIONS, (v) => t('labelOrientation.' + v)), onChange: (v) => setLabel({ orientation: v }) });
   const lText = textArea({ rows: 2, onChange: (v) => setLabel({ text: v.trim() ? v.replace(/\s+$/, '') : undefined }) });
@@ -160,7 +162,7 @@ export function createStationPanel(ctx, stationId) {
       closed.setValue(st.closedYear);
       ridership.setValue(st.ridership);
       note.setValue(st.note || '');
-      const lb = st.label.schematic;
+      const lb = st.label[labelView()];
       lPos.setValue(lb.pos);
       lOrient.setValue(lb.orientation);
       lText.setValue(lb.text || '');

@@ -4,6 +4,7 @@ import { createStation } from '../defaults.js';
 import { removeStop } from '../lines.js';
 import { romanize } from '../romaji.js';
 import { shrinkServices } from './services.js';
+import { estimateGeo, estimateSchematic, freeGridPoint } from '../geo-layout.js';
 
 /** @typedef {import('../patch.js').Tx} Tx */
 /** @typedef {import('./context.js').ActionContext} Ctx */
@@ -25,18 +26,42 @@ export function applyRomaji(tx, ctx, i) {
   tx.set(['stations', i, 'names'], { ...st.names, [r.romanizeTo]: en });
 }
 
+const round3 = (v) => Math.round(v * 1000) / 1000 + 0;
+
 /**
- * 駅を足す
+ * 架空の地形の中央（km）。対応のある駅が無いときに、路線図で置いた駅を地理のここに仮置きする
+ * @param {import('../schema.js').World} world
+ */
+function worldCenter(world) {
+  const km = world.mode === 'fictional' ? world.gen.size * world.gen.cellKm : 0;
+  return { x: km / 2, y: km / 2 };
+}
+
+/**
+ * 駅を足す。路線図の格子座標で置いたら、架空の地形があるときは地理にも近い位置に仮置きする。
+ * 地理座標（pos.geo、km）で置いたら、路線図の近くの空いた格子点に仮置きする（§7 フェーズ4）
  * @param {Tx} tx
  * @param {Ctx} ctx
- * @param {{ x: number, y: number }} pos 路線図の格子座標
+ * @param {{ x: number, y: number } | { geo: { x: number, y: number } }} pos
  * @param {object} [fields]
  * @returns {string}
  */
 export function addStationTo(tx, ctx, pos, fields = {}) {
+  const p = tx.state;
+  let schematic;
+  let geo = null;
+  if ('geo' in pos && pos.geo) {
+    geo = { x: round3(pos.geo.x), y: round3(pos.geo.y) };
+    schematic = freeGridPoint(p.stations, estimateSchematic(p.stations, geo));
+  } else {
+    const q = /** @type {{ x: number, y: number }} */ (pos);
+    schematic = { x: Math.round(q.x) + 0, y: Math.round(q.y) + 0 };
+    if (p.world.mode === 'fictional') geo = estimateGeo(p.stations, schematic, worldCenter(p.world));
+  }
   const st = createStation(ctx.region, {
     id: ctx.newId(ID_PREFIX.station),
-    schematic: { x: Math.round(pos.x) + 0, y: Math.round(pos.y) + 0 },
+    schematic,
+    geo,
     ...fields,
   });
   tx.push(['stations'], st);
@@ -89,9 +114,9 @@ export function deleteStationsFrom(tx, ids) {
 
 /** @type {Record<string, (tx: Tx, a: any, ctx: Ctx) => any>} */
 export const stationReducers = {
-  /** { x, y, fields? } → 新しい ID */
-  'station/add'(tx, { x, y, fields }, ctx) {
-    return addStationTo(tx, ctx, { x, y }, fields);
+  /** { x, y, fields? }（路線図の格子座標）か { geo: { x, y }, fields? }（地理座標 km）→ 新しい ID */
+  'station/add'(tx, { x, y, geo, fields }, ctx) {
+    return addStationTo(tx, ctx, geo ? { geo } : { x, y }, fields);
   },
 
   /** { stationId, fields }（undefined のキーは消す）。よみを変えたら英字も作り直す */
@@ -119,6 +144,16 @@ export const stationReducers = {
     });
   },
 
+  /** 地理の位置を動かす { ids, dx, dy }（km） */
+  'station/moveGeo'(tx, { ids, dx, dy }) {
+    if (!dx && !dy) return;
+    const set = new Set(ids);
+    tx.state.stations.forEach((st, i) => {
+      if (!set.has(st.id) || !st.geo || !('x' in st.geo)) return;
+      tx.set(['stations', i, 'geo'], { x: round3(st.geo.x + dx), y: round3(st.geo.y + dy) });
+    });
+  },
+
   /** 路線図の位置をまとめて決める { positions: { [id]: { x, y } } } */
   'station/place'(tx, { positions }) {
     tx.state.stations.forEach((st, i) => {
@@ -139,11 +174,10 @@ export const stationReducers = {
     const out = [];
     for (const id of ids) {
       const st = tx.find('stations', id);
-      const copy = {
-        ...st,
-        id: ctx.newId(ID_PREFIX.station),
-        schematic: st.schematic ? { x: st.schematic.x + dx, y: st.schematic.y + dy } : null,
-      };
+      const schematic = st.schematic ? { x: st.schematic.x + dx, y: st.schematic.y + dy } : null;
+      // 地理の位置も、路線図でずらした分だけ近くにずらす（同じ位置に重ならないように）
+      const geo = st.geo && schematic && tx.state.world.mode === 'fictional' ? estimateGeo(tx.state.stations, schematic, st.geo) : st.geo;
+      const copy = { ...st, id: ctx.newId(ID_PREFIX.station), schematic, geo };
       tx.push(['stations'], copy);
       out.push(copy.id);
     }

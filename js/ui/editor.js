@@ -12,7 +12,7 @@ import { readableTextColor } from '../core/color.js';
 import { getProject, putProject } from '../storage/idb.js';
 import { createAutosave } from '../storage/autosave.js';
 import { createCanvasView } from './canvas-view.js';
-import { stationBounds, visibleWorldRect, screenToWorld, GRID } from '../core/viewport.js';
+import { stationBounds, visibleWorldRect, screenToWorld, snapToGrid, GRID } from '../core/viewport.js';
 import { alignHorizontal, alignVertical, alignDiagonal, distributeEvenly, hasCollision } from '../core/align.js';
 import { buildSchematicScene } from '../render/scene-schematic.js';
 import { labelLevel } from '../render/labels.js';
@@ -45,11 +45,13 @@ const HIT_RADIUS = { touch: 22, mouse: 8, pen: 12 };
  * @property {ReturnType<typeof createEditorState>} es
  * @property {(p: any, w: { x: number, y: number }, filter?: (t: any) => boolean) => any} hitTest
  * @property {(g: { x: number, y: number }) => string | null} stationAt
+ * @property {(w: { x: number, y: number }) => { stationId: string | null, newStation: object, hover: { x: number, y: number } }} spotAt
+ *   タップした所にある駅と、新しい駅を作るときの位置（路線図は格子点、地理ビューは地理座標）
  * @property {(sel: import('./editor-state.js').Selection) => void} select
  * @property {(target: any) => void} selectTarget
  * @property {() => void} focusStationName
  * @property {(g: { x: number, y: number } | null) => void} setHover
- * @property {(p: { x: number, y: number }, items: import('./menu.js').MenuItem[]) => void} openMenuAt
+ * @property {(p: { x: number, y: number }, items: import('./menu.js').MenuItem[], canvas?: HTMLCanvasElement) => void} openMenuAt
  * @property {(opt: { title: string, message?: string, okLabel?: string, danger?: boolean }) => Promise<boolean>} confirm
  * @property {(msg: string) => void} toast
  * @property {() => import('../render/scene-schematic.js').SchematicScene} getScene
@@ -253,6 +255,10 @@ export function createEditor(opt) {
         const st = store.getState().stations.find((s) => s.schematic && s.schematic.x === g.x && s.schematic.y === g.y);
         return st ? st.id : null;
       },
+      spotAt(w) {
+        const g = snapToGrid(w.x, w.y);
+        return { stationId: toolCtx.stationAt(g), newStation: g, hover: g };
+      },
       select(sel) {
         es.set({ selection: sel });
       },
@@ -270,8 +276,8 @@ export function createEditor(opt) {
         if (cur === g || (cur && g && cur.x === g.x && cur.y === g.y)) return;
         es.set({ hover: g });
       },
-      openMenuAt(p, items) {
-        const r = canvasView.canvas.getBoundingClientRect();
+      openMenuAt(p, items, canvas = canvasView.canvas) {
+        const r = canvas.getBoundingClientRect();
         lastMenuPoint = { x: r.left + p.x, y: r.top + p.y };
         openMenu(lastMenuPoint, items);
       },
@@ -345,14 +351,17 @@ export function createEditor(opt) {
     function labelPosMenu(stationId) {
       const st = store.getState().stations.find((s) => s.id === stationId);
       if (!st) return;
-      const set = (fields) => store.dispatch({ type: 'station/label', stationId, fields });
+      // 地理ビューでは地理の札の設定を変える
+      const view = es.get().view === 'geo' ? 'geo' : 'schematic';
+      const lb = st.label[view];
+      const set = (fields) => store.dispatch({ type: 'station/label', stationId, view, fields });
       openMenu(lastMenuPoint, [
         ...LABEL_POSITIONS.map((pos) => ({
-          label: (st.label.schematic.pos === pos ? '\u2713 ' : '') + t('labelPos.' + pos),
+          label: (lb.pos === pos ? '\u2713 ' : '') + t('labelPos.' + pos),
           onSelect: () => set({ pos }),
         })),
         { separator: true },
-        { label: t('label.resetOffset'), disabled: !st.label.schematic.dx && !st.label.schematic.dy, onSelect: () => set({ dx: undefined, dy: undefined }) },
+        { label: t('label.resetOffset'), disabled: !lb.dx && !lb.dy, onSelect: () => set({ dx: undefined, dy: undefined }) },
       ], { label: t('label.position') });
     }
 
@@ -430,12 +439,16 @@ export function createEditor(opt) {
     cleanups.push(() => commands.dispose());
     const checkView = createCheckView({ store, close: () => es.set({ drawer: null }), go: (target) => commands.goTo(target) });
 
-    // ---------- 停車駅案内図と駅名標のビュー ----------
-    const others = createOtherViews({ store, es, onSelectService: (id) => es.set({ selection: { type: 'service', id } }), getInsets: () => sheetInsets(others.geo.el) });
+    // ---------- 地理・停車駅案内図・駅名標のビュー ----------
+    const others = createOtherViews({ store, es, toolCtx, onSelectService: (id) => es.set({ selection: { type: 'service', id } }), getInsets: () => sheetInsets(others.geo.el) });
     cleanups.push(() => others.dispose());
     const views = createViewSwitcher({ store, es, others });
-    /** 路線図ではないビュー（案内図・駅名標）を表示しているなら、そのビュー */
+    /** 路線図ではないビュー（地理・案内図・駅名標）を表示しているなら、そのビュー */
     const otherView = () => others.get(es.get().view);
+    /** 描くツールを使わないビュー（案内図・駅名標） */
+    const toolsOff = () => es.get().view === 'stopChart' || es.get().view === 'signboard';
+    /** 今のビューのツール（地理ビューは地理用のツール） */
+    const activeTool = () => (es.get().view === 'geo' ? others.geo.tool() : currentTool());
     /** ビューを切り替える。スマホでは、切り替えた先が見えるようにシートを下げる */
     function changeView(v) {
       if (!v || es.get().view === v) return;
@@ -456,7 +469,7 @@ export function createEditor(opt) {
     // ---------- キーボード（§4.5） ----------
     cleanups.push(attachShortcuts({
       // 案内図・駅名標では描くツールに切り替えない
-      setTool: (id) => { if (!otherView()) setTool(id); },
+      setTool: (id) => { if (!toolsOff()) setTool(id); },
       undo: () => store.undo(),
       redo: () => store.redo(),
       deleteSelection,
@@ -483,7 +496,7 @@ export function createEditor(opt) {
       },
       fit: () => (otherView() || canvasView).fitAll(),
       zoom: (f) => (otherView() || canvasView).zoomBy(f),
-      toolKey: (e) => !otherView() && !!currentTool().onKey?.(e),
+      toolKey: (e) => !toolsOff() && !!activeTool().onKey?.(e),
       view: (n) => changeView(views.viewForKey(n)),
       search: () => commands.search(),
       exportJson: () => commands.exportJson(),
@@ -500,10 +513,9 @@ export function createEditor(opt) {
         return;
       }
       header.update(p.name, store.canUndo(), store.canRedo(), s.view, availableViews(p));
-      // ビュー：地理・案内図・駅名標では描くツールを隠し、そのビューを描き直す
-      const onOther = s.view !== 'schematic';
-      canvasView.el.hidden = onOther;
-      for (const b of toolButtons.values()) b.classList.toggle('is-hidden', onOther);
+      // ビュー：案内図・駅名標では描くツールを隠す。表示しているビューを描き直す
+      canvasView.el.hidden = s.view !== 'schematic';
+      for (const b of toolButtons.values()) b.classList.toggle('is-hidden', toolsOff());
       others.update(p, s.view);
       document.title = `${p.name} - ${t('app.title')}`;
       banner.update(!bannerHidden && needsBackupReminder(p), p.meta.lastBackupAt);

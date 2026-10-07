@@ -1,4 +1,5 @@
-// 区間（駅間）のパネル：曲がり位置・経由点・区間属性の上書き（空なら路線の既定値）
+// 区間（駅間）のパネル：曲がり位置・経由点・区間属性の上書き（空なら路線の既定値）。
+// 経由点は、路線図では格子の経由点（schematicVia）、地理ビューでは地理の経由点（geoVia）を扱う
 import { h } from '../dom.js';
 import { t } from '../../i18n/i18n.js';
 import { ELECTRIFICATIONS, COLLECTIONS, TRACKS, STRUCTURES, LINE_STATUSES, BENDS, GAUGE_CANDIDATES } from '../../core/schema.js';
@@ -6,6 +7,7 @@ import { field, selectInput, numberInput, gaugeInput, group, enumOptions } from 
 import { gaugeLabels, kmText } from './line-panel.js';
 import { lineKm } from '../../core/distance.js';
 import { nextViaPoint } from '../../core/schematic.js';
+import { nextGeoViaPoint } from '../../core/geo-lines.js';
 
 const INHERIT = '';
 
@@ -19,6 +21,8 @@ export function createSectionPanel(ctx, lineId, index) {
   const line = () => store.getState().lines.find((l) => l.id === lineId);
   const sec = () => line().sections[index] || {};
   const set = (fields) => store.dispatch({ type: 'line/section', lineId, index, fields });
+  const onGeo = () => es.get().view === 'geo';
+  const viaKey = () => (onGeo() ? 'geoVia' : 'schematicVia');
 
   const title = h('h2', { class: 'panel-title' });
   const sub = h('p', { class: 'panel-note' });
@@ -33,23 +37,24 @@ export function createSectionPanel(ctx, lineId, index) {
       click: () => {
         const p = store.getState();
         const l = line();
-        const pos = (id) => p.stations.find((s) => s.id === id)?.schematic;
+        const key = viaKey();
+        const pos = (id) => p.stations.find((s) => s.id === id)?.[onGeo() ? 'geo' : 'schematic'];
         const a = pos(l.stops[index].stationId);
         const b = pos(l.stops[(index + 1) % l.stops.length].stationId);
         if (!a || !b) return;
-        const via = sec().schematicVia || [];
-        const next = nextViaPoint([a, ...via, b]);
+        const via = sec()[key] || [];
+        const next = (onGeo() ? nextGeoViaPoint : nextViaPoint)([a, ...via, b]);
         if (!next) {
           ctx.toast(t('via.noRoom'));
           return;
         }
         const list = [...via];
         list.splice(next.index, 0, next.point);
-        set({ schematicVia: list });
+        set({ [key]: list });
       },
     },
   }, t('via.add'));
-  const clearVia = h('button', { class: 'btn btn-small', type: 'button', on: { click: () => set({ schematicVia: null }) } }, t('via.clear'));
+  const clearVia = h('button', { class: 'btn btn-small', type: 'button', on: { click: () => set({ [viaKey()]: null }) } }, t('via.clear'));
 
   // 上書き（空欄・「路線の既定」なら null にして既定値を使う）
   const nullable = (values, labelOf, key, toValue = (v) => v) => {
@@ -74,6 +79,9 @@ export function createSectionPanel(ctx, lineId, index) {
   const opened = numberInput({ step: 1, onChange: (v) => set({ openedYear: v === null ? null : Math.round(v) }) });
   const closed = numberInput({ step: 1, onChange: (v) => set({ closedYear: v === null ? null : Math.round(v) }) });
 
+  // 曲がり位置は路線図だけ
+  const bendField = field(t('section.bend'), bend);
+  const shapeTitle = h('span', {});
   const el = h('div', {},
     h('div', { class: 'panel-head' }, title),
     h('div', { class: 'panel-section' }, sub, kmInfo,
@@ -81,8 +89,8 @@ export function createSectionPanel(ctx, lineId, index) {
         h('button', { class: 'btn btn-small', type: 'button', on: { click: () => es.set({ selection: { type: 'line', lineId } }) } }, t('section.openLine')),
       ),
     ),
-    group(t('section.shape'), [
-      field(t('section.bend'), bend),
+    group(shapeTitle, [
+      bendField,
       viaInfo,
       h('div', { class: 'panel-actions' }, addVia, clearVia),
     ]),
@@ -126,8 +134,11 @@ export function createSectionPanel(ctx, lineId, index) {
       const sk = lineKm(p, l).sections[index];
       kmInfo.textContent = t('km.sectionValue', { value: kmText(sk.km, sk.source === 'estimate', p.locale.distanceUnit) });
       bend.setValue(s.schematicBend || 'auto');
-      const viaCount = (s.schematicVia || []).length;
-      viaInfo.textContent = viaCount ? t('via.count', { count: viaCount }) : t('via.none');
+      bendField.hidden = onGeo();
+      shapeTitle.textContent = t(onGeo() ? 'section.shapeGeo' : 'section.shape');
+      const viaCount = (s[viaKey()] || []).length;
+      if (onGeo()) viaInfo.textContent = viaCount ? t('via.geoCount', { count: viaCount }) : t('via.geoNone');
+      else viaInfo.textContent = viaCount ? t('via.count', { count: viaCount }) : t('via.none');
       clearVia.disabled = !viaCount;
 
       const d = l.defaults;

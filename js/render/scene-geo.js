@@ -262,6 +262,7 @@ export function buildGeoScene(p, opt) {
     index,
     stationItems,
     sectionItems,
+    labelInfo: labels.info,
     zoom: opt.zoom,
     unit: u,
     paper: paperOf(style),

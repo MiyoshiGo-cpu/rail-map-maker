@@ -1,34 +1,35 @@
-// 地理ビュー（§5.4）：架空の地形（段彩と陰影の画像）の上に、県境・川・都市・線路・駅・駅名を描く。
+// 地理ビュー（§5.4）：架空の地形（段彩と陰影の画像）の上に、県境・川・都市・線路・駅・駅名を描き、地理の位置で編集する。
 // 地形の画像・川・県境は、保存した世界から Worker で作り直し（terrain-client.js の analyze）、画像は1回だけ canvas に描いて拡大縮小する。
 // 表示リストは倍率の段階が変わったときに作り直す（線の太さと文字の大きさを画面で一定にするため）。
-// 縮尺バーと方位記号は画面に重ねて描く。タップで駅・区間を選べる（編集のツールはステップ5で足す）。
+// ツールは路線図と同じもの（駅を置く・路線を引く・削除）に、当たり判定と座標を地理用に差し替えた道具を渡す。選択ツールは地理用。
 import { h } from './dom.js';
+import { icon } from './icons.js';
 import { t, mapTranslator } from '../i18n/i18n.js';
 import { createCanvasView } from './canvas-view.js';
 import { requestTerrain } from './terrain-client.js';
 import { computeGeoSections } from '../core/geo-lines.js';
 import { buildGeoScene, geoBaseVectors, geoZoomLevel } from '../render/scene-geo.js';
 import { drawItems, createMeasure } from '../render/backend-canvas.js';
-import { mapFont } from '../render/styles.js';
-import { LAKE_COLOR, SHORE_COLOR } from '../render/terrain-raster.js';
-import { visibleWorldRect, GEO_UNIT, GEO_ZOOM } from '../core/viewport.js';
-import { drawUnderlay, drawSelectionRings } from './overlay.js';
-import { accentFor, NO_SELECTION } from './editor-state.js';
+import { visibleWorldRect, screenToWorld, GEO_UNIT, GEO_ZOOM } from '../core/viewport.js';
+import { drawUnderlay, drawSelectionRings, stationRing } from './overlay.js';
+import { makeImage, ringsPath, drawTerrain, drawScaleBar, drawNorthArrow, drawGeoEditOverlay } from './geo-overlay.js';
+import { accentFor } from './editor-state.js';
+import { pickPending, pendingHint } from './pending-pick.js';
+import { createGeoSelectTool } from './tools/geo-select-tool.js';
+import { createPlaceStationTool } from './tools/place-station-tool.js';
+import { createDrawLineTool } from './tools/draw-line-tool.js';
+import { createDeleteTool } from './tools/delete-tool.js';
 
 /** 当たり判定の半径（画面の px。§4.4） */
 const HIT_RADIUS = { touch: 22, mouse: 8, pen: 12 };
 /** 地形の外の色 */
 const OUTSIDE = '#D5DDE5';
-const OVERLAY_INK = '#1F2933';
-const OVERLAY_PAPER = 'rgba(255,255,255,0.85)';
-/** 縮尺バーの長さの区切り（1・2・5 × 10 のべき） */
-const NICE = [1, 2, 5];
-const KM_PER_MILE = 1.609344;
 
 /**
  * @param {{
  *   store: any,
  *   es: any,
+ *   toolCtx: import('./editor.js').ToolContext,
  *   getInsets?: () => { top: number, right: number, bottom: number, left: number },
  * }} ctx
  */
@@ -66,6 +67,51 @@ export function createGeoView(ctx) {
   });
   const el = h('div', { class: 'geo-view' }, canvasView.el);
 
+  // スマホの「範囲」ボタン（選択ツールのときだけ出す）
+  const rangeBtn = h('button', {
+    class: 'icon-btn mobile-only',
+    type: 'button',
+    'aria-label': t('range.toggle'),
+    title: t('range.toggle'),
+    'aria-pressed': 'false',
+    on: { click: () => es.set({ rangeMode: !es.get().rangeMode }) },
+  }, icon('range'));
+  canvasView.addControl(rangeBtn);
+
+  // ---------- ツール ----------
+  /** 地理用の道具：当たり判定・座標の変換・新しい駅の位置を地理用に差し替える */
+  const gctx = {
+    ...ctx.toolCtx,
+    getScene: () => getScene(),
+    hitRadius: (p) => (HIT_RADIUS[p.pointerType] ?? 8) / canvasView.getView().zoom,
+    hitTest: (p, w, filter) => getScene().index.hitTest(w.x, w.y, gctx.hitRadius(p), filter),
+    toWorld: (p) => screenToWorld(canvasView.getView(), canvasView.getSize(), p.x, p.y),
+    openMenuAt: (p, items) => ctx.toolCtx.openMenuAt(p, items, canvasView.canvas),
+    // 地理には格子が無いので、駅は当たり判定だけで探す。新しい駅はタップした地理の位置（km）に作る
+    stationAt: () => null,
+    spotAt: (w) => {
+      const g = { x: Math.round(w.x / GEO_UNIT * 1000) / 1000 + 0, y: Math.round(w.y / GEO_UNIT * 1000) / 1000 + 0 };
+      return { stationId: null, newStation: { geo: g }, hover: g };
+    },
+    zoom: () => canvasView.getView().zoom,
+    sceneZoom: () => getScene().zoom,
+  };
+  const tools = {
+    select: createGeoSelectTool(gctx),
+    station: createPlaceStationTool(gctx),
+    line: createDrawLineTool(gctx),
+    delete: createDeleteTool(gctx),
+  };
+  const currentTool = () => tools[es.get().tool] || tools.select;
+  canvasView.setInput({
+    onTap: (p, w) => (es.get().pending ? pickPending({ store, es, hitTest: gctx.hitTest, toast: gctx.toast }, p, w) : currentTool().onTap?.(p, w)),
+    onDoubleTap: (p, w) => currentTool().onDoubleTap?.(p, w) || false,
+    onLongPress: (p, w) => currentTool().onLongPress?.(p, w),
+    onDragStart: (p, w) => currentTool().onDragStart?.(p, w) || null,
+    onHover: (p, w) => currentTool().onHover?.(p, w),
+  });
+  canvasView.canvas.addEventListener('pointerleave', () => gctx.setHover(null));
+
   canvasView.addLayer((c, view, size, dpr) => {
     const p = store.getState();
     if (p.world.mode !== 'fictional') return;
@@ -76,22 +122,13 @@ export function createGeoView(ctx) {
     drawUnderlay(c, o);
     drawItems(c, sc.items, visibleWorldRect(view, size));
     drawSelectionRings(c, o);
+    drawGeoEditOverlay(c, { ...o, ring: (id, color) => stationRing(c, sc, id, color, view.zoom) });
     // ここから画面の座標：縮尺バーと方位記号
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     const insets = ctx.getInsets ? ctx.getInsets() : { top: 0, right: 0, bottom: 0, left: 0 };
     const mapT = mapTranslator(p.locale.mapLanguage);
     drawScaleBar(c, view.zoom * GEO_UNIT, size, insets, p, mapT);
     drawNorthArrow(c, insets, p, mapT);
-  });
-
-  canvasView.setInput({
-    onTap: (pt, w) => {
-      const r = (HIT_RADIUS[pt.pointerType] ?? 8) / canvasView.getView().zoom;
-      const target = getScene().index.hitTest(w.x, w.y, r);
-      if (!target) es.set({ selection: NO_SELECTION });
-      else if (target.type === 'station' || target.type === 'label') es.set({ selection: { type: 'stations', ids: [target.id] } });
-      else if (target.type === 'section') es.set({ selection: { type: 'section', lineId: target.lineId, index: target.index } });
-    },
   });
 
   /** 今の倍率の段階の表示リスト（データか段階が変わったら作り直す） */
@@ -124,7 +161,6 @@ export function createGeoView(ctx) {
     const key = [w.terrain, w.gen, w.regions];
     baseKey = key;
     failed = false;
-    updateHint();
     requestTerrain({ kind: 'analyze', world: w }).then((res) => {
       if (baseKey !== key) return;
       terrain = {
@@ -136,20 +172,23 @@ export function createGeoView(ctx) {
       // 画像にしたら画素の配列は要らない（標高と水は、あとで駅名の候補やトンネルの提案に使う）
       base = { ...res, rgba: null, seaRgba: null };
       vectors = geoBaseVectors(res);
-      updateHint();
+      updateHint(store.getState());
       canvasView.requestRender();
     }, (e) => {
       if (baseKey !== key) return;
       console.error('[geo view]', e);
       failed = true;
-      updateHint();
+      updateHint(store.getState());
     });
   }
 
-  function updateHint() {
+  /** 画面の中央の案内：読み込み中・失敗・待っている操作・駅が無いとき */
+  function updateHint(p) {
+    const s = es.get();
     if (failed) canvasView.setHint(t('geo.failed'));
     else if (baseKey && !base) canvasView.setHint(t('geo.loading'));
-    else canvasView.setHint(null);
+    else if (s.pending) canvasView.setHint(pendingHint(s.pending));
+    else canvasView.setHint(p.stations.some((st) => st.geo) ? null : t(s.tool === 'station' ? 'hint.placeStation' : 'hint.empty'));
   }
 
   return {
@@ -157,8 +196,15 @@ export function createGeoView(ctx) {
     /** 表示しているときに呼ぶ @param {import('../core/schema.js').Project} p */
     update(p) {
       ensureBase(p);
+      updateHint(p);
+      const s = es.get();
+      rangeBtn.hidden = s.tool !== 'select';
+      rangeBtn.setAttribute('aria-pressed', String(!!s.rangeMode));
+      canvasView.setCursor(currentTool().cursor || 'default');
       canvasView.requestRender();
     },
+    /** 今のツール（キーボードの操作に使う） */
+    tool: () => currentTool(),
     /** 表示している表示リスト（デバッグ用。書き出しはステップ6で対応する） */
     getScene: () => scene,
     getBase: () => base,
@@ -183,151 +229,4 @@ function worldExtent(p) {
   if (p.world.mode !== 'fictional') return null;
   const km = p.world.gen.size * p.world.gen.cellKm;
   return { minX: 0, minY: 0, maxX: km * GEO_UNIT, maxY: km * GEO_UNIT };
-}
-
-/**
- * 画素の配列を canvas に描く
- * @param {Uint8ClampedArray} rgba
- * @param {number} width
- * @param {number} height
- */
-function makeImage(rgba, width, height) {
-  const cv = document.createElement('canvas');
-  cv.width = width;
-  cv.height = height;
-  const c = /** @type {CanvasRenderingContext2D} */ (cv.getContext('2d'));
-  c.putImageData(new ImageData(rgba, width, height), 0, 0);
-  return cv;
-}
-
-/**
- * 輪（km の x, y の並び）を世界座標の Path2D にする
- * @param {number[][]} rings
- */
-function ringsPath(rings) {
-  const path = new Path2D();
-  for (const r of rings) {
-    path.moveTo(r[0] * GEO_UNIT, r[1] * GEO_UNIT);
-    for (let i = 2; i < r.length; i += 2) path.lineTo(r[i] * GEO_UNIT, r[i + 1] * GEO_UNIT);
-    path.closePath();
-  }
-  return path;
-}
-
-/**
- * 地形：海の画像の上に、海岸線の形で切り抜いた陸の画像を重ね、湖を塗って岸に細い線を引く
- * @param {CanvasRenderingContext2D} c 世界座標
- * @param {{ land: HTMLCanvasElement, sea: HTMLCanvasElement, landPath: Path2D, lakePath: Path2D }} tr
- * @param {number} w 地形の幅（世界座標）
- * @param {number} hgt
- * @param {number} zoom
- */
-function drawTerrain(c, tr, w, hgt, zoom) {
-  c.imageSmoothingEnabled = true;
-  c.drawImage(tr.sea, 0, 0, w, hgt);
-  c.save();
-  c.clip(tr.landPath, 'evenodd');
-  c.drawImage(tr.land, 0, 0, w, hgt);
-  c.restore();
-  c.fillStyle = LAKE_COLOR;
-  c.fill(tr.lakePath, 'evenodd');
-  c.strokeStyle = SHORE_COLOR;
-  c.lineWidth = 0.8 / zoom;
-  c.lineJoin = 'round';
-  c.stroke(tr.landPath);
-  c.stroke(tr.lakePath);
-}
-
-/** 数を短く（0.5・10・200） */
-const numText = (n) => String(Math.round(n * 1000) / 1000);
-
-/**
- * 縮尺バー（左下。スマホではシートの上）。長さは 1・2・5 の区切りで、画面で140px 以内
- * @param {CanvasRenderingContext2D} c 画面の座標
- * @param {number} pxPerKm
- * @param {{ width: number, height: number }} size
- * @param {{ bottom: number, left: number }} insets
- * @param {import('../core/schema.js').Project} p
- * @param {(key: string, vars?: any) => string} mapT
- */
-function drawScaleBar(c, pxPerKm, size, insets, p, mapT) {
-  const mile = p.locale.distanceUnit === 'mi';
-  const pxPerUnit = pxPerKm * (mile ? KM_PER_MILE : 1);
-  const maxPx = Math.min(140, size.width * 0.4);
-  let best = null;
-  for (let e = -2; e <= 4; e++) {
-    for (const m of NICE) {
-      const n = m * 10 ** e;
-      const len = n * pxPerUnit;
-      if (len <= maxPx && (!best || len > best.len)) best = { n, len };
-    }
-  }
-  if (!best) return;
-  const text = mapT(mile ? 'map.scale.mi' : 'map.scale.km', { n: numText(best.n) });
-  const font = mapFont(p.style, 11, 600);
-  c.font = font;
-  const tw = c.measureText(text).width;
-  const x = insets.left + 12;
-  const y = size.height - insets.bottom - 14;
-  const barH = 5;
-  // 地（読みやすいように白い板を敷く）
-  c.fillStyle = OVERLAY_PAPER;
-  c.beginPath();
-  c.roundRect(x - 6, y - 22, Math.max(best.len, tw) + 12, 30, 4);
-  c.fill();
-  // 半分ずつ黒と白の帯
-  const half = best.len / 2;
-  c.fillStyle = OVERLAY_INK;
-  c.fillRect(x, y - barH, half, barH);
-  c.fillStyle = '#FFFFFF';
-  c.fillRect(x + half, y - barH, half, barH);
-  c.strokeStyle = OVERLAY_INK;
-  c.lineWidth = 1;
-  c.strokeRect(x + 0.5, y - barH + 0.5, best.len - 1, barH - 1);
-  c.fillStyle = OVERLAY_INK;
-  c.textAlign = 'left';
-  c.textBaseline = 'alphabetic';
-  c.fillText(text, x, y - barH - 4);
-}
-
-/**
- * 方位記号（左上）：北を指す矢じりと N
- * @param {CanvasRenderingContext2D} c 画面の座標
- * @param {{ top: number, left: number }} insets
- * @param {import('../core/schema.js').Project} p
- * @param {(key: string, vars?: any) => string} mapT
- */
-function drawNorthArrow(c, insets, p, mapT) {
-  const cx = insets.left + 28;
-  const cy = insets.top + 32;
-  c.fillStyle = OVERLAY_PAPER;
-  c.beginPath();
-  c.arc(cx, cy, 19, 0, Math.PI * 2);
-  c.fill();
-  // 矢じり：左半分を塗り、右半分は白
-  const top = cy - 5;
-  const bottom = cy + 14;
-  c.beginPath();
-  c.moveTo(cx, top);
-  c.lineTo(cx - 6, bottom);
-  c.lineTo(cx, bottom - 4);
-  c.closePath();
-  c.fillStyle = OVERLAY_INK;
-  c.fill();
-  c.beginPath();
-  c.moveTo(cx, top);
-  c.lineTo(cx + 6, bottom);
-  c.lineTo(cx, bottom - 4);
-  c.closePath();
-  c.fillStyle = '#FFFFFF';
-  c.fill();
-  c.strokeStyle = OVERLAY_INK;
-  c.lineWidth = 1;
-  c.lineJoin = 'round';
-  c.stroke();
-  c.font = mapFont(p.style, 10, 700);
-  c.fillStyle = OVERLAY_INK;
-  c.textAlign = 'center';
-  c.textBaseline = 'alphabetic';
-  c.fillText(mapT('map.north'), cx, top - 2);
 }

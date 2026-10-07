@@ -101,13 +101,14 @@
 - フェーズ1は完了（2026-09-29）。完了条件13個をすべて確認し、公開版を PC と iPhone（Safari・ホーム画面）で確認済み。未計測なのは iPhone 実機での駅200・路線20の操作感だけ（任意）。
 - フェーズ2は完了（2026-09-29）。計画のステップ0〜10をすべて終え、完了条件5つを確かめ、公開版を iPhone で確認してもらった。
 - フェーズ3は完了（2026-09-29）。計画のステップ1〜9をすべて終え、完了条件5つを確かめた（4つは Chromium で：PNG と SVG の画素比較、1,600万画素の案内、駅名標の前後の駅のテスト、A4 横の PDF が1ページ。iPhone での PNG の保存は確認してもらった）。
-- フェーズ4（架空地形と地理ビュー）は計画を承認済み（2026-09-29。下の「フェーズ4の計画」）。ステップ1〜3 を区切り1として main に反映し、iPhone で確認してもらった（2026-10-01：中サイズの生成 0.3秒、画面は固まらない）。ステップ4（地理ビューの表示）を作業ブランチ claude/phase4-geo-view で終えた（2026-10-01、main には未反映。区切り2はステップ5のあと）。次はステップ5（地理ビューでの編集）。
+- フェーズ4（架空地形と地理ビュー）は計画を承認済み（2026-09-29。下の「フェーズ4の計画」）。ステップ1〜3 を区切り1として main に反映し、iPhone で確認してもらった（2026-10-01：中サイズの生成 0.3秒、画面は固まらない）。ステップ4（地理ビューの表示）とステップ5（地理ビューでの編集）を終え、区切り2として main に反映した（2026-10-07）。iPhone での確認待ち（地理ビューの表示と編集）。次はステップ6（地図記号スタイルと地理ビューの書き出し）。
 - 地形：生成は core/terrain/（noise・generate・hydrology・cities・world・codec・jobs・features）、地名は core/placenames.js（要素は regions/jp-placenames.js）、路線図と地理の対応は core/geo-layout.js、Worker は js/workers/terrain-worker.js（ui/terrain-client.js から呼ぶ）、生成の画面は ui/terrain-dialog.js、地形の画像は render/terrain-raster.js、アクションは core/actions/world.js。カタログは js/i18n/ja-geo.js、CSS は css/geo.css。速さ（Node）：世界まるごと 小0.2秒・中0.5秒・大2.2秒。
 - 地理ビュー（ステップ4）：ui/geo-view.js（キャンバス・地形の画像・選択・縮尺バーと方位記号）→ render/scene-geo.js（表示リスト：県境・川・都市・線路・駅・駅名。倍率の段階 geoZoomLevel ごとに作り直す）。線路の曲線と並走の束は core/geo-lines.js、川・県境・海岸線と湖岸の線は core/terrain/features.js、地形の下ごしらえ（画像・線）は core/terrain/jobs.js の analyze（Worker、中サイズ約0.4秒）。世界座標は km × GEO_UNIT（32）、倍率の範囲は GEO_ZOOM（core/viewport.js）。ビューの切り替えと「地理」タブの出し分けは ui/editor-views.js（availableViews）。
+- 地理ビューの編集（ステップ5）：ツールは路線図と同じ place-station-tool・draw-line-tool・delete-tool に、geo-view.js が当たり判定・座標・spotAt（新しい駅の位置）を地理用に差し替えた道具を渡す。選択ツールは ui/tools/geo-select-tool.js（駅の移動・経由点・札のドラッグ・範囲選択・長押しメニュー・矢印キー）。編集の目印・地形・縮尺バーと方位記号の描画は ui/geo-overlay.js。片方のビューで置いた駅の仮置きは core/geo-layout.js（estimateGeo・estimateSchematic・freeGridPoint）を core/actions/stations.js の addStationTo が使う（station/add に geo を渡すと地理で置く）。地理の移動は station/moveGeo、経由点は SectionOverride.geoVia。
 - 性能（PC）：駅200・路線20で、パン・ズームの描画1回が中央値0.8〜3.5ms（3倍の画素数）、ラベル込みの表示リスト作成が約9ms。
-- 描画：core/schematic.js → core/parallel.js → render/scene-schematic.js（連絡線・駅記号・labels.js のラベル）→ render/backend-canvas.js。操作：ui/editor.js（約565行。これ以上は editor-views.js などに分ける）＋ editor-header.js・editor-commands.js・editor-state.js・tools/・panels/・data-view.js・check-view.js。起動と画面の切り替え・iPhone 向けの処理は js/main.js。
+- 描画：core/schematic.js → core/parallel.js → render/scene-schematic.js（連絡線・駅記号・labels.js のラベル）→ render/backend-canvas.js。操作：ui/editor.js（約575行。これ以上は editor-views.js などに分ける）＋ editor-header.js・editor-commands.js・editor-state.js・tools/・panels/・data-view.js・check-view.js。起動と画面の切り替え・iPhone 向けの処理は js/main.js。
 - 型は core/schema.js、既定値と補完は defaults.js、アクションは core/actions/、保存は js/storage/。CSS は app.css・components.css・table.css・services.css（フェーズ2）、カタログは js/i18n/ja.js（約490行）＋ ja-help.js ＋ ja-services.js（フェーズ2）。営業キロは core/distance.js、種別は core/actions/service-types.js・ui/panels/service-type-panel.js・ui/data-tabs-services.js。系統：経路の展開・停車駅・直通の判定は core/services.js、経路の候補は core/network.js、所要時間は core/runtime.js、アクションと後始末は core/actions/services.js、チェックは core/validate-services.js。画面は ui/panels/service-panel.js・service-new-panel.js・ui/route-picker.js・service-ui.js・pending-pick.js（地図のタップで駅を選ぶ）・service-overlay.js（路線図の強調）。停車駅案内図は core/stopchart.js（中身）→ render/scene-stopchart.js（表示リスト。横・縦）→ ui/stopchart-view.js（ビュー）、ビューの切り替えは ui/editor-views.js。スタイル：プリセットは地域パック（jp.js の stylePresets）、適用は core/map-style.js、色づかい（inkOf・paperOf・tone・lineAppearance）は render/styles.js、設定の欄は ui/style-settings.js。パレットは ui/color-palette.js（色は jp.js の linePalette）、色の差は core/color.js の colorDistance（CIEDE2000）。凡例とタイトルは render/scene-legend.js（設定の欄は ui/legend-settings.js）、駅の記号は render/station-symbol.js。駅名標は core/signboard.js（中身）→ render/scene-signboard.js（3つのテンプレート）→ ui/signboard-view.js（ビュー）。案内図と駅名標のビューは ui/editor-views.js の createOtherViews でまとめて作る。書き出し：シートは ui/export-view.js、絵と PNG は ui/exporter.js、大きさの上限は core/export-size.js、SVG は render/backend-svg.js、印刷は ui/print.js（印刷用 CSS は css/export.css）。カタログはフェーズ3の分を js/i18n/ja-export.js、CSS は css/export.css。
-- 確認用：`?debug=1` で window.rmmDebug（store・es・canvasView・getScene・commands・others。地理ビューは others.geo）と、一覧の「性能確認用のデータを作る」。テストは Node 259件・ブラウザ（/tests/）254件（tests/helpers.js の throughNetwork が直通の路線網の見本）、`node tools/check-i18n.js` は0件。印刷は `node tools/browser-check.js shot … --pdf`（PDF のページ数と用紙）と `--media=print`（印刷用 CSS での画面写真）で確かめる。
+- 確認用：`?debug=1` で window.rmmDebug（store・es・canvasView・getScene・commands・others。地理ビューは others.geo）と、一覧の「性能確認用のデータを作る」。テストは Node 264件・ブラウザ（/tests/）259件（tests/helpers.js の throughNetwork が直通の路線網の見本）、`node tools/check-i18n.js` は0件。印刷は `node tools/browser-check.js shot … --pdf`（PDF のページ数と用紙）と `--media=print`（印刷用 CSS での画面写真）で確かめる。
 
 ### 直近で対応した問題（2026-09-29、すべて解決済み）
 
@@ -120,18 +121,15 @@
 
 ### 次にやること（この順番で）
 
-1. **再開の手順**（2026-10-01。ステップ4は作業ブランチ claude/phase4-geo-view に push 済み、main は未反映）
-   - 新しい環境なら `git fetch origin claude/phase4-geo-view` → そのブランチを取り出して続ける（main から作り直さない）。git の作者が未設定なら「開発の進め方」の値にする。
-   - ローカルサーバーを起動（クラウド：`python3 tools/serve.py 8000 &`、Windows：`py tools/serve.py`）→ `npm test`・`node tools/check-i18n.js`・`node tools/browser-check.js tests` がすべて通ることを確かめる（Node 259件・ブラウザ 254件・0件）。
-   - 地理ビューの画面写真は、サンプルに地形を付けて開く手順で撮る（ページの中で runTerrainJob の world → putProject → `#/p/ID` → `[data-view="geo"]` をクリック）。
-2. **ステップ5（地理ビューでの編集）に着手**。設計メモ：
-   - ツール（駅を置く・路線を引く・選択と移動・削除）を地理ビューでも使えるようにする。ui/tools/ の路線図用のツールは格子（GRID・snapToGrid・stationAt）に決め打ちなので、地理用のツール（ui/tools/geo-*.js）を分けて作り、ui/geo-view.js の setInput に渡す。今は地理ビューに切り替えると tool を select にして、ツールのボタンを隠している（editor-views.js の setView と editor.js の render の onOther）。
-   - 駅の地理座標は station/add・station/place に相当するアクション（地理用。例 station/placeGeo）で入れる。経由点は SectionOverride.geoVia（区間パネルの「経由点を追加」と、選択ツールでのドラッグ）。区間の当たり判定は scene-geo の sectionItems。
-   - 承認時の決めごと：地理で置いた駅は、路線図の近くの空いた格子点に自動で仮置きする。路線図で置いた駅は、地理の対応する位置（近くの駅どうしの対応から推定）へ仮置きする。今は地形を付けたあとに路線図で置いた駅は geo が null で、地理ビューに出ない。
-   - 駅名の札のドラッグは label.geo の dx・dy（画面の px。scene-geo では unit を掛ける）。
-   - 営業キロは distance.js がすでに地理座標（経由点も）から出している（source: 'geo'）。地理で動かした結果がデータ表・系統の所要時間に反映されるかを確かめる。
-3. ステップ5のあと**区切り2**：main に反映 → iPhone で地理ビューの表示と編集を確認してもらう。地理ビューの書き出し（PNG・SVG・印刷）はステップ6（今は書き出しのシートに「このあとの更新で対応」と出る）。
-4. そのあと「フェーズ4の計画」のステップ6以降を順に進める。ステップごとに実装 → テスト → check-i18n → ブラウザ確認 → コミット。区切りでは main に反映し、iPhone での確認手順を伝えて、確認を待つ。
+1. **再開の手順**（2026-10-07。ステップ5まで main に反映済み＝作業ブランチ claude/phase4-geo-view と同じ）
+   - 新しい環境なら、作業ブランチを最新の main から作る（`git fetch origin main` → 作業ブランチを main から作成）。git の作者が未設定なら「開発の進め方」の値にする。
+   - ローカルサーバーを起動（クラウド：`python3 tools/serve.py 8000 &`、Windows：`py tools/serve.py`）→ `npm test`・`node tools/check-i18n.js`・`node tools/browser-check.js tests` がすべて通ることを確かめる（Node 264件・ブラウザ 259件・0件）。
+   - 地理ビューの画面写真は、サンプルに地形を付けて開く手順で撮る（ページの中で runTerrainJob の world → putProject → `#/p/ID` → `[data-view="geo"]` をクリック）。操作は canvas に PointerEvent（pointerId 1・mouse）を送って確かめられる。
+2. **区切り2の iPhone の確認結果を聞く**：地理ビューの表示（地形・川・都市・路線・駅名・縮尺バーと方位記号）と編集（駅を置く・動かす、路線を引く、経由点、削除、取り消し）。指での操作（ドラッグで駅を動かす・長押しのメニュー・ピンチ）が思ったとおりに動くか。
+3. **ステップ6（地図記号スタイルと地理ビューの書き出し）に着手**。設計メモ：
+   - 地図記号スタイル（§5.4）：「ラインカラー」と「地図記号」を MapStyle で切り替える（例 MapStyle.geoStyle: 'lineColor'|'symbol'）。地図記号は、JR（事業者の区分は地域パック）は白黒の縞、JR 以外は黒線に短い横線、地下の区間は破線、単線と複線以上は太さ、トンネルは破線と坑口、橋梁は線の両側に細線。区間の構造は effectiveSectionAttrs(line, i).structure。render/geo-symbols.js に分ける。
+   - 書き出し：今は ui/exporter.js の exportTarget が地理ビューでは null を返し、書き出しのシートに案内（export.geoNotYet）を出している。地形（海の画像・陸の画像を海岸線で切り抜き・湖）を表示リストの要素（画像と Path）にして、backend-canvas と backend-svg の両方で描けるようにする。SVG は画像を data URI で埋め込む（大サイズは重いので、画素数の上限か縮小を考える）。駅名はズームに関係なくすべて出す（書き出し用の倍率の段階を決める）。
+4. そのあと「フェーズ4の計画」のステップ7以降を順に進める。ステップごとに実装 → テスト → check-i18n → ブラウザ確認 → コミット。区切りでは main に反映し、iPhone での確認手順を伝えて、確認を待つ。
 5. （任意）iPhone で大きな路線図の操作感を確かめてもらう（「iPhone での確認手順」の5）。
 
 ### フェーズ4の計画（2026-09-29 承認）
@@ -267,3 +265,5 @@
 - 2026-10-01 地理ビューの地形：海の画像（深さの濃淡）の上に、陸の画像（段彩と陰影。1辺約1024画素に細かくする）を海岸線の形で切り抜いて重ね、湖を湖岸の形で塗る。海岸線と湖岸は標高（湖は埋めた深さ）を補間した等値線（マーチングスクエア）で、拡大しても岸がくっきり見える。川は流量で5段階の太さ（縮小すると小さい川を省く）、県境は一点鎖線。都市は人口の多い順に、駅や駅名と重ならない所に名前を置く（町は 1km 2.5px、村は 6px 以上で出す）。地形の外は灰色。
 - 2026-10-01 縮尺バーは左下（スマホはシートの上）に 1・2・5 の区切りで140px 以内、方位記号は左上。どちらも地図の言語の文言（map.scale.km・map.north）。距離の単位が mi ならマイルで出す。
 - 2026-10-01 ヘッダーの「地理」タブ（キー 2）は架空の地形があるときだけ出す。地形が無くなったら（取り消しなど）路線図に戻る。地理ビューではステップ5まで描くツールを隠し、タップで駅・区間を選ぶだけにする。検索・チェック・データ表から選んだ駅は、地理ビューでは地理の位置に移動して見せる。
+- 2026-10-07 地理ビューの編集：ツール（選択・駅・路線・削除）とボタンは路線図と同じものを出す。駅は格子に合わせず、タップした地理の位置（1m 単位）に置く。地理で置いた駅は、路線図の近くの空いた格子点に仮置きする。路線図で置いた駅（地形があるとき）は、地理にも仮置きする。仮置きの位置は、両方に位置がある駅の対応（全体の拡大と平行移動を最小二乗で求め、近い4駅のずれを距離の2乗の逆数で足す）から出す。対応が無いときは、地理は地形の中央、1マスは 1km とする。複製した駅も地理で少しずらす。
+- 2026-10-07 地理ビューの選択ツール：駅のドラッグは地理の位置だけを動かす（路線図の位置は変えない）。駅名の札のドラッグは label.geo の dx・dy（画面の px）。矢印キーは画面の 10px（Shift で 50px）。区間の長押しメニューは「ここに駅を挿入する」「ここに経由点を足す」「この区間を削除する」「路線を削除する」。経由点は選んだ区間に四角い点で出し、ドラッグで動かし、長押しで消す。区間のパネルの経由点の欄と見出し（地理での形）、駅のパネルの駅名の札の欄は、地理ビューでは地理の値を扱う。複数の駅のパネルの整列（格子の操作）は地理ビューでは出さない。

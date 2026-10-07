@@ -31,10 +31,11 @@ const KEY_VIEWS = { 1: 'schematic', 2: 'geo', 3: 'stopChart', 4: 'signboard' };
 
 /**
  * 地理・案内図・駅名標のビュー
- * @param {{ store: any, es: any, onSelectService: (id: string) => void, getInsets?: () => { top: number, right: number, bottom: number, left: number } }} ctx
+ * @param {{ store: any, es: any, toolCtx: import('./editor.js').ToolContext, onSelectService: (id: string) => void, getInsets?: () => { top: number, right: number, bottom: number, left: number } }} ctx
+ *   toolCtx は路線図のツールの道具（地理ビューは、当たり判定や座標の変換を地理用に差し替えて使う）
  */
 export function createOtherViews(ctx) {
-  const geo = createGeoView({ store: ctx.store, es: ctx.es, getInsets: ctx.getInsets });
+  const geo = createGeoView({ store: ctx.store, es: ctx.es, toolCtx: ctx.toolCtx, getInsets: ctx.getInsets });
   const chart = createStopChartView({ store: ctx.store, es: ctx.es, onSelectService: ctx.onSelectService });
   const sign = createSignboardView({ store: ctx.store, es: ctx.es });
   const byId = { geo, stopChart: chart, signboard: sign };
@@ -71,8 +72,8 @@ export function createViewSwitcher(ctx) {
     const p = store.getState();
     if (s.view === view || !availableViews(p).includes(view)) return;
     const patch = { view, drawing: null, hover: null, rangeMode: false, marquee: null, pending: null };
-    if (view !== 'schematic') {
-      // 地理（ステップ5まで）・案内図・駅名標では描くツールを使わない。選んでいる路線・系統・駅があれば、それを対象にする
+    if (view === 'stopChart' || view === 'signboard') {
+      // 案内図・駅名標では描くツールを使わない。選んでいる路線・系統・駅があれば、それを対象にする
       patch.tool = 'select';
       if (view === 'stopChart') {
         const target = others.chart.targetFor(p, s.selection);
