@@ -65,8 +65,9 @@ export function analyzeForView(world) {
 }
 
 /**
- * @param {{ kind: 'preview'|'world'|'analyze', seed?: string, params?: import('../schema.js').TerrainParams, regionId?: string, resolution?: number, romaji?: any, stations?: Array<{ id: string, schematic: { x: number, y: number } | null }>, world?: any }} job
- *   stations があれば、路線図の配置から駅の地理座標を仮に作って stationGeo（駅 ID → km）で返す。analyze は world（保存した世界）から GeoBase を作る
+ * @param {{ kind: 'preview'|'world'|'analyze', seed?: string, params?: import('../schema.js').TerrainParams, regionId?: string, resolution?: number, romaji?: any, stations?: Array<{ id: string, schematic: { x: number, y: number } | null }>, world?: any, edits?: any[] }} job
+ *   stations があれば、路線図の配置から駅の地理座標を仮に作って stationGeo（駅 ID → km）で返す。analyze は world（保存した世界）から GeoBase を作る。
+ *   edits（ブラシの編集）があれば、作った地形に当て直す（作り直し）
  * @param {(ratio: number) => void} [onProgress]
  */
 export function runTerrainJob(job, onProgress) {
@@ -76,7 +77,7 @@ export function runTerrainJob(job, onProgress) {
     const el = generateElevation(job.seed, job.params, { resolution: job.resolution || PREVIEW_RESOLUTION });
     return { kind: 'preview', width: el.width, height: el.height, data: el.data };
   }
-  const { world, analysis } = generateWorld(job.seed, job.params, getRegion(job.regionId), { resolution: job.resolution, onProgress, romaji: job.romaji });
+  const { world, analysis } = generateWorld(job.seed, job.params, getRegion(job.regionId), { resolution: job.resolution, onProgress, romaji: job.romaji, edits: job.edits });
   /** @type {Record<string, { x: number, y: number }>} */
   const stationGeo = {};
   if (job.stations && job.stations.length) {

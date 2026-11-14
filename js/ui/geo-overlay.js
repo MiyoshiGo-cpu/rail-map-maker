@@ -1,5 +1,5 @@
 // 地理ビューの描画の道具：地形の画像と海岸線の Path2D を作る、地形の表示リストの要素、
-// 編集の目印（経由点・引いている途中の線・指している所・範囲選択）
+// 編集の目印（経由点・引いている途中の線・指している所・範囲選択・選んだ都市）と、地形ブラシの下書き
 import { GEO_UNIT } from '../core/viewport.js';
 import { LAKE_COLOR, SHORE_COLOR } from '../render/terrain-raster.js';
 
@@ -150,4 +150,94 @@ export function drawGeoEditOverlay(ctx, o) {
     ctx.stroke();
     ctx.setLineDash([]);
   }
+}
+
+/** 地形ブラシの下書きの色（種類ごと） */
+const BRUSH_COLORS = {
+  raise: '#A0522D',
+  lower: '#5B4B8A',
+  flatten: '#C29A2E',
+  smooth: '#4E9A6B',
+  land: '#3E8E3E',
+  sea: '#1F6FB8',
+  river: '#1E88E5',
+  city: '#C0392B',
+};
+/** 川の下書きの太さ（画面の px） */
+const RIVER_PREVIEW_PX = 4;
+
+/**
+ * 地形ブラシの下書き：塗った範囲を半透明の帯で、マウスの位置にブラシの円を描く（世界座標の変換のまま）
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {{ strokes: Array<{ tool: string, r: number, pts: number[] }>, hover: { x: number, y: number } | null, brush: { tool: string, size: number } }} pv
+ * @param {number} zoom
+ */
+export function drawBrushPreview(ctx, pv, zoom) {
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (const s of pv.strokes) {
+    const river = s.tool === 'river';
+    const w = river ? RIVER_PREVIEW_PX / zoom : s.r * 2 * GEO_UNIT;
+    ctx.globalAlpha = river ? 0.85 : 0.3;
+    ctx.strokeStyle = BRUSH_COLORS[s.tool] || '#888';
+    ctx.fillStyle = ctx.strokeStyle;
+    if (s.pts.length === 2) {
+      ctx.beginPath();
+      ctx.arc(s.pts[0] * GEO_UNIT, s.pts[1] * GEO_UNIT, w / 2, 0, Math.PI * 2);
+      ctx.fill();
+      continue;
+    }
+    ctx.lineWidth = w;
+    ctx.beginPath();
+    for (let i = 0; i < s.pts.length; i += 2) {
+      const x = s.pts[i] * GEO_UNIT;
+      const y = s.pts[i + 1] * GEO_UNIT;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  // ブラシの円（都市と川は小さな十字）
+  if (pv.hover) {
+    const { x, y } = pv.hover;
+    ctx.globalAlpha = 1;
+    ctx.lineWidth = 1.5 / zoom;
+    ctx.strokeStyle = '#1F2933';
+    ctx.setLineDash([4 / zoom, 3 / zoom]);
+    ctx.beginPath();
+    if (pv.brush.tool === 'city' || pv.brush.tool === 'river') {
+      const a = 8 / zoom;
+      ctx.setLineDash([]);
+      ctx.moveTo(x - a, y);
+      ctx.lineTo(x + a, y);
+      ctx.moveTo(x, y - a);
+      ctx.lineTo(x, y + a);
+    } else {
+      ctx.arc(x, y, pv.brush.size * GEO_UNIT, 0, Math.PI * 2);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/**
+ * 選んでいる都市の印（点のまわりの輪）
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {import('../core/schema.js').Project} p
+ * @param {any} sel
+ * @param {number} zoom
+ * @param {string} color
+ */
+export function drawCityRing(ctx, p, sel, zoom, color) {
+  if (sel.type !== 'city' || p.world.mode !== 'fictional') return;
+  const c = p.world.cities.find((x) => x.id === sel.id);
+  if (!c) return;
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3 / zoom;
+  ctx.beginPath();
+  ctx.arc(c.pos.x * GEO_UNIT, c.pos.y * GEO_UNIT, 11 / zoom, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
 }

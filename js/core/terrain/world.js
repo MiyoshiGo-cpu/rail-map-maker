@@ -1,5 +1,6 @@
 // 架空の世界（§3 World の mode: 'fictional'）を作る：標高 → 水系 → 都市 → 県 → 名前。
-// 保存するのは標高（Int16 の base64）・都市・県だけ。水系と県の範囲は、読み込んだときに analyzeWorld で作り直す。
+// 保存するのは標高（Int16 の base64）・ブラシの編集（terrain.edits）・都市・県だけ。
+// 水系と県の範囲は、読み込んだときに、標高にブラシの編集を当ててから analyzeWorld で作り直す。
 import { createRng } from '../rng.js';
 import { generateElevation } from './generate.js';
 import { quantizeElevation, encodeElevation, decodeElevation } from './codec.js';
@@ -7,6 +8,7 @@ import { analyzeHydrology, LAND, SEA } from './hydrology.js';
 import { citySuitability, placeCities, regionCount, partitionRegions } from './cities.js';
 import { createPlaceNamer } from '../placenames.js';
 import { romanize } from '../romaji.js';
+import { applyEdits } from './brush.js';
 
 /** @typedef {import('../schema.js').TerrainParams} TerrainParams */
 /** @typedef {import('../schema.js').RegionPack} RegionPack */
@@ -61,11 +63,12 @@ export function placeTerrain(hy, elev, cell, cellKm) {
  * @param {number} height
  * @param {TerrainParams} params
  * @param {Array<{ pos: { x: number, y: number } }>} capitals 県庁所在地（県の並び順）
+ * @param {Int32Array[]} [channels] ブラシで描いた川の道筋
  * @returns {WorldAnalysis}
  */
-export function analyzeWorld(elevation, width, height, params, capitals) {
+export function analyzeWorld(elevation, width, height, params, capitals, channels) {
   const cellKm = (params.size * params.cellKm) / width;
-  const hydrology = analyzeHydrology(elevation, width, height, { cellKm, riverAmount: params.riverAmount });
+  const hydrology = analyzeHydrology(elevation, width, height, { cellKm, riverAmount: params.riverAmount, channels });
   const seeds = capitals.map((c) => {
     const x = Math.min(width - 1, Math.max(0, Math.floor(c.pos.x / cellKm)));
     const y = Math.min(height - 1, Math.max(0, Math.floor(c.pos.y / cellKm)));
@@ -80,15 +83,18 @@ export function analyzeWorld(elevation, width, height, params, capitals) {
  * @param {string} seed
  * @param {TerrainParams} params
  * @param {RegionPack} region
- * @param {{ resolution?: number, onProgress?: (ratio: number) => void, romaji?: any }} [opt]
+ * @param {{ resolution?: number, onProgress?: (ratio: number) => void, romaji?: any, edits?: import('./brush.js').BrushStroke[] }} [opt]
+ *   edits を渡すと、作った標高にブラシの編集を当ててから都市と県を決める（作り直しで編集を当て直すとき）
  * @returns {{ world: Extract<import('../schema.js').World, { mode: 'fictional' }>, analysis: WorldAnalysis }}
  */
 export function generateWorld(seed, params, region, opt = {}) {
   const progress = opt.onProgress || (() => {});
   const el = generateElevation(seed, params, { resolution: opt.resolution, onProgress: (r) => progress(r * 0.6) });
-  const elevation = quantizeElevation(el.data);
+  const baseElevation = quantizeElevation(el.data);
   const { width, height, cellKm } = el;
-  const hydrology = analyzeHydrology(elevation, width, height, { cellKm, riverAmount: params.riverAmount });
+  const edits = opt.edits || [];
+  const { elevation, channels } = applyEdits(baseElevation, width, height, cellKm, edits);
+  const hydrology = analyzeHydrology(elevation, width, height, { cellKm, riverAmount: params.riverAmount, channels });
   progress(0.8);
 
   // 都市：点数の高い順に置き、人口を配る
@@ -143,7 +149,7 @@ export function generateWorld(seed, params, region, opt = {}) {
       mode: 'fictional',
       seed,
       gen: { ...params },
-      terrain: { width, height, elevation: encodeElevation(elevation), edits: [] },
+      terrain: { width, height, elevation: encodeElevation(baseElevation), edits: edits.slice() },
       cities,
       regions,
     },
@@ -158,8 +164,56 @@ export function generateWorld(seed, params, region, opt = {}) {
  */
 export function loadWorld(world) {
   const { width, height } = world.terrain;
-  const elevation = decodeElevation(world.terrain.elevation, width, height);
+  const base = decodeElevation(world.terrain.elevation, width, height);
+  const cellKm = (world.gen.size * world.gen.cellKm) / width;
+  const { elevation, channels } = applyEdits(base, width, height, cellKm, world.terrain.edits);
   const byId = new Map(world.cities.map((c) => [c.id, c]));
   const capitals = world.regions.map((r) => byId.get(r.capitalCityId)).filter(Boolean);
-  return analyzeWorld(elevation, width, height, world.gen, capitals);
+  return analyzeWorld(elevation, width, height, world.gen, capitals, channels);
+}
+
+/**
+ * ブラシで置く都市（名前は場所の地形に合わせて作る。ほかの都市と同じ名前にしない）
+ * @param {Extract<import('../schema.js').World, { mode: 'fictional' }>} world
+ * @param {{ width: number, height: number, cellKm: number, elevation: Int16Array, water: Uint8Array, river: Uint8Array, regionMap: Int8Array }} base 地形の下ごしらえ（jobs.js の GeoBase）
+ * @param {{ x: number, y: number }} pos km
+ * @param {RegionPack} region
+ * @param {any} [romaji] 英字の規則
+ * @returns {Omit<City, 'id'>}
+ */
+export function newCityAt(world, base, pos, region, romaji) {
+  const { width, height, cellKm } = base;
+  const cx = Math.min(width - 1, Math.max(0, Math.floor(pos.x / cellKm)));
+  const cy = Math.min(height - 1, Math.max(0, Math.floor(pos.y / cellKm)));
+  const cell = cy * width + cx;
+  // 川は「流量がしきい値以上」の代わりに、川のマス（1）を使う
+  const hy = /** @type {any} */ ({ width, height, water: base.water, acc: base.river, threshold: 1 });
+  const rng = createRng(`${world.seed}:city:${world.cities.length}:${cell}`);
+  const namer = createPlaceNamer(rng, region.placeNames, world.cities.map((c) => c.name));
+  const n = namer.name(placeTerrain(hy, base.elevation, cell, cellKm));
+  const r = base.regionMap[cell];
+  const preset = region.newCity;
+  return {
+    name: n.name,
+    reading: n.reading,
+    names: { en: region.autoRomanize ? romanize(n.reading, romaji || region.romajiDefaults) : '' },
+    pos: { x: Math.round(pos.x * 1000) / 1000 + 0, y: Math.round(pos.y * 1000) / 1000 + 0 },
+    population: preset.population,
+    kind: preset.kind,
+    ...(r >= 0 && world.regions[r] ? { regionId: world.regions[r].id } : {}),
+  };
+}
+
+/**
+ * 人口から都市の規模を決める（地域パックの cityKindThresholds）
+ * @param {number} population
+ * @param {RegionPack} region
+ * @returns {City['kind']}
+ */
+export function cityKindOf(population, region) {
+  const th = region.cityKindThresholds;
+  if (population >= th.metropolis) return 'metropolis';
+  if (population >= th.city) return 'city';
+  if (population >= th.town) return 'town';
+  return 'village';
 }

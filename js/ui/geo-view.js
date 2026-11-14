@@ -12,7 +12,7 @@ import { buildGeoScene, geoBaseVectors, geoZoomLevel } from '../render/scene-geo
 import { drawItems, createMeasure } from '../render/backend-canvas.js';
 import { visibleWorldRect, screenToWorld, GEO_UNIT, GEO_ZOOM } from '../core/viewport.js';
 import { drawUnderlay, drawSelectionRings, stationRing } from './overlay.js';
-import { makeImage, ringsPath, terrainItemMaker, drawGeoEditOverlay } from './geo-overlay.js';
+import { makeImage, ringsPath, terrainItemMaker, drawGeoEditOverlay, drawBrushPreview, drawCityRing } from './geo-overlay.js';
 import { scaleBarItems, northArrowItems } from '../render/geo-furniture.js';
 import { accentFor } from './editor-state.js';
 import { pickPending, pendingHint } from './pending-pick.js';
@@ -20,6 +20,7 @@ import { createGeoSelectTool } from './tools/geo-select-tool.js';
 import { createPlaceStationTool } from './tools/place-station-tool.js';
 import { createDrawLineTool } from './tools/draw-line-tool.js';
 import { createDeleteTool } from './tools/delete-tool.js';
+import { createBrushTool } from './tools/brush-tool.js';
 
 /** 当たり判定の半径（画面の px。§4.4） */
 const HIT_RADIUS = { touch: 22, mouse: 8, pen: 12 };
@@ -114,12 +115,15 @@ export function createGeoView(ctx) {
     },
     zoom: () => canvasView.getView().zoom,
     sceneZoom: () => getScene().zoom,
+    getBase: () => base,
+    requestRender: () => canvasView.requestRender(),
   };
   const tools = {
     select: createGeoSelectTool(gctx),
     station: createPlaceStationTool(gctx),
     line: createDrawLineTool(gctx),
     delete: createDeleteTool(gctx),
+    brush: createBrushTool(gctx),
   };
   const currentTool = () => tools[es.get().tool] || tools.select;
   canvasView.setInput({
@@ -129,7 +133,10 @@ export function createGeoView(ctx) {
     onDragStart: (p, w) => currentTool().onDragStart?.(p, w) || null,
     onHover: (p, w) => currentTool().onHover?.(p, w),
   });
-  canvasView.canvas.addEventListener('pointerleave', () => gctx.setHover(null));
+  canvasView.canvas.addEventListener('pointerleave', () => {
+    gctx.setHover(null);
+    tools.brush.leave();
+  });
 
   canvasView.addLayer((c, view, size, dpr) => {
     const p = store.getState();
@@ -142,6 +149,8 @@ export function createGeoView(ctx) {
     drawItems(c, sc.items, visibleWorldRect(view, size));
     drawSelectionRings(c, o);
     drawGeoEditOverlay(c, { ...o, ring: (id, color) => stationRing(c, sc, id, color, view.zoom) });
+    drawCityRing(c, p, s.selection, view.zoom, o.accent);
+    if (s.tool === 'brush') drawBrushPreview(c, tools.brush.preview(), view.zoom);
     // ここから画面の座標：縮尺バーと方位記号
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     const insets = ctx.getInsets ? ctx.getInsets() : { top: 0, right: 0, bottom: 0, left: 0 };
@@ -220,6 +229,7 @@ export function createGeoView(ctx) {
       });
       base = res;
       vectors = geoBaseVectors(res);
+      tools.brush.baseUpdated();
       updateHint(store.getState());
       canvasView.requestRender();
     }, (e) => {

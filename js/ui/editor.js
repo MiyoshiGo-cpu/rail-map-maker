@@ -27,6 +27,7 @@ import { createDataView } from './data-view.js';
 import { createCheckView } from './check-view.js';
 import { createEditorHeader, createBackupBanner } from './editor-header.js';
 import { createEditorCommands } from './editor-commands.js';
+import { createToolbar } from './editor-toolbar.js';
 import { needsBackupReminder, isSnoozed, snooze } from '../storage/backup.js';
 import { attachShortcuts } from './keyboard.js';
 import { createPlaceStationTool } from './tools/place-station-tool.js';
@@ -112,6 +113,7 @@ export function createEditor(opt) {
       chartLayout: 'auto',
       signStation: '',
       signLine: '',
+      brush: { tool: 'raise', size: 2, strength: 0.5 },
     });
 
     // ---------- ヘッダーと保存 ----------
@@ -146,46 +148,8 @@ export function createEditor(opt) {
     });
 
     // ---------- ツールのボタン ----------
-    const toolDefs = [
-      { id: 'select', icon: 'select', label: t('tool.select'), title: t('tool.select.title') },
-      { id: 'station', icon: 'station', label: t('tool.station'), title: t('tool.station.title') },
-      { id: 'line', icon: 'line', label: t('tool.line'), title: t('tool.line.title') },
-      // 削除ツールは PC だけ（スマホは長押しメニューとパネルのボタンで削除する）
-      { id: 'delete', icon: 'delete', label: t('tool.delete'), title: t('tool.delete.title'), pcOnly: true },
-    ];
-    const toolButtons = new Map();
-    // データ表とチェックを開く・閉じる（ツールではないので押した状態は別に持つ）
-    const toggleDrawer = (name) => es.set({ drawer: es.get().drawer === name ? null : name });
-    const dataBtn = h('button', {
-      class: 'badge-btn data-toggle',
-      type: 'button',
-      title: t('tool.data.title'),
-      'aria-pressed': 'false',
-      on: { click: () => toggleDrawer('data') },
-    }, icon('data'), h('span', { class: 'badge-label' }, t('tool.data')));
-    const checkCount = h('span', { class: 'badge-count', hidden: true });
-    const checkBtn = h('button', {
-      class: 'badge-btn check-toggle',
-      type: 'button',
-      title: t('tool.check.title'),
-      'aria-pressed': 'false',
-      on: { click: () => toggleDrawer('check') },
-    }, icon('check'), h('span', { class: 'badge-label' }, t('check.title')), checkCount);
-    const toolsNav = h('nav', { class: 'ed-tools', 'aria-label': t('tool.label') },
-      toolDefs.map((d) => {
-        const b = h('button', {
-          class: ['badge-btn', d.pcOnly ? 'pc-only' : ''],
-          type: 'button',
-          title: d.title,
-          'aria-pressed': 'false',
-          on: { click: () => setTool(d.id) },
-        }, icon(d.icon), h('span', { class: 'badge-label' }, d.label));
-        toolButtons.set(d.id, b);
-        return b;
-      }),
-      dataBtn,
-      checkBtn,
-    );
+    const toolbar = createToolbar({ es, setTool: (id) => setTool(id) });
+    const toolsNav = toolbar.el;
 
     // ---------- キャンバスと表示リスト ----------
     const measure = createMeasure();
@@ -267,6 +231,7 @@ export function createEditor(opt) {
         else if (target.type === 'station' || target.type === 'label') es.set({ selection: { type: 'stations', ids: [target.id] } });
         else if (target.type === 'section') es.set({ selection: { type: 'section', lineId: target.lineId, index: target.index } });
         else if (target.type === 'interchange') es.set({ selection: { type: 'interchange', id: target.id } });
+        else if (target.type === 'city') es.set({ selection: { type: 'city', id: target.id } });
       },
       focusStationName() {
         panels.focusStationName();
@@ -329,7 +294,7 @@ export function createEditor(opt) {
     });
     canvasView.canvas.addEventListener('pointerleave', () => toolCtx.setHover(null));
 
-    /** @param {'select'|'station'|'line'|'delete'} id */
+    /** @param {'select'|'station'|'line'|'delete'|'brush'} id */
     function setTool(id) {
       if (es.get().tool === id) return;
       es.set({ tool: id, drawing: null, hover: null, rangeMode: false, marquee: null });
@@ -409,6 +374,7 @@ export function createEditor(opt) {
       },
       onDelete: (ids) => toolCtx.deleteStations(ids),
       onDeleteLine: (lineId) => toolCtx.deleteLine(lineId),
+      regenerateTerrain: () => commands.regenerateTerrain(),
       align,
       deleteSelection,
       makeInterchange: (ids) => {
@@ -520,21 +486,15 @@ export function createEditor(opt) {
       header.update(p.name, store.canUndo(), store.canRedo(), s.view, availableViews(p));
       // ビュー：案内図・駅名標では描くツールを隠す。表示しているビューを描き直す
       canvasView.el.hidden = s.view !== 'schematic';
-      for (const b of toolButtons.values()) b.classList.toggle('is-hidden', toolsOff());
+      toolbar.update(s, { toolsOff: toolsOff(), brush: s.view === 'geo' && p.world.mode === 'fictional', checkCount: checkView.count() });
       others.update(p, s.view);
       document.title = `${p.name} - ${t('app.title')}`;
       banner.update(!bannerHidden && needsBackupReminder(p), p.meta.lastBackupAt);
-      for (const [id, b] of toolButtons) b.setAttribute('aria-pressed', String(s.tool === id));
       rangeBtn.hidden = s.tool !== 'select';
-      dataBtn.setAttribute('aria-pressed', String(s.drawer === 'data'));
-      checkBtn.setAttribute('aria-pressed', String(s.drawer === 'check'));
       dataView.el.hidden = s.drawer !== 'data';
       checkView.el.hidden = s.drawer !== 'check';
       if (s.drawer === 'data') dataView.update();
       if (s.drawer === 'check') checkView.update();
-      const n = checkView.count();
-      checkCount.hidden = n === 0;
-      checkCount.textContent = n > 99 ? '99+' : String(n);
       rangeBtn.setAttribute('aria-pressed', String(!!s.rangeMode));
       accent = accentFor(p, s);
       el.style.setProperty('--accent', accent);

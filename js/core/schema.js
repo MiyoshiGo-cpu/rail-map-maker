@@ -454,6 +454,7 @@ export const DEFAULT_WALK_MINUTES = 5;
  * @property {Array<{ id: string, hex: string }>} linePalette ラインカラーのパレット
  * @property {PlaceNameStyle} placeNames 地名の要素（§6.8）
  * @property {{ metropolis: number, city: number, town: number }} cityKindThresholds 都市の規模の区切り（人口）
+ * @property {{ kind: 'metropolis'|'city'|'town'|'village', population: number }} newCity ブラシで置く都市の既定
  */
 
 /**

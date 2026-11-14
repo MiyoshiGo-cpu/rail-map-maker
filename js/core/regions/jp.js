@@ -185,6 +185,8 @@ const jp = {
   // 架空の地形（§6.7・§6.8）：地名の要素と、都市の規模の区切り（人口）
   placeNames,
   cityKindThresholds: { metropolis: 1000000, city: 50000, town: 10000 },
+  // ブラシで置く都市の既定（規模と人口）
+  newCity: { kind: 'town', population: 20000 },
 
   // 途中駅の停車時間の既定（rank の上限ごと）
   dwellSecByRank: [

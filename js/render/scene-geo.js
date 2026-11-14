@@ -270,10 +270,11 @@ export function buildGeoScene(p, opt) {
     const dotBox = { minX: x - r, minY: y - r, maxX: x + r, maxY: y + r };
     const at = candidates.find((cd) => !taken.query(cd.box).some((o) => overlaps(cd.box, o.bbox)));
     if (!at) continue;
-    const dot = { kind: 'circle', x, y, r, fill: CITY_DOT, stroke: HALO, lineWidth: 1.2 * u, bbox: grow(dotBox, u) };
+    const target = { type: 'city', id: c.id };
+    const dot = { kind: 'circle', x, y, r, fill: CITY_DOT, stroke: HALO, lineWidth: 1.2 * u, bbox: grow(dotBox, u), target };
     const label = {
       kind: 'text', x: at.x, y: at.y, text: c.name, font, color: CITY_INK, align: at.align, baseline: 'middle',
-      halo: HALO, haloWidth: 3 * u, bbox: at.box,
+      halo: HALO, haloWidth: 3 * u, bbox: at.box, target,
     };
     cityDots.push(dot);
     cityLabels.push(label);
@@ -282,7 +283,8 @@ export function buildGeoScene(p, opt) {
   }
 
   const index = createSpatialIndex(96 * u);
-  for (const it of [...lineItems, ...symbolItems, ...labels.items]) if (it.target) index.insert(it);
+  // 都市は当たり判定の優先度がいちばん低い（spatial-index.js の PRIORITY に無い種類）
+  for (const it of [...lineItems, ...symbolItems, ...labels.items, ...cityDots, ...cityLabels]) if (it.target) index.insert(it);
   const items = [...borderItems, ...riverItems, ...cityDots, ...lineItems, ...symbolItems, ...cityLabels, ...labels.items];
   return {
     items,

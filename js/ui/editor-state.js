@@ -7,12 +7,13 @@
  *   | { type: 'interchange', id: string }
  *   | { type: 'operator', id: string }
  *   | { type: 'serviceType', id: string }
- *   | { type: 'service', id: string }} Selection
+ *   | { type: 'service', id: string }
+ *   | { type: 'city', id: string }} Selection
  */
 
 /**
  * @typedef {object} EditorState
- * @property {'select'|'station'|'line'|'delete'} tool
+ * @property {'select'|'station'|'line'|'delete'|'brush'} tool brush は地理ビューだけ
  * @property {Selection} selection
  * @property {{ lineId: string, atStart: boolean } | null} drawing 路線を引いている途中
  * @property {string} lineChoice 路線を引くときの対象（'new' か路線 ID）
@@ -28,6 +29,7 @@
  * @property {'auto'|'horizontal'|'vertical'} chartLayout 停車駅案内図の並べ方（auto はスマホの幅なら縦）
  * @property {string} signStation 駅名標の駅（保存しない）
  * @property {string} signLine 駅名標の路線
+ * @property {{ tool: import('../core/terrain/brush.js').BrushTool, size: number, strength: number }} brush 地形ブラシの種類・半径（km）・強さ（0〜1）
  */
 
 /**
@@ -109,6 +111,9 @@ export function repairFor(p, s) {
   if (sel.type === 'operator' && !p.operators.some((x) => x.id === sel.id)) return { selection: NO_SELECTION };
   if (sel.type === 'serviceType' && !p.serviceTypes.some((x) => x.id === sel.id)) return { selection: NO_SELECTION };
   if (sel.type === 'service' && !p.services.some((x) => x.id === sel.id)) return { selection: NO_SELECTION };
+  if (sel.type === 'city' && (p.world.mode !== 'fictional' || !p.world.cities.some((c) => c.id === sel.id))) return { selection: NO_SELECTION };
+  // 地形ブラシは、地理ビューで架空の地形があるときだけ
+  if (s.tool === 'brush' && (s.view !== 'geo' || p.world.mode !== 'fictional')) return { tool: 'select' };
   const d = s.routeDraft;
   if (d) {
     if (d.serviceId && !p.services.some((x) => x.id === d.serviceId)) return { routeDraft: null };

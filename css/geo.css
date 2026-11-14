@@ -31,3 +31,38 @@
 .check-bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px 0; }
 .check-bulk[hidden] { display: none; }
 .check-bulk .panel-note { flex: 1 1 260px; margin: 0; }
+
+/* ---------- 地形ブラシのパネル ---------- */
+
+.brush-tools {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.brush-tool {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-height: 52px;
+  padding: 6px 2px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.2;
+  cursor: pointer;
+}
+.brush-tool:hover { background: var(--surface); }
+.brush-tool[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); font-weight: 700; }
+.brush-swatch { width: 18px; height: 18px; border-radius: 50%; background: #888; }
+.brush-tool[data-tool="raise"] .brush-swatch { background: #A0522D; }
+.brush-tool[data-tool="lower"] .brush-swatch { background: #5B4B8A; }
+.brush-tool[data-tool="flatten"] .brush-swatch { background: #C29A2E; }
+.brush-tool[data-tool="smooth"] .brush-swatch { background: #4E9A6B; }
+.brush-tool[data-tool="land"] .brush-swatch { background: #3E8E3E; }
+.brush-tool[data-tool="sea"] .brush-swatch { background: #1F6FB8; }
+.brush-tool[data-tool="river"] .brush-swatch { background: #1E88E5; border-radius: 3px; height: 6px; margin: 6px 0; }
+.brush-tool[data-tool="city"] .brush-swatch { background: #C0392B; width: 12px; height: 12px; margin: 3px 0; border: 2px solid #fff; box-shadow: 0 0 0 1px #C0392B; }

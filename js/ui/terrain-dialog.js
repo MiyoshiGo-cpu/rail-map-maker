@@ -22,7 +22,9 @@ function newSeed() {
  *   romaji?: any,
  *   stations?: Array<{ id: string, schematic: { x: number, y: number } | null }>,
  *   initial?: { seed: string, params: import('../core/schema.js').TerrainParams },
- * }} opt
+ *   edits?: any[],
+ *   note?: string,
+ * }} opt initial は作り直しのときの今の値。edits はブラシの編集（作り直した地形に当て直す）。note は「作る」の上に出す注意
  * @returns {Promise<{ world: any, stationGeo: Record<string, { x: number, y: number }>, ms: number } | null>}
  */
 export function openTerrainDialog(opt) {
@@ -142,7 +144,7 @@ export function openTerrainDialog(opt) {
       };
       show(0);
       try {
-        const r = await requestTerrain({ kind: 'world', seed, params: { ...params }, regionId: opt.regionId, romaji: opt.romaji, stations: opt.stations }, show);
+        const r = await requestTerrain({ kind: 'world', seed, params: { ...params }, regionId: opt.regionId, romaji: opt.romaji, stations: opt.stations, edits: opt.edits }, show);
         if (done) return;
         finish({ world: r.world, stationGeo: r.stationGeo || {}, ms: r.ms });
         sheet.close();
@@ -172,6 +174,7 @@ export function openTerrainDialog(opt) {
           river.el,
           h('div', { class: 'field-row' }, field(t('terrain.cityCount'), cities), field(t('terrain.population'), population)),
           opt.stations && opt.stations.length ? h('p', { class: 'panel-note' }, t('terrain.addHint')) : null,
+          opt.note ? h('p', { class: 'panel-note' }, opt.note) : null,
           progress,
           status,
           h('div', { class: 'panel-actions' }, cancelBtn, createBtn),

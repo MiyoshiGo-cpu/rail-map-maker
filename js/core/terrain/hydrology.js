@@ -62,7 +62,8 @@ function createHeap(capacity) {
  * @param {Int16Array | Float32Array} elev 標高（m）。0 以下は水
  * @param {number} width
  * @param {number} height
- * @param {{ cellKm: number, riverAmount: number }} opt
+ * @param {{ cellKm: number, riverAmount: number, channels?: Int32Array[] }} opt channels はブラシで描いた川の道筋
+ *   （上流から下流へのマスの並び）。道筋に沿って流し、描き始めから川にする
  */
 export function analyzeHydrology(elev, width, height, opt) {
   const n = width * height;
@@ -144,9 +145,35 @@ export function analyzeHydrology(elev, width, height, opt) {
     dir[i] = best;
   }
 
+  // 川のしきい値：流量が 250〜25km²（川の多さ）を超える陸のマスを川にする
+  const amount = Math.min(1, Math.max(0, opt.riverAmount));
+  const threshold = 250 - 225 * amount;
+
   // 流量の累積（面積 km²）：高い方から順に下流へ足す
   const cellArea = opt.cellKm * opt.cellKm;
   const acc = new Float32Array(n).fill(cellArea);
+
+  // 描いた川：道筋の次のマスが低ければそちらへ流す。描き始めと、湖などで流れが道筋から外れたあとの最初のマスに、
+  // 川になるだけの水を足す（湖を通り抜けて描いた川も、湖の先で川として続くように）
+  for (const ch of opt.channels || []) {
+    let fed = false;
+    for (let k = 0; k < ch.length; k++) {
+      const a = ch[k];
+      if (water[a] === SEA) break;
+      if (!fed && filled[a] - elev[a] <= 2) {
+        acc[a] += threshold;
+        fed = true;
+      }
+      const b = ch[k + 1];
+      if (b === undefined || !(filled[b] < filled[a])) {
+        fed = false;
+        continue;
+      }
+      const dx = (b % width) - (a % width);
+      const dy = (b - (b % width)) / width - (a - (a % width)) / width;
+      for (let d = 0; d < 8; d++) if (DX[d] === dx && DY[d] === dy) dir[a] = d;
+    }
+  }
   for (let k = count - 1; k >= 0; k--) {
     const i = order[k];
     const d = dir[i];
@@ -183,9 +210,7 @@ export function analyzeHydrology(elev, width, height, opt) {
     if (isLake) for (const c of comp) water[c] = LAKE;
   }
 
-  // 川：流量がしきい値を超える陸のマス（しきい値は川の多さで 250〜25km²）
-  const amount = Math.min(1, Math.max(0, opt.riverAmount));
-  const threshold = 250 - 225 * amount;
+  // 川：流量がしきい値を超える陸のマス
   const rivers = traceRivers(width, height, water, dir, acc, threshold);
   return { width, height, water, filled, dir, acc, rivers, threshold };
 }

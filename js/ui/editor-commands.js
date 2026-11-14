@@ -13,8 +13,9 @@ import { openExportSheet } from './export-view.js';
 import { exportTarget } from './exporter.js';
 import { preparePrint, cleanupPrint } from './print.js';
 import { openTerrainDialog } from './terrain-dialog.js';
-import { confirmDialog } from './dialog.js';
+import { confirmDialog, openDialog } from './dialog.js';
 import { autoSchematic } from '../core/auto-schematic.js';
+import { getRegion } from '../core/regions/index.js';
 
 const MOBILE = '(max-width: 899.98px)';
 
@@ -146,6 +147,43 @@ export function createEditorCommands(ctx) {
     toast(t('terrain.done', { sec: (res.ms / 1000).toFixed(1) }));
   }
 
+  /**
+   * 架空の地形を作り直す（今のシードとパラメータから変えて）。ブラシの編集があれば、捨てるか新しい地形に当て直すかを選ぶ。
+   * 都市と県は新しく作り、駅の地理の位置はそのまま。作り直す前に復元ポイントを作る（1手で取り消せる）
+   */
+  async function regenerateTerrain() {
+    const p = store.getState();
+    if (p.world.mode !== 'fictional') return;
+    const w = p.world;
+    const edits = w.terrain.edits || [];
+    let keep = [];
+    if (edits.length) {
+      const v = await openDialog({
+        title: t('terrain.regenerate'),
+        message: t('terrain.editsQuestion', { count: edits.length }),
+        actions: [
+          { label: t('common.cancel'), value: 'cancel' },
+          { label: t('terrain.editsDiscard'), value: 'discard' },
+          { label: t('terrain.editsKeep'), value: 'keep', kind: 'primary' },
+        ],
+      });
+      if (v !== 'discard' && v !== 'keep') return;
+      if (v === 'keep') keep = edits;
+    }
+    const res = await openTerrainDialog({
+      title: t('terrain.regenerate'),
+      regionId: p.locale.region,
+      romaji: p.settings.romaji,
+      initial: { seed: w.seed, params: w.gen },
+      edits: keep,
+      note: t('terrain.regenerateNote', { admin1: t(getRegion(p.locale.region).adminLabelKeys.admin1) }),
+    });
+    if (!res) return;
+    checkpoint('regenerate');
+    store.dispatch({ type: 'world/set', world: res.world });
+    toast(t('terrain.regenerated', { sec: (res.ms / 1000).toFixed(1) }));
+  }
+
   /** 地理の配置から路線図を作り直す（確認してから。作る前に復元ポイントを作る。1手で取り消せる） */
   async function autoLayout() {
     const ok = await confirmDialog({ title: t('autoSchematic.title'), message: t('autoSchematic.confirm'), okLabel: t('autoSchematic.ok') });
@@ -168,6 +206,7 @@ export function createEditorCommands(ctx) {
       { label: t('check.title'), onSelect: () => es.set({ drawer: 'check' }) },
       ...(noWorld ? [{ label: t('terrain.addTitle'), onSelect: addTerrain }] : []),
       ...(canAuto ? [{ label: t('autoSchematic.title'), onSelect: autoLayout }] : []),
+      ...(p.world.mode === 'fictional' ? [{ label: t('terrain.regenerate'), onSelect: regenerateTerrain }] : []),
       { separator: true },
       { label: t('settings.title'), onSelect: settings },
       { label: t('help.title'), onSelect: openHelp },
@@ -187,6 +226,7 @@ export function createEditorCommands(ctx) {
     menuItems,
     addTerrain,
     autoLayout,
+    regenerateTerrain,
     dispose() {
       window.removeEventListener('beforeprint', onBeforePrint);
       clearInterval(timer);

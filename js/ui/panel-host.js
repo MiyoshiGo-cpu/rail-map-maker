@@ -13,6 +13,8 @@ import { createInterchangePanel } from './panels/interchange-panel.js';
 import { createServiceTypePanel } from './panels/service-type-panel.js';
 import { createServicePanel } from './panels/service-panel.js';
 import { createServiceNewPanel } from './panels/service-new-panel.js';
+import { createBrushPanel } from './panels/brush-panel.js';
+import { createCityPanel } from './panels/city-panel.js';
 
 const STAGES = ['peek', 'half', 'full'];
 const PEEK = 64;
@@ -28,6 +30,7 @@ const PEEK = 64;
  *   deleteSection: (lineId: string, index: number) => void,
  *   align: (mode: 'horizontal'|'vertical'|'diagonal'|'even') => void,
  *   deleteSelection: () => void,
+ *   regenerateTerrain?: () => void,
  * }} ctx
  */
 export function createPanelHost(ctx) {
@@ -107,6 +110,8 @@ export function createPanelHost(ctx) {
   function keyOf() {
     const s = ctx.es.get();
     if (s.tool === 'line') return 'lineTool';
+    // 地形ブラシ：都市を選んでいれば都市のパネル、それ以外はブラシのパネル
+    if (s.tool === 'brush') return s.selection.type === 'city' ? `city:${s.selection.id}` : 'brush';
     if (s.routeDraft && !s.routeDraft.serviceId) return 'serviceNew';
     const sel = s.selection;
     if (sel.type === 'stations' && sel.ids.length === 1) return `station:${sel.ids[0]}`;
@@ -117,6 +122,7 @@ export function createPanelHost(ctx) {
     if (sel.type === 'interchange') return `interchange:${sel.id}`;
     if (sel.type === 'serviceType') return `serviceType:${sel.id}`;
     if (sel.type === 'service') return `service:${sel.id}`;
+    if (sel.type === 'city') return `city:${sel.id}`;
     return 'project';
   }
 
@@ -133,6 +139,8 @@ export function createPanelHost(ctx) {
       case 'serviceType': return createServiceTypePanel(ctx, a);
       case 'service': return createServicePanel(ctx, a);
       case 'serviceNew': return createServiceNewPanel(ctx);
+      case 'brush': return createBrushPanel(ctx);
+      case 'city': return createCityPanel(ctx, a);
       default: return createProjectPanel(ctx);
     }
   }
