@@ -25,3 +25,9 @@
 
 .geo-view { position: absolute; inset: 0; }
 .geo-view[hidden] { display: none; }
+
+/* ---------- チェックのトンネル・橋梁の提案 ---------- */
+
+.check-bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px 0; }
+.check-bulk[hidden] { display: none; }
+.check-bulk .panel-note { flex: 1 1 260px; margin: 0; }

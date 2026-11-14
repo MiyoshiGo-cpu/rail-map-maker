@@ -20,6 +20,7 @@ const IMAGE_SIZE = 1024;
  * @property {number} cellKm
  * @property {Int16Array} elevation
  * @property {Uint8Array} water 水の種類（hydrology.js の LAND・SEA・LAKE）
+ * @property {Uint8Array} river 川のマス（流量が川のしきい値以上の陸。1）
  * @property {Int8Array} regionMap
  * @property {number} threshold 川にする流量（km²）
  * @property {Uint8ClampedArray} rgba 陸の画像（段彩と陰影。imageWidth × imageHeight）。海岸線の形に切り抜いて描く
@@ -41,6 +42,8 @@ export function analyzeForView(world) {
   const { width, height, cellKm, elevation, hydrology, regionMap } = a;
   // 画像は1辺 1024 画素ほどまで細かくする（小は4倍、中は2倍、大はそのまま）
   const scale = Math.max(1, Math.floor(IMAGE_SIZE / width));
+  const river = new Uint8Array(width * height);
+  for (let i = 0; i < river.length; i++) if (hydrology.water[i] === 0 && hydrology.acc[i] >= hydrology.threshold) river[i] = 1;
   return {
     kind: 'analyze',
     width,
@@ -48,6 +51,7 @@ export function analyzeForView(world) {
     cellKm,
     elevation,
     water: hydrology.water,
+    river,
     regionMap,
     threshold: hydrology.threshold,
     rgba: terrainRGBA(elevation, width, height, { cellKm, scale, layer: 'land' }),

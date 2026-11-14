@@ -9,7 +9,7 @@ self.onmessage = (e) => {
   try {
     const result = runTerrainJob(job, (ratio) => self.postMessage({ id: job.id, kind: 'progress', ratio }));
     const transfer = result.kind === 'preview' ? [result.data.buffer]
-      : result.kind === 'analyze' ? [result.elevation.buffer, result.water.buffer, result.regionMap.buffer, result.rgba.buffer, result.seaRgba.buffer] : [];
+      : result.kind === 'analyze' ? [result.elevation.buffer, result.water.buffer, result.river.buffer, result.regionMap.buffer, result.rgba.buffer, result.seaRgba.buffer] : [];
     self.postMessage({ id: job.id, ...result }, transfer);
   } catch (err) {
     self.postMessage({ id: job.id, kind: 'error', message: String(err && err.message || err) });

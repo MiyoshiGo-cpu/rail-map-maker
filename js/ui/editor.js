@@ -437,7 +437,7 @@ export function createEditor(opt) {
     // ---------- 書き出し・復元ポイント・検索・チェック ----------
     commands = createEditorCommands({ store, es, canvasView, getViewScene: (v) => (v === 'geo' ? others.geo.exportScene() : others.get(v)?.getScene()) || null, revealGeo: (g) => others.geo.reveal(g), onExit: () => opt.onExit() });
     cleanups.push(() => commands.dispose());
-    const checkView = createCheckView({ store, close: () => es.set({ drawer: null }), go: (target) => commands.goTo(target) });
+    const checkView = createCheckView({ store, close: () => es.set({ drawer: null }), go: (target) => commands.goTo(target), refresh: () => render() });
 
     // ---------- 地理・停車駅案内図・駅名標のビュー ----------
     const others = createOtherViews({ store, es, toolCtx, onSelectService: (id) => es.set({ selection: { type: 'service', id } }), getInsets: () => sheetInsets(others.geo.el) });

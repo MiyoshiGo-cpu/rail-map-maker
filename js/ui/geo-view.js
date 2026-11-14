@@ -6,7 +6,7 @@ import { h } from './dom.js';
 import { icon } from './icons.js';
 import { t, mapTranslator } from '../i18n/i18n.js';
 import { createCanvasView } from './canvas-view.js';
-import { requestTerrain } from './terrain-client.js';
+import { loadGeoBase, clearGeoBase } from './geo-base.js';
 import { computeGeoSections } from '../core/geo-lines.js';
 import { buildGeoScene, geoBaseVectors, geoZoomLevel } from '../render/scene-geo.js';
 import { drawItems, createMeasure } from '../render/backend-canvas.js';
@@ -210,7 +210,7 @@ export function createGeoView(ctx) {
     const key = [w.terrain, w.gen, w.regions];
     baseKey = key;
     failed = false;
-    requestTerrain({ kind: 'analyze', world: w }).then((res) => {
+    loadGeoBase(w).then((res) => {
       if (baseKey !== key) return;
       terrainItem = terrainItemMaker(res, {
         land: makeImage(res.rgba, res.imageWidth, res.imageHeight),
@@ -218,8 +218,7 @@ export function createGeoView(ctx) {
         landPath: ringsPath(res.outlines.land),
         lakePath: ringsPath(res.outlines.lakes),
       });
-      // 画像にしたら画素の配列は要らない（標高と水は、あとで駅名の候補やトンネルの提案に使う）
-      base = { ...res, rgba: null, seaRgba: null };
+      base = res;
       vectors = geoBaseVectors(res);
       updateHint(store.getState());
       canvasView.requestRender();
@@ -268,6 +267,7 @@ export function createGeoView(ctx) {
       canvasView.dispose();
       terrainItem = null;
       base = null;
+      clearGeoBase();
     },
   };
 }

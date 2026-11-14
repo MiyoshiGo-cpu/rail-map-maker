@@ -232,6 +232,15 @@ export const lineReducers = {
     }
   },
 
+  /** 区間の構造をまとめて決める（トンネル・橋梁の提案を当てる。1手で取り消せる）{ items: [{ lineId, index, structure }] } */
+  'line/applyStructures'(tx, { items }) {
+    for (const it of items) {
+      const i = tx.indexOf('lines', it.lineId);
+      if (i < 0 || it.index >= tx.state.lines[i].sections.length) continue;
+      tx.set(['lines', i, 'sections', it.index, 'structure'], it.structure);
+    }
+  },
+
   /**
    * 駅間を消す { lineId, sectionIndex } → 分かれてできた路線の ID（無ければ null）
    */
