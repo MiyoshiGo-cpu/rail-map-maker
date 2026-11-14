@@ -455,6 +455,15 @@ export const DEFAULT_WALK_MINUTES = 5;
  * @property {PlaceNameStyle} placeNames 地名の要素（§6.8）
  * @property {{ metropolis: number, city: number, town: number }} cityKindThresholds 都市の規模の区切り（人口）
  * @property {{ kind: 'metropolis'|'city'|'town'|'village', population: number }} newCity ブラシで置く都市の既定
+ * @property {StationNameRules} stationNames 駅名の候補の作り方（§6.8）
+ */
+
+/**
+ * 駅名の候補の作り方（地域パック）。forms のテンプレートは {c} 都市名・{d} 方角・{l} 施設を置き換える（k は表記、r はよみ）
+ * @typedef {object} StationNameRules
+ * @property {Record<'N'|'E'|'S'|'W', { k: string, r: string }>} directions
+ * @property {Record<'direction'|'shin'|'guchi'|'center'|'cityHall'|'landmark', { k: string, r: string }>} forms
+ * @property {Array<{ k: string, r: string }>} landmarks
  */
 
 /**

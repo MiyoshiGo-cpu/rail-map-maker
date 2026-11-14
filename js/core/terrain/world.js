@@ -172,6 +172,27 @@ export function loadWorld(world) {
   return analyzeWorld(elevation, width, height, world.gen, capitals, channels);
 }
 
+/** @typedef {{ width: number, height: number, cellKm: number, elevation: Int16Array, water: Uint8Array, river: Uint8Array }} BaseGrid */
+
+/** 地点（km）のマス @param {BaseGrid} base @param {{ x: number, y: number }} pos */
+function cellOf(base, pos) {
+  const cx = Math.min(base.width - 1, Math.max(0, Math.floor(pos.x / base.cellKm)));
+  const cy = Math.min(base.height - 1, Math.max(0, Math.floor(pos.y / base.cellKm)));
+  return cy * base.width + cx;
+}
+
+/**
+ * 地点の地形の種類（地名を作るときの海岸・川沿い・山・平地）
+ * @param {BaseGrid} base 地形の下ごしらえ（jobs.js の GeoBase）
+ * @param {{ x: number, y: number }} pos km
+ * @returns {import('../placenames.js').PlaceTerrain}
+ */
+export function terrainKindAt(base, pos) {
+  // 川は「流量がしきい値以上」の代わりに、川のマス（1）を使う
+  const hy = /** @type {any} */ ({ width: base.width, height: base.height, water: base.water, acc: base.river, threshold: 1 });
+  return /** @type {any} */ (placeTerrain(hy, base.elevation, cellOf(base, pos), base.cellKm));
+}
+
 /**
  * ブラシで置く都市（名前は場所の地形に合わせて作る。ほかの都市と同じ名前にしない）
  * @param {Extract<import('../schema.js').World, { mode: 'fictional' }>} world
@@ -182,15 +203,10 @@ export function loadWorld(world) {
  * @returns {Omit<City, 'id'>}
  */
 export function newCityAt(world, base, pos, region, romaji) {
-  const { width, height, cellKm } = base;
-  const cx = Math.min(width - 1, Math.max(0, Math.floor(pos.x / cellKm)));
-  const cy = Math.min(height - 1, Math.max(0, Math.floor(pos.y / cellKm)));
-  const cell = cy * width + cx;
-  // 川は「流量がしきい値以上」の代わりに、川のマス（1）を使う
-  const hy = /** @type {any} */ ({ width, height, water: base.water, acc: base.river, threshold: 1 });
+  const cell = cellOf(base, pos);
   const rng = createRng(`${world.seed}:city:${world.cities.length}:${cell}`);
   const namer = createPlaceNamer(rng, region.placeNames, world.cities.map((c) => c.name));
-  const n = namer.name(placeTerrain(hy, base.elevation, cell, cellKm));
+  const n = namer.name(terrainKindAt(base, pos));
   const r = base.regionMap[cell];
   const preset = region.newCity;
   return {

@@ -43,4 +43,5 @@ export const files = [
   'structure-suggest.test.js',
   'auto-schematic.test.js',
   'brush.test.js',
+  'station-names.test.js',
 ];

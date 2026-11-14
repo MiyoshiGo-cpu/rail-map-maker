@@ -108,6 +108,8 @@ export default {
   'city.capitalNote': 'この都市は{admin1}の中心なので削除できません（{admin1}の範囲はこの都市をもとに決めています）。',
   'city.delete': 'この都市を削除する',
   'city.deleted': '都市「{name}」を削除しました（↶ で戻せます）',
+  // 駅名の候補
+  'station.nameSuggest': '駅名の候補（押すと駅名とよみを入れます）',
   // 地形の作り直し
   'terrain.regenerate': '地形を作り直す',
   'terrain.editsQuestion': 'ブラシで{count}回編集しています。作り直した地形にも、同じ編集を当て直しますか？「編集を捨てる」を選ぶと、編集は新しい地形に残りません（作り直す前に復元ポイントを作るので、あとから戻せます）。',

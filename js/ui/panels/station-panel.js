@@ -5,6 +5,7 @@ import { STATION_RANKS, STATION_STRUCTURES, PLATFORM_TYPES, FACILITIES, LABEL_PO
 import { getRegion } from '../../core/regions/index.js';
 import { field, textInput, textArea, selectInput, numberInput, checkInput, group, enumOptions } from '../form.js';
 import { stationNumbers } from '../../core/numbering.js';
+import { createNameSuggest } from '../name-suggest.js';
 
 /**
  * @param {{ store: any, es: any, onDelete: (ids: string[]) => void }} ctx
@@ -29,6 +30,8 @@ export function createStationPanel(ctx, stationId) {
   // ---------- 基本 ----------
   const name = textInput({ onChange: (v) => set({ name: v.trim() }) });
   const reading = textInput({ onChange: (v) => set({ reading: v.trim() }), inputMode: 'kana' });
+  // 駅名の候補（架空の地形があるとき）
+  const suggest = createNameSuggest(ctx, stationId);
   const nameEn = textInput({ onChange: (v) => set({ names: { ...cur().names, en: opt(v) } }), lang: 'en' });
   const autoRomanize = checkInput({ label: t('station.autoRomanize'), onChange: (v) => set({ autoRomanize: v }) });
   const subName = textInput({ onChange: (v) => set({ subName: opt(v) }) });
@@ -84,6 +87,7 @@ export function createStationPanel(ctx, stationId) {
     group(t('interchange.groupTitle'), [icInfo, h('div', { class: 'panel-actions' }, icOpen, icAdd, icLeave)]),
     group(t('panel.basic'), [
       field(t('station.name'), name),
+      suggest.el,
       field(t('station.reading'), reading, { hint: t('station.readingHint') }),
       field(t('common.nameEn'), nameEn),
       autoRomanize,
@@ -138,6 +142,7 @@ export function createStationPanel(ctx, stationId) {
       const st = p.stations.find((s) => s.id === stationId);
       if (!st) return;
       title.textContent = st.name || t('station.unnamed');
+      suggest.update(p);
       name.setValue(st.name);
       reading.setValue(st.reading || '');
       nameEn.setValue(st.names.en || '');
