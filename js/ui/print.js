@@ -1,7 +1,6 @@
 // 印刷（§5.9）：今表示しているビューの SVG をページに入れ、印刷用の CSS（css/export.css）で用紙に収める。
 // 用紙は A4・A3（横が既定）。印刷が終わったら（afterprint）取り除く。
 import { renderSvg } from '../render/backend-svg.js';
-import { EXPORT_MARGIN } from '../core/export-size.js';
 
 /** 用紙の大きさ（横向きの mm） */
 export const PAPERS = { a4: { w: 297, h: 210 }, a3: { w: 420, h: 297 } };
@@ -16,7 +15,7 @@ export function preparePrint(target, opt = {}) {
   cleanupPrint();
   const size = PAPERS[opt.paper || 'a4'] || PAPERS.a4;
   const [w, h] = opt.orientation === 'portrait' ? [size.h, size.w] : [size.w, size.h];
-  const svg = renderSvg(target.items, { bounds: target.bounds, margin: EXPORT_MARGIN, background: target.background, title: opt.title });
+  const svg = renderSvg(target.items, { bounds: target.bounds, margin: target.margin, background: target.background, title: opt.title });
   const doc = new DOMParser().parseFromString(svg, 'image/svg+xml');
   const root = document.createElement('div');
   root.className = 'print-root';

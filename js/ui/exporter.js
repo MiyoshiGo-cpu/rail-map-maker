@@ -10,10 +10,11 @@ import { mapTranslator } from '../i18n/i18n.js';
 /**
  * 書き出す絵
  * @typedef {object} ExportTarget
- * @property {'schematic'|'stopChart'|'signboard'} view
+ * @property {'schematic'|'geo'|'stopChart'|'signboard'} view
  * @property {any[]} items 表示リスト
  * @property {{ minX: number, minY: number, maxX: number, maxY: number }} bounds
  * @property {string} background
+ * @property {number} margin 絵のまわりの余白（地理ビューは表示している範囲そのままなので 0）
  */
 
 let measure = null;
@@ -22,21 +23,23 @@ let measure = null;
  * 今表示しているビューの絵（書き出すものが無ければ null）
  * @param {import('../core/schema.js').Project} p
  * @param {'schematic'|'geo'|'stopChart'|'signboard'} view
- * @param {any} [viewScene] 案内図・駅名標のビューが表示している表示リスト
+ * @param {any} [viewScene] 地理・案内図・駅名標のビューが表示している表示リスト（地理は今表示している範囲。geo-view.js の exportScene）
  * @returns {ExportTarget | null}
  */
 export function exportTarget(p, view, viewScene) {
-  // 地理ビューの書き出し（地形の画像を入れる）はステップ6で対応する
-  if (view === 'geo') return null;
+  if (view === 'geo') {
+    if (!viewScene || !viewScene.items.length) return null;
+    return { view, items: viewScene.items, bounds: viewScene.bounds, background: viewScene.background, margin: 0 };
+  }
   if (view !== 'schematic') {
     if (!viewScene || !viewScene.items.length) return null;
-    return { view, items: viewScene.items, bounds: viewScene.bounds, background: p.style.background };
+    return { view, items: viewScene.items, bounds: viewScene.bounds, background: p.style.background, margin: EXPORT_MARGIN };
   }
   if (!measure) measure = createMeasure();
   const scene = buildSchematicScene(p, { measure, level: 0, mapT: mapTranslator(p.locale.mapLanguage) });
   const bounds = unionBoxes(scene.items);
   if (!bounds) return null;
-  return { view: 'schematic', items: scene.items, bounds, background: p.style.background };
+  return { view: 'schematic', items: scene.items, bounds, background: p.style.background, margin: EXPORT_MARGIN };
 }
 
 /**
@@ -46,7 +49,7 @@ export function exportTarget(p, view, viewScene) {
  * @returns {Promise<Blob>}
  */
 export async function renderPng(target, opt) {
-  const size = exportSize(target.bounds, opt.scale);
+  const size = exportSize(target.bounds, opt.scale, target.margin);
   const canvas = document.createElement('canvas');
   try {
     canvas.width = size.width;
@@ -57,7 +60,8 @@ export async function renderPng(target, opt) {
       ctx.fillRect(0, 0, size.width, size.height);
     }
     const s = opt.scale;
-    ctx.setTransform(s, 0, 0, s, (EXPORT_MARGIN - target.bounds.minX) * s, (EXPORT_MARGIN - target.bounds.minY) * s);
+    const m = target.margin;
+    ctx.setTransform(s, 0, 0, s, (m - target.bounds.minX) * s, (m - target.bounds.minY) * s);
     drawItems(ctx, target.items, null);
     return await new Promise((resolve, reject) => {
       canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png');
@@ -76,6 +80,6 @@ export async function renderPng(target, opt) {
  * @returns {Blob}
  */
 export function renderSvgBlob(target, opt) {
-  const text = renderSvg(target.items, { bounds: target.bounds, margin: EXPORT_MARGIN, background: target.background, transparent: opt.transparent, title: opt.title });
+  const text = renderSvg(target.items, { bounds: target.bounds, margin: target.margin, background: target.background, transparent: opt.transparent, title: opt.title });
   return new Blob([text], { type: 'image/svg+xml' });
 }

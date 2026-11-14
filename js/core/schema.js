@@ -24,6 +24,8 @@ export const FACILITIES = /** @type {const} */ (['airport', 'port', 'busTerminal
 export const FONT_FAMILIES = /** @type {const} */ (['gothic', 'mincho', 'maru']);
 export const COLOR_MODES = /** @type {const} */ (['color', 'mono', 'bright']);
 export const STATION_SYMBOLS = /** @type {const} */ (['circle', 'tick']);
+/** 地理ビューの線の描き方（§5.4）：ラインカラー／地図記号（地形図の慣習） */
+export const GEO_STYLES = /** @type {const} */ (['lineColor', 'symbol']);
 export const STATION_STROKES = /** @type {const} */ (['black', 'line']);
 /** 凡例とタイトルを置く角（上の角は地図の上、下の角は地図の下） */
 export const LEGEND_CORNERS = /** @type {const} */ (['tl', 'tr', 'bl', 'br']);
@@ -338,6 +340,7 @@ export const DEFAULT_WALK_MINUTES = 5;
  * @property {string} paper 駅の地と、文字の縁取りの色
  * @property {'color'|'mono'|'bright'} colorMode 路線の色づかい（mono は灰色の濃淡と破線で区別、bright は明るくする）
  * @property {'circle'|'tick'} stationSymbol 一般駅の記号（tick は線の上の短い目盛り）
+ * @property {'lineColor'|'symbol'} geoStyle 地理ビューの線（ラインカラーか、地形図の慣習の地図記号）
  * @property {LegendSettings} legend 凡例（§5.7）
  * @property {TitleSettings} title タイトル・作者・日付（§5.7）
  * @property {SignboardSettings} signboard 駅名標（§5.6）
@@ -447,6 +450,7 @@ export const DEFAULT_WALK_MINUTES = 5;
  * @property {{ byLineKind: Record<string, string>, byCategory: Record<string, string>, fallback: string }} serviceSetDefaults 事業者に合ったプリセット
  * @property {Array<{ maxRank: number, sec: number }>} dwellSecByRank
  * @property {Array<{ id: string, labelKey: string, values: Partial<MapStyle> }>} stylePresets スタイルプリセット（§5.8）
+ * @property {{ stripedCategories: string[] }} geoSymbol 地理ビューの地図記号（§5.4）：白黒の縞で描く事業者の区分
  * @property {Array<{ id: string, hex: string }>} linePalette ラインカラーのパレット
  * @property {PlaceNameStyle} placeNames 地名の要素（§6.8）
  * @property {{ metropolis: number, city: number, town: number }} cityKindThresholds 都市の規模の区切り（人口）

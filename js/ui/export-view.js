@@ -69,8 +69,8 @@ export function openExportSheet(ctx) {
   const includeTitle = checkInput({ label: t('export.includeTitle'), onChange: (v) => setShow('title', v) });
   const includeLegend = checkInput({ label: t('export.includeLegend'), onChange: (v) => setShow('legend', v) });
   const sizeNote = h('p', { class: 'panel-note' });
-  const nothing = h('p', { class: 'panel-warn' }, t(view === 'geo' ? 'export.geoNotYet' : 'export.nothing'));
-  const reduceBtn = btn('', () => run(fittingScale(target.bounds)));
+  const nothing = h('p', { class: 'panel-warn' }, t('export.nothing'));
+  const reduceBtn = btn('', () => run(fittingScale(target.bounds, target.margin)));
   const warn = h('div', { class: 'panel-warn', role: 'alert' }, h('p', {}, t('export.tooLarge')), h('div', { class: 'panel-actions' }, reduceBtn));
   const runBtn = btn(t('export.run'), () => run(prefs.scale), 'btn btn-primary');
   const shareBtn = btn(t('export.share'), () => pending && deliver(pending.name, pending.blob), 'btn btn-primary');
@@ -99,6 +99,8 @@ export function openExportSheet(ctx) {
     body: [
       h('div', { class: 'panel-section' },
         h('p', { class: 'panel-note' }, t('export.targetNote', { view: t('views.' + view) })),
+        // 地理ビューは、いま表示している範囲を画面と同じ見た目で書き出す
+        view === 'geo' ? h('p', { class: 'panel-note' }, t('export.geoNote')) : null,
         field(t('export.format'), format),
         imageBox,
         jsonBox,
@@ -128,7 +130,7 @@ export function openExportSheet(ctx) {
     printBox.hidden = f !== 'print' || !target;
     runBtn.disabled = !target;
     if (!target || f !== 'png') return;
-    const size = exportSize(target.bounds, prefs.scale);
+    const size = exportSize(target.bounds, prefs.scale, target.margin);
     sizeNote.textContent = t('export.size', {
       w: formatNumber(size.width),
       h: formatNumber(size.height),
@@ -136,7 +138,7 @@ export function openExportSheet(ctx) {
     });
     warn.hidden = size.fits;
     runBtn.disabled = !size.fits;
-    if (!size.fits) reduceBtn.textContent = t('export.reduce', { n: formatNumber(fittingScale(target.bounds)) });
+    if (!size.fits) reduceBtn.textContent = t('export.reduce', { n: formatNumber(fittingScale(target.bounds, target.margin)) });
   }
 
   async function run(s) {

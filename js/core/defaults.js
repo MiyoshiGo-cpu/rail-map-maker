@@ -30,6 +30,7 @@ export function defaultStyle() {
     paper: '#FFFFFF',
     colorMode: 'color',
     stationSymbol: 'circle',
+    geoStyle: 'lineColor',
     legend: { show: false, corner: 'br', lines: true, types: true, symbols: true },
     title: { show: false, corner: 'tl', text: '', showAuthor: true, date: '' },
     signboard: {

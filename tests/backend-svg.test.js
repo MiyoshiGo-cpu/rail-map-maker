@@ -63,3 +63,37 @@ test('SVG：路線図の表示リストから文書を作る（余白・背景�
   const clear = renderSvg(scene.items, { bounds, margin: 24, background: '#FFFFFF', transparent: true });
   assert.ok(!clear.includes(bg), '透過なら背景を描かない');
 });
+
+test('SVG：多角形・まとまり（変換行列）・地形（画像と海岸線の切り抜き）', async () => {
+  const { itemSvg, ringsData } = await import('../js/render/backend-svg.js');
+  assert.equal(ringsData([[0, 0, 10, 0, 10, 10]]), 'M0 0L10 0L10 10Z');
+  const poly = itemSvg({ kind: 'poly', pts: [0, 0, 4, 0, 2, 3], fill: '#000', stroke: '#111', lineWidth: 1 });
+  assert.ok(poly.includes('d="M0 0L4 0L2 3Z"') && poly.includes('fill="#000"'), poly);
+  const g = itemSvg({ kind: 'group', transform: [0.015625, 0, 0, 0.015625, -12.5, 3], items: [{ kind: 'poly', pts: [0, 0, 1, 0, 1, 1], fill: '#000' }] });
+  assert.ok(g.startsWith('<g transform="matrix(0.015625 0 0 0.015625 -12.5 3)">'), g);
+  const clipped = itemSvg({ kind: 'group', transform: [1, 0, 0, 1, 0, 0], clip: { x: 0, y: 0, w: 50, h: 40 }, items: [] });
+  assert.ok(/<clipPath id="rmm-clip-\d+"><rect x="0" y="0" width="50" height="40"\/><\/clipPath>/.test(clipped), clipped);
+  const terrain = itemSvg({
+    kind: 'terrain', x: 0, y: 0, w: 100, h: 80, seaHref: 'data:image/png;base64,AAA', landHref: 'data:image/png;base64,BBB',
+    landRings: [[10, 10, 90, 10, 90, 70]], lakeRings: [], lakeColor: '#80B8E2', shoreColor: '#2E6096', shoreWidth: 0.5,
+  });
+  const clip = /id="(rmm-land-\d+)"/.exec(terrain);
+  assert.ok(clip, terrain);
+  assert.ok(terrain.includes(`clip-path="url(#${clip[1]})"`), '陸の画像は海岸線で切り抜く');
+  assert.ok(terrain.includes('href="data:image/png;base64,AAA"') && terrain.includes('href="data:image/png;base64,BBB"'));
+  assert.ok(terrain.includes('clip-rule="evenodd"'));
+});
+
+test('地理ビューの縮尺バー：1・2・5 の区切りで、決めた長さ以内', async () => {
+  const { niceScaleLength, scaleBarItems } = await import('../js/render/geo-furniture.js');
+  assert.deepEqual(niceScaleLength(10, 140), { n: 10, len: 100 });
+  assert.deepEqual(niceScaleLength(3, 140), { n: 20, len: 60 });
+  assert.deepEqual(niceScaleLength(100, 140), { n: 1, len: 100 });
+  const items = scaleBarItems({
+    pxPerKm: 10, width: 800, height: 600, insets: { top: 0, right: 0, bottom: 100, left: 0 },
+    style: /** @type {any} */ ({ fontFamily: 'gothic' }), mapT: (k, v) => `${v.n} km`, distanceUnit: 'km', measure: () => 30,
+  });
+  const text = items.find((it) => it.kind === 'text');
+  assert.equal(text.text, '10 km');
+  assert.ok(text.y < 600 - 100, 'シートの上に出す');
+});

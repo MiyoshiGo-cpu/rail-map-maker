@@ -179,6 +179,9 @@ const jp = {
     },
   ],
 
+  // 地理ビューの地図記号（§5.4）：地形図の慣習で、JR 線は白黒の縞、それ以外は黒線に短い横線
+  geoSymbol: { stripedCategories: ['jr'] },
+
   // 架空の地形（§6.7・§6.8）：地名の要素と、都市の規模の区切り（人口）
   placeNames,
   cityKindThresholds: { metropolis: 1000000, city: 50000, town: 10000 },

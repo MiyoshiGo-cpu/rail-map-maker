@@ -12,7 +12,8 @@ import { buildGeoScene, geoBaseVectors, geoZoomLevel } from '../render/scene-geo
 import { drawItems, createMeasure } from '../render/backend-canvas.js';
 import { visibleWorldRect, screenToWorld, GEO_UNIT, GEO_ZOOM } from '../core/viewport.js';
 import { drawUnderlay, drawSelectionRings, stationRing } from './overlay.js';
-import { makeImage, ringsPath, drawTerrain, drawScaleBar, drawNorthArrow, drawGeoEditOverlay } from './geo-overlay.js';
+import { makeImage, ringsPath, terrainItemMaker, drawGeoEditOverlay } from './geo-overlay.js';
+import { scaleBarItems, northArrowItems } from '../render/geo-furniture.js';
 import { accentFor } from './editor-state.js';
 import { pickPending, pendingHint } from './pending-pick.js';
 import { createGeoSelectTool } from './tools/geo-select-tool.js';
@@ -24,6 +25,8 @@ import { createDeleteTool } from './tools/delete-tool.js';
 const HIT_RADIUS = { touch: 22, mouse: 8, pen: 12 };
 /** 地形の外の色 */
 const OUTSIDE = '#D5DDE5';
+/** 海岸線と湖岸の線の太さ（画面の px） */
+const SHORE_PX = 0.8;
 
 /**
  * @param {{
@@ -39,9 +42,9 @@ export function createGeoView(ctx) {
   /** 地形の下ごしらえ（jobs.js の GeoBase）と、そこから作ったもの */
   let base = null;
   let vectors = null;
-  /** 地形の画像（陸・海）と、海岸線・湖岸の形（世界座標） */
-  /** @type {{ land: HTMLCanvasElement, sea: HTMLCanvasElement, landPath: Path2D, lakePath: Path2D } | null} */
-  let terrain = null;
+  /** 地形の表示リストの要素を作る関数（岸の線の太さを渡す）。画像と海岸線・湖岸の形を持つ */
+  /** @type {((shoreWidth: number) => any) | null} */
+  let terrainItem = null;
   /** 下ごしらえを頼んだ世界（標高・パラメータ・県が同じなら作り直さない） */
   let baseKey = null;
   let failed = false;
@@ -77,6 +80,22 @@ export function createGeoView(ctx) {
     on: { click: () => es.set({ rangeMode: !es.get().rangeMode }) },
   }, icon('range'));
   canvasView.addControl(rangeBtn);
+  // 線の描き方（ラインカラー／地図記号）の切り替え
+  const styleBtn = h('button', {
+    class: 'icon-btn',
+    type: 'button',
+    'aria-label': t('geo.toggleStyle'),
+    title: t('geo.toggleStyle'),
+    'aria-pressed': 'false',
+    on: {
+      click: () => {
+        const next = store.getState().style.geoStyle === 'symbol' ? 'lineColor' : 'symbol';
+        store.dispatch({ type: 'project/style', fields: { geoStyle: next } });
+        ctx.toolCtx.toast(t('geo.styleNow', { name: t('geoStyle.' + next) }));
+      },
+    },
+  }, icon('layers'));
+  canvasView.addControl(styleBtn);
 
   // ---------- ツール ----------
   /** 地理用の道具：当たり判定・座標の変換・新しい駅の位置を地理用に差し替える */
@@ -115,7 +134,7 @@ export function createGeoView(ctx) {
   canvasView.addLayer((c, view, size, dpr) => {
     const p = store.getState();
     if (p.world.mode !== 'fictional') return;
-    if (terrain && base) drawTerrain(c, terrain, base.width * base.cellKm * GEO_UNIT, base.height * base.cellKm * GEO_UNIT, view.zoom);
+    if (terrainItem) drawItems(c, [terrainItem(SHORE_PX / view.zoom)], null);
     const sc = getScene();
     const s = es.get();
     const o = { project: p, scene: sc, es: s, zoom: view.zoom, accent: accentFor(p, s) };
@@ -126,10 +145,40 @@ export function createGeoView(ctx) {
     // ここから画面の座標：縮尺バーと方位記号
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     const insets = ctx.getInsets ? ctx.getInsets() : { top: 0, right: 0, bottom: 0, left: 0 };
-    const mapT = mapTranslator(p.locale.mapLanguage);
-    drawScaleBar(c, view.zoom * GEO_UNIT, size, insets, p, mapT);
-    drawNorthArrow(c, insets, p, mapT);
+    drawItems(c, furnitureItems(p, view.zoom, size, insets), null);
   });
+
+  /** 縮尺バーと方位記号（画面の px） */
+  function furnitureItems(p, zoom, size, insets) {
+    const mapT = mapTranslator(p.locale.mapLanguage);
+    return [
+      ...northArrowItems({ insets, style: p.style, mapT }),
+      ...scaleBarItems({ pxPerKm: zoom * GEO_UNIT, width: size.width, height: size.height, insets, style: p.style, mapT, distanceUnit: p.locale.distanceUnit, measure }),
+    ];
+  }
+
+  /**
+   * 書き出す絵：今表示している範囲を、画面と同じ見た目で（1 が画面の 1px。余白なし）。駅名も画面と同じだけ出す
+   * @returns {{ items: any[], bounds: { minX: number, minY: number, maxX: number, maxY: number }, background: string } | null}
+   */
+  function exportScene() {
+    const p = store.getState();
+    if (p.world.mode !== 'fictional') return null;
+    getScene();
+    const view = canvasView.getView();
+    const size = canvasView.getSize();
+    const z = view.zoom;
+    const vis = visibleWorldRect(view, size);
+    // 表示リストは、倍率の段階ではなく今の倍率でちょうどの大きさに作り直す
+    const sc = buildGeoScene(p, { measure, zoom: z, sections, vectors });
+    const inner = terrainItem ? [terrainItem(SHORE_PX / z), ...sc.items] : sc.items;
+    const bounds = { minX: 0, minY: 0, maxX: size.width, maxY: size.height };
+    // 表示している範囲の外は切り抜く（SVG をほかのソフトや印刷で開いたとき、範囲の外が見えないように）
+    const clip = { x: 0, y: 0, w: size.width, h: size.height };
+    const group = { kind: 'group', transform: [z, 0, 0, z, -vis.minX * z, -vis.minY * z], items: inner, clip, bbox: bounds };
+    const none = { top: 0, right: 0, bottom: 0, left: 0 };
+    return { items: [group, ...furnitureItems(p, z, size, none)], bounds, background: OUTSIDE };
+  }
 
   /** 今の倍率の段階の表示リスト（データか段階が変わったら作り直す） */
   function getScene() {
@@ -153,7 +202,7 @@ export function createGeoView(ctx) {
       baseKey = null;
       base = null;
       vectors = null;
-      terrain = null;
+      terrainItem = null;
       return;
     }
     const w = p.world;
@@ -163,12 +212,12 @@ export function createGeoView(ctx) {
     failed = false;
     requestTerrain({ kind: 'analyze', world: w }).then((res) => {
       if (baseKey !== key) return;
-      terrain = {
+      terrainItem = terrainItemMaker(res, {
         land: makeImage(res.rgba, res.imageWidth, res.imageHeight),
         sea: makeImage(res.seaRgba, res.width, res.height),
         landPath: ringsPath(res.outlines.land),
         lakePath: ringsPath(res.outlines.lakes),
-      };
+      });
       // 画像にしたら画素の配列は要らない（標高と水は、あとで駅名の候補やトンネルの提案に使う）
       base = { ...res, rgba: null, seaRgba: null };
       vectors = geoBaseVectors(res);
@@ -200,13 +249,15 @@ export function createGeoView(ctx) {
       const s = es.get();
       rangeBtn.hidden = s.tool !== 'select';
       rangeBtn.setAttribute('aria-pressed', String(!!s.rangeMode));
+      styleBtn.setAttribute('aria-pressed', String(p.style.geoStyle === 'symbol'));
       canvasView.setCursor(currentTool().cursor || 'default');
       canvasView.requestRender();
     },
     /** 今のツール（キーボードの操作に使う） */
     tool: () => currentTool(),
-    /** 表示している表示リスト（デバッグ用。書き出しはステップ6で対応する） */
+    /** 表示している表示リスト（デバッグ用） */
     getScene: () => scene,
+    exportScene,
     getBase: () => base,
     fitAll: () => canvasView.fitAll(),
     zoomBy: (f) => canvasView.zoomBy(f),
@@ -215,7 +266,7 @@ export function createGeoView(ctx) {
     canvasView,
     dispose() {
       canvasView.dispose();
-      terrain = null;
+      terrainItem = null;
       base = null;
     },
   };

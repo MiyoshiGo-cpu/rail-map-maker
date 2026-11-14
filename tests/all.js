@@ -39,4 +39,5 @@ export const files = [
   'geo-lines.test.js',
   'scene-geo.test.js',
   'geo-edit.test.js',
+  'geo-symbols.test.js',
 ];

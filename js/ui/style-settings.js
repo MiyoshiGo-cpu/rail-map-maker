@@ -1,7 +1,8 @@
 // 設定の「スタイル」の欄（§5.8）：プリセットと詳細設定（線の太さ・駅記号の大きさ・角の半径・書体・文字サイズ・一般駅の記号・色づかい・色）
+// と、地理ビューの線の描き方（ラインカラー／地図記号。§5.4。地形があるときだけ出す）
 import { h } from './dom.js';
 import { t } from '../i18n/i18n.js';
-import { FONT_FAMILIES, COLOR_MODES, STATION_SYMBOLS, STATION_STROKES } from '../core/schema.js';
+import { FONT_FAMILIES, COLOR_MODES, STATION_SYMBOLS, STATION_STROKES, GEO_STYLES } from '../core/schema.js';
 import { stylePresets, matchesPreset } from '../core/map-style.js';
 import { field, selectInput, numberInput, colorInput, group, enumOptions } from './form.js';
 
@@ -44,9 +45,11 @@ export function createStyleSettings(ctx) {
     sel('stationSymbol', STATION_SYMBOLS, 'stationSymbol.'),
     sel('colorMode', COLOR_MODES, 'colorMode.'),
     sel('stationStroke', STATION_STROKES, 'stationStroke.'),
+    sel('geoStyle', GEO_STYLES, 'geoStyle.'),
   ];
   const colors = ['background', 'ink', 'paper'].map((key) => ({ key, el: colorInput({ label: t('style.' + key), onChange: (v) => set({ [key]: v }) }) }));
   const byKey = (list, key) => list.find((x) => x.key === key).el;
+  const geoField = field(t('style.geoStyle'), byKey(sels, 'geoStyle'), { hint: t('style.geoStyleHint') });
 
   const el = group(t('style.title'), [
     field(t('style.preset'), preset),
@@ -65,6 +68,7 @@ export function createStyleSettings(ctx) {
       field(t('style.colorMode'), byKey(sels, 'colorMode')),
     ),
     field(t('style.background'), byKey(colors, 'background')),
+    geoField,
     group(t('panel.details'), [
       field(t('style.ink'), byKey(colors, 'ink')),
       field(t('style.paper'), byKey(colors, 'paper')),
@@ -80,6 +84,7 @@ export function createStyleSettings(ctx) {
     for (const x of nums) x.el.setValue(s[x.key]);
     for (const x of sels) x.el.setValue(s[x.key]);
     for (const x of colors) x.el.setValue(s[x.key]);
+    geoField.hidden = store.getState().world.mode !== 'fictional';
   }
   refresh();
   return { el, refresh };

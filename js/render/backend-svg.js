@@ -195,12 +195,60 @@ function labelItem(it) {
   return `<g transform="${tr}"${attrs({ opacity: opacityOf(it.alpha) })}>${halo}${body}</g>`;
 }
 
+/** 閉じた点の並び（x, y の平らな配列）の d 属性。輪をいくつも並べられる */
+export function ringsData(rings) {
+  let d = '';
+  for (const r of rings) {
+    if (r.length < 4) continue;
+    d += `M${num(r[0])} ${num(r[1])}`;
+    for (let i = 2; i < r.length; i += 2) d += `L${num(r[i])} ${num(r[i + 1])}`;
+    d += 'Z';
+  }
+  return d;
+}
+
+let clipSeq = 0;
+
+/**
+ * まとまり：中の要素を変換行列で描く。clip（外側の座標の四角）があれば、その外は切り抜く
+ * @param {any} it
+ */
+function groupItem(it) {
+  // 変換行列は小さな倍率もあるので、細かい桁まで書く
+  const inner = `<g${attrs({ transform: `matrix(${it.transform.map((v) => String(Math.round(v * 1e6) / 1e6 + 0)).join(' ')})` })}>${it.items.map(itemSvg).join('')}</g>`;
+  if (!it.clip) return inner;
+  const id = `rmm-clip-${++clipSeq}`;
+  const c = it.clip;
+  return `<defs><clipPath${attrs({ id })}>${rectEl(c.x, c.y, c.w, c.h, 0, {})}</clipPath></defs><g${attrs({ 'clip-path': `url(#${id})` })}>${inner}</g>`;
+}
+
+/**
+ * 地形（地理ビュー）：海の画像、海岸線で切り抜いた陸の画像、湖、岸の細い線。画像は data URI（seaHref・landHref）で埋め込む
+ * @param {any} it
+ */
+function terrainItem(it) {
+  const id = `rmm-land-${++clipSeq}`;
+  const land = ringsData(it.landRings);
+  const lakes = ringsData(it.lakeRings);
+  const img = (href, extra) => `<image${attrs({ href, x: it.x, y: it.y, width: it.w, height: it.h, preserveAspectRatio: 'none', ...extra })}/>`;
+  let s = `<defs><clipPath${attrs({ id })}><path${attrs({ d: land, 'clip-rule': 'evenodd' })}/></clipPath></defs>`;
+  s += img(it.seaHref, {});
+  if (land) s += img(it.landHref, { 'clip-path': `url(#${id})` });
+  if (lakes) s += `<path${attrs({ d: lakes, fill: it.lakeColor, 'fill-rule': 'evenodd' })}/>`;
+  const shore = land + lakes;
+  if (shore) s += `<path${attrs({ d: shore, fill: 'none', stroke: it.shoreColor, 'stroke-width': it.shoreWidth, 'stroke-linejoin': 'round' })}/>`;
+  return s;
+}
+
 /**
  * 表示リストの要素1つ
  * @param {any} it
  */
 export function itemSvg(it) {
   switch (it.kind) {
+    case 'poly': return `<path${attrs({ d: ringsData([it.pts]), 'stroke-linejoin': 'round', ...paint(it) })}/>`;
+    case 'group': return groupItem(it);
+    case 'terrain': return terrainItem(it);
     case 'path': return pathItem(it);
     case 'circle': return `<circle${attrs({ cx: it.x, cy: it.y, r: it.r, ...paint(it) })}/>`;
     case 'capsule': return capsuleItem(it);

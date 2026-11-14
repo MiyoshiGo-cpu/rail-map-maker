@@ -138,6 +138,9 @@ export function drawItems(ctx, items, visible) {
       case 'rrect': drawRRectItem(ctx, it); break;
       case 'text': drawTextItem(ctx, it); break;
       case 'label': drawLabelItem(ctx, it); break;
+      case 'poly': drawPolyItem(ctx, it); break;
+      case 'group': drawGroupItem(ctx, it, visible); break;
+      case 'terrain': drawTerrainItem(ctx, it); break;
       default: break;
     }
   }
@@ -176,6 +179,59 @@ function fillStroke(ctx, it) {
     ctx.stroke();
     ctx.setLineDash([]);
   }
+}
+
+/** 塗った多角形（閉じた点の並び） */
+function drawPolyItem(ctx, it) {
+  ctx.beginPath();
+  ctx.moveTo(it.pts[0], it.pts[1]);
+  for (let i = 2; i < it.pts.length; i += 2) ctx.lineTo(it.pts[i], it.pts[i + 1]);
+  ctx.closePath();
+  ctx.lineJoin = 'round';
+  fillStroke(ctx, it);
+}
+
+/**
+ * まとまり：中の要素を変換行列（transform = [a, b, c, d, e, f]）で描く（地理ビューの書き出しで、世界座標を画面の px にする）。
+ * clip（外側の座標の四角 { x, y, w, h }）があれば、その外は描かない
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {any} it
+ * @param {{ minX: number, minY: number, maxX: number, maxY: number } | null} visible
+ */
+function drawGroupItem(ctx, it, visible) {
+  const [a, b, c, d, e, f] = it.transform;
+  ctx.save();
+  if (it.clip) {
+    ctx.beginPath();
+    ctx.rect(it.clip.x, it.clip.y, it.clip.w, it.clip.h);
+    ctx.clip();
+  }
+  ctx.transform(a, b, c, d, e, f);
+  // 見えている範囲も中の座標に直す（拡大と平行移動だけの変換を前提にする）
+  const inner = visible ? { minX: (visible.minX - e) / a, minY: (visible.minY - f) / d, maxX: (visible.maxX - e) / a, maxY: (visible.maxY - f) / d } : null;
+  drawItems(ctx, it.items, inner);
+  ctx.restore();
+}
+
+/**
+ * 地形（地理ビュー）：海の画像の上に、海岸線の形で切り抜いた陸の画像を重ね、湖を塗って岸に細い線を引く
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {any} it { x, y, w, h, sea, land（canvas）, landPath, lakePath（Path2D）, lakeColor, shoreColor, shoreWidth }
+ */
+function drawTerrainItem(ctx, it) {
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(it.sea, it.x, it.y, it.w, it.h);
+  ctx.save();
+  ctx.clip(it.landPath, 'evenodd');
+  ctx.drawImage(it.land, it.x, it.y, it.w, it.h);
+  ctx.restore();
+  ctx.fillStyle = it.lakeColor;
+  ctx.fill(it.lakePath, 'evenodd');
+  ctx.strokeStyle = it.shoreColor;
+  ctx.lineWidth = it.shoreWidth;
+  ctx.lineJoin = 'round';
+  ctx.stroke(it.landPath);
+  ctx.stroke(it.lakePath);
 }
 
 function drawCircleItem(ctx, it) {

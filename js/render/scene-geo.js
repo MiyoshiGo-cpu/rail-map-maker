@@ -9,6 +9,9 @@ import { createSpatialIndex } from './spatial-index.js';
 import { strokeFor, inkOf, paperOf, lineAppearance, mapFont } from './styles.js';
 import { layoutLabels } from './labels.js';
 import { stationSymbol } from './station-symbol.js';
+import { symbolSectionItems, SYMBOL_INK, SYMBOL_SPACING } from './geo-symbols.js';
+import { sectionCount } from '../core/defaults.js';
+import { getRegion } from '../core/regions/index.js';
 
 /** @typedef {import('../core/schema.js').Project} Project */
 /** @typedef {import('../core/geo-lines.js').GeoSection} GeoSection */
@@ -135,10 +138,14 @@ export function buildGeoScene(p, opt) {
     }
   }
 
-  // ---------- 線路 ----------
+  // ---------- 線路（ラインカラーか、地形図の慣習の地図記号） ----------
   const lineById = new Map(p.lines.map((l) => [l.id, l]));
   const orderIndex = new Map([...p.lines].sort((a, b) => a.order - b.order).map((l, i) => [l.id, i]));
-  const spacing = sStyle.lineWidth + sStyle.lineGap;
+  const symbolMode = style.geoStyle === 'symbol';
+  const symbolUnit = u * Math.max(0.7, shrink);
+  const striped = new Set((getRegion(p.locale.region).geoSymbol || { stripedCategories: [] }).stripedCategories);
+  const operatorOf = new Map(p.operators.map((o) => [o.id, o]));
+  const spacing = symbolMode ? SYMBOL_SPACING * symbolUnit : sStyle.lineWidth + sStyle.lineGap;
   /** @type {Map<string, { pts: { x: number, y: number }[], dirs: { x: number, y: number }[], lineIds: Set<string> }>} */
   const passes = new Map();
   const passOf = (id) => {
@@ -165,6 +172,24 @@ export function buildGeoScene(p, opt) {
     pb.lineIds.add(line.id);
 
     const attrs = effectiveSectionAttrs(line, g.index);
+    if (symbolMode) {
+      const items = symbolSectionItems({
+        pts: shifted,
+        kind: line.kind,
+        tracks: attrs.tracks,
+        structure: attrs.structure,
+        status: attrs.status,
+        striped: striped.has(operatorOf.get(line.operatorId)?.category),
+        unit: symbolUnit,
+        showAbolished: style.showAbolished,
+        ...tunnelEnds(line, g.index),
+      });
+      if (!items.length) continue;
+      items[0].target = { type: 'section', lineId: line.id, index: g.index };
+      for (const it of items) lineItems.push(it);
+      sectionItems.set(`${line.id}:${g.index}`, items[0]);
+      continue;
+    }
     const s = strokeFor(sStyle, line.kind, attrs.status, line.color, orderIndex.get(line.id), u);
     if (s.hidden) continue;
     const pts = [];
@@ -192,15 +217,17 @@ export function buildGeoScene(p, opt) {
   const symbolItems = [];
   /** @type {Map<string, any>} */
   const stationItems = new Map();
-  const lineColor = new Map(p.lines.map((l) => [l.id, lineAppearance(sStyle, l.color, orderIndex.get(l.id)).color]));
+  // 地図記号では、駅は白地に黒い縁の丸（路線の色は使わない）
+  const lineColor = new Map(p.lines.map((l) => [l.id, symbolMode ? SYMBOL_INK : lineAppearance(sStyle, l.color, orderIndex.get(l.id)).color]));
+  const symStyle = symbolMode ? { ...sStyle, paper: '#FFFFFF', stationSymbol: 'circle' } : sStyle;
   for (const st of p.stations) {
     if (!st.geo || !('x' in st.geo)) continue;
     const center = { x: st.geo.x * GEO_UNIT, y: st.geo.y * GEO_UNIT };
     const pass = passes.get(st.id);
     const ids = pass ? [...pass.lineIds].sort((a, b) => lineById.get(a).order - lineById.get(b).order) : [];
-    const stroke = style.stationStroke === 'line' && ids.length ? lineColor.get(ids[0]) : inkOf(style);
+    const stroke = symbolMode ? SYMBOL_INK : style.stationStroke === 'line' && ids.length ? lineColor.get(ids[0]) : inkOf(style);
     // 縁の太さなども、縮小したときは記号に合わせて細くする
-    const items = stationSymbol(st, center, pass, ids.length, sStyle, stroke, ids.length ? lineColor.get(ids[0]) : inkOf(style), u * Math.max(0.6, shrink));
+    const items = stationSymbol(st, center, pass, ids.length, symStyle, stroke, ids.length ? lineColor.get(ids[0]) : inkOf(style), u * Math.max(0.6, shrink));
     for (const it of items) symbolItems.push(it);
     stationItems.set(st.id, items[0]);
   }
@@ -267,6 +294,21 @@ export function buildGeoScene(p, opt) {
     unit: u,
     paper: paperOf(style),
   };
+}
+
+/**
+ * トンネルの区間の坑口を描く端（隣の区間がトンネルでない端。環状線は一周でつなぐ）
+ * @param {import('../core/schema.js').Line} line
+ * @param {number} i
+ */
+function tunnelEnds(line, i) {
+  if (effectiveSectionAttrs(line, i).structure !== 'tunnel') return { portalStart: false, portalEnd: false };
+  const n = sectionCount(line);
+  const at = (k) => {
+    if (line.isLoop) k = (k + n) % n;
+    return k >= 0 && k < n ? effectiveSectionAttrs(line, k).structure : null;
+  };
+  return { portalStart: at(i - 1) !== 'tunnel', portalEnd: at(i + 1) !== 'tunnel' };
 }
 
 /** @typedef {ReturnType<typeof buildGeoScene>} GeoScene */
