@@ -56,3 +56,21 @@ test('性能確認用のデータ：駅200・路線20で、毎回同じもの', 
   assert.ok(a.lines.every((l) => l.stops.length >= 2));
   assert.deepEqual(a.stations.map((s) => s.schematic), b.stations.map((s) => s.schematic));
 });
+
+test('サンプル：小さい架空の地形があり、すべての駅が陸の上にある（フェーズ4）', async () => {
+  const { loadWorld } = await import('../js/core/terrain/world.js');
+  const { LAND } = await import('../js/core/terrain/hydrology.js');
+  const p = parseProjectText(await readSample());
+  assert.equal(p.world.mode, 'fictional');
+  assert.equal(p.world.gen.size, 256);
+  const a = loadWorld(/** @type {any} */ (p.world));
+  for (const st of p.stations) {
+    assert.ok(st.geo && 'x' in st.geo, `${st.name} に地理の位置がない`);
+    const cell = Math.floor(st.geo.y / a.cellKm) * a.width + Math.floor(st.geo.x / a.cellKm);
+    assert.equal(a.hydrology.water[cell], LAND, `${st.name} が水の上`);
+  }
+  // 都市圏の中心の大都市が県の中心
+  const capital = p.world.cities.find((c) => c.id === p.world.regions[0].capitalCityId);
+  assert.equal(capital.name, '湾岸');
+  assert.equal(capital.kind, 'metropolis');
+});

@@ -82,6 +82,14 @@ export function tokenize(s) {
   return out;
 }
 
+/**
+ * 表示するよみ（駅名標など）：語の区切りの「・」と空白は英字を作るためのものなので、表示では消す
+ * @param {string} reading
+ */
+export function readingForDisplay(reading) {
+  return (reading || '').split(WORD_SEP).join('').replace(/\s+/g, '');
+}
+
 /** @type {RomajiSettings} */
 export const DEFAULT_ROMAJI = { longVowel: 'omit', nBeforeBmp: 'm', capitalizeAfterHyphen: false };
 

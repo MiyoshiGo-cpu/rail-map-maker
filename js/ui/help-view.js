@@ -1,4 +1,4 @@
-// ヘルプ（§4.3：操作方法、見た目と書き出し、iPhone での保存の注意、データの出典）
+// ヘルプ（§4.3：操作方法、見た目と書き出し、架空の地形と地理ビュー、iPhone での保存の注意、データの出典）
 import { h } from './dom.js';
 import { t } from '../i18n/i18n.js';
 import { group } from './form.js';
@@ -13,7 +13,7 @@ export function openHelp() {
     ['Delete', 'help.key.delete'], ['Ctrl+Z', 'editor.undo'], ['Ctrl+Y / Ctrl+Shift+Z', 'editor.redo'],
     ['Ctrl+A', 'help.key.selectAll'], ['Ctrl+D', 'help.key.duplicate'], ['↑ ↓ ← →', 'help.key.arrows'],
     ['Enter', 'tool.line.finish'], ['Esc', 'help.key.escape'], ['F', 'canvas.fit'], ['+ / −', 'help.key.zoom'],
-    ['Ctrl+F', 'search.title'], ['Ctrl+S', 'backup.export'], ['1', 'views.schematic'], ['3', 'views.stopChart'], ['4', 'views.signboard'],
+    ['Ctrl+F', 'search.title'], ['Ctrl+S', 'backup.export'], ['1', 'views.schematic'], ['2', 'views.geo'], ['3', 'views.stopChart'], ['4', 'views.signboard'],
   ];
   openSheet({
     title: t('help.title'),
@@ -22,6 +22,7 @@ export function openHelp() {
       group(t('help.basicsTitle'), paras('help.basics')),
       group(t('help.servicesTitle'), paras('help.services')),
       group(t('help.lookTitle'), paras('help.look')),
+      group(t('help.geoTitle'), paras('help.geo')),
       group(t('help.touchTitle'), paras('help.touch')),
       group(t('help.keysTitle'), [
         h('dl', { class: 'help-keys' }, keys.flatMap(([k, label]) => [h('dt', {}, h('kbd', {}, k)), h('dd', {}, t(label))])),

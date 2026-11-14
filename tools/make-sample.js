@@ -9,6 +9,11 @@ import { createProjectStore } from '../js/core/actions/index.js';
 import { checkIntegrity } from '../js/core/validate.js';
 import { serializeProject } from '../js/storage/file-io.js';
 import { findRoutes } from '../js/core/network.js';
+import { generateWorld } from '../js/core/terrain/world.js';
+import { defaultTerrainParams } from '../js/core/terrain/generate.js';
+import { getRegion } from '../js/core/regions/index.js';
+import { romanize } from '../js/core/romaji.js';
+import { GEO_UNIT } from '../js/core/viewport.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const NOW = '2026-09-29T00:00:00.000Z';
@@ -136,7 +141,33 @@ d({ type: 'service/segmentType', serviceId: through, index: 1, typeId: typeOf(op
 // 使っていない種別は見本から外す（事業者のパネルの「まとめて追加」でいつでも戻せる）
 for (const x of [...store.getState().serviceTypes]) d({ type: 'serviceType/delete', typeId: x.id });
 
-// 表示位置は既定のまま（初めて開いたときに、画面の大きさに合わせて全体を表示する）
+// ---------- 架空の地形（小サイズ。§7 フェーズ4） ----------
+// 駅は路線図の 1マスを 0.8km として（営業キロと同じ縮尺）、南が海に面した陸に置く。
+// シードと位置は、臨海空港と港町が海沿いになり、ほかの駅が陸に乗るものを探して決めた。
+const TERRAIN_SEED = 'wangan6';
+const ORIGIN = { x: 98, y: 86 }; // 路線図の (0, 0) の地理の位置（km）
+const KM_PER_CELL = 0.8;
+const jp = getRegion('jp');
+const { world, analysis } = generateWorld(TERRAIN_SEED, { ...defaultTerrainParams(), size: 256 }, jp);
+const geoOf = (x, y) => ({ x: Math.round((ORIGIN.x + x * KM_PER_CELL) * 1000) / 1000 + 0, y: Math.round((ORIGIN.y + y * KM_PER_CELL) * 1000) / 1000 + 0 });
+// 都市圏の中心の大都市「湾岸」（本町の南西。地理ビューで名前が駅名と重ならない所）を県の中心にする（県が1つなので県の範囲は変わらない）
+const wanganPos = geoOf(-2, 3);
+const wanganCell = Math.floor(wanganPos.y / analysis.cellKm) * analysis.width + Math.floor(wanganPos.x / analysis.cellKm);
+const wanganId = `city_${world.cities.length + 1}`;
+const region0 = analysis.regionMap[wanganCell];
+world.cities.push({
+  id: wanganId, name: '湾岸', reading: 'わんがん', names: { en: romanize('わんがん') }, pos: wanganPos,
+  population: 1500000, kind: 'metropolis', ...(region0 >= 0 ? { regionId: world.regions[region0].id } : {}),
+});
+if (world.regions.length === 1) world.regions[0] = { ...world.regions[0], name: '湾岸', reading: 'わんがん', names: { en: romanize('わんがん') }, capitalCityId: wanganId };
+const stationGeo = {};
+for (const st of store.getState().stations) stationGeo[st.id] = geoOf(st.schematic.x, st.schematic.y);
+d({ type: 'world/set', world, stationGeo });
+
+// 表示位置：路線図は既定のまま（初めて開いたときに、画面の大きさに合わせて全体を表示する）。
+// 地理ビューは地形の全体ではなく、路線網のまわりを出す
+const net = geoOf(1.5, -3);
+d({ type: 'project/view', view: 'geo', state: { cx: net.x * GEO_UNIT, cy: net.y * GEO_UNIT, zoom: 0.3 }, silent: true });
 
 const out = { ...store.getState(), updatedAt: NOW };
 const problems = checkIntegrity(out);

@@ -2,6 +2,7 @@
 // 前後の駅は、左＝起点側・右＝終点側。終端の駅は片側だけ、環状線は一周でつなぐ。
 // 信号場・貨物駅・車両基地は旅客の駅ではないので、前後の駅には出さずに飛ばす。
 import { stopNumbers, prefixOf, fullCode } from './numbering.js';
+import { readingForDisplay } from './romaji.js';
 
 /** @typedef {import('./schema.js').Project} Project */
 /** @typedef {import('./schema.js').Line} Line */
@@ -95,7 +96,7 @@ export function buildSignboard(p, stationId, lineId) {
     return {
       id: s.id,
       name: s.name,
-      reading: s.reading || '',
+      reading: readingForDisplay(s.reading),
       en: (s.names && s.names.en) || '',
       subName: s.subName || '',
       others: Object.entries(s.names || {}).filter(([lang, v]) => lang !== 'en' && lang !== mapLang && v).map(([, v]) => v),

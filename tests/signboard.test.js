@@ -142,3 +142,14 @@ test('駅名標：読み込んだデータに設定が無ければ既定で補�
   delete p.style.signboard;
   assert.equal(normalizeProject(p).style.signboard.template, 'band');
 });
+
+test('駅名標：よみの語の区切り（「・」と空白）は表示しない', () => {
+  const { store, ids } = line(['あ', 'い', 'う']);
+  store.dispatch({ type: 'station/update', stationId: ids[1], fields: { name: '市役所前', reading: 'しやくしょ・まえ' } });
+  store.dispatch({ type: 'station/update', stationId: ids[2], fields: { reading: 'みなと みらい' } });
+  const sb = buildSignboard(store.getState(), ids[1]);
+  assert.equal(sb.station.reading, 'しやくしょまえ');
+  assert.equal(sb.next.reading, 'みなとみらい');
+  // 英字は区切りのとおり
+  assert.equal(store.getState().stations.find((s) => s.id === ids[1]).names.en, 'Shiyakusho-mae');
+});
