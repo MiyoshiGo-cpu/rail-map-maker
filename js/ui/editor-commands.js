@@ -13,6 +13,8 @@ import { openExportSheet } from './export-view.js';
 import { exportTarget } from './exporter.js';
 import { preparePrint, cleanupPrint } from './print.js';
 import { openTerrainDialog } from './terrain-dialog.js';
+import { confirmDialog } from './dialog.js';
+import { autoSchematic } from '../core/auto-schematic.js';
 
 const MOBILE = '(max-width: 899.98px)';
 
@@ -23,6 +25,7 @@ const MOBILE = '(max-width: 899.98px)';
  *   canvasView: ReturnType<typeof import('./canvas-view.js').createCanvasView>,
  *   getViewScene: (view: string) => any,
  *   revealGeo?: (g: { x: number, y: number }) => void,
+ *   showSchematic?: () => void,
  *   onExit: () => void,
  * }} ctx
  */
@@ -143,14 +146,28 @@ export function createEditorCommands(ctx) {
     toast(t('terrain.done', { sec: (res.ms / 1000).toFixed(1) }));
   }
 
+  /** 地理の配置から路線図を作り直す（確認してから。作る前に復元ポイントを作る。1手で取り消せる） */
+  async function autoLayout() {
+    const ok = await confirmDialog({ title: t('autoSchematic.title'), message: t('autoSchematic.confirm'), okLabel: t('autoSchematic.ok') });
+    if (!ok) return;
+    checkpoint('autoSchematic');
+    const { positions } = autoSchematic(store.getState());
+    store.dispatch({ type: 'station/autoLayout', positions });
+    if (ctx.showSchematic) ctx.showSchematic();
+    toast(t('autoSchematic.done', { count: Object.keys(positions).length }));
+  }
+
   /** プロジェクト名のメニューと「その他」のメニュー */
   function menuItems() {
-    const noWorld = store.getState().world.mode === 'none';
+    const p = store.getState();
+    const noWorld = p.world.mode === 'none';
+    const canAuto = p.world.mode === 'fictional' && p.stations.length > 0;
     return [
       { label: t('editor.export'), onSelect: openExport },
       { label: t('search.title'), onSelect: search },
       { label: t('check.title'), onSelect: () => es.set({ drawer: 'check' }) },
       ...(noWorld ? [{ label: t('terrain.addTitle'), onSelect: addTerrain }] : []),
+      ...(canAuto ? [{ label: t('autoSchematic.title'), onSelect: autoLayout }] : []),
       { separator: true },
       { label: t('settings.title'), onSelect: settings },
       { label: t('help.title'), onSelect: openHelp },
@@ -169,6 +186,7 @@ export function createEditorCommands(ctx) {
     settings,
     menuItems,
     addTerrain,
+    autoLayout,
     dispose() {
       window.removeEventListener('beforeprint', onBeforePrint);
       clearInterval(timer);

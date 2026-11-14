@@ -164,6 +164,28 @@ export const stationReducers = {
     });
   },
 
+  /**
+   * 路線図を作り直す（地理から路線図を作る）{ positions: { [id]: { x, y } } }。
+   * 駅を置き直し、路線図の経由点・曲がり方と、置き直した駅の札の位置（自動以外・ずらし）を消す
+   */
+  'station/autoLayout'(tx, { positions }) {
+    stationReducers['station/place'](tx, { positions });
+    tx.state.lines.forEach((line, li) => {
+      line.sections.forEach((sec, si) => {
+        if (sec && (sec.schematicVia !== undefined || sec.schematicBend !== undefined)) {
+          tx.merge(['lines', li, 'sections', si], { schematicVia: undefined, schematicBend: undefined });
+        }
+      });
+    });
+    tx.state.stations.forEach((st, i) => {
+      const lb = st.label && st.label.schematic;
+      if (!positions[st.id] || !lb) return;
+      if (lb.pos !== 'auto' || lb.dx !== undefined || lb.dy !== undefined) {
+        tx.merge(['stations', i, 'label', 'schematic'], { pos: 'auto', dx: undefined, dy: undefined });
+      }
+    });
+  },
+
   /** { ids } → 一緒に消えた系統の数 */
   'station/delete'(tx, { ids }) {
     return deleteStationsFrom(tx, ids);

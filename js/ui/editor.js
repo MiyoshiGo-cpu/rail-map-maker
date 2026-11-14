@@ -435,7 +435,12 @@ export function createEditor(opt) {
     cleanups.push(() => dataView.dispose());
 
     // ---------- 書き出し・復元ポイント・検索・チェック ----------
-    commands = createEditorCommands({ store, es, canvasView, getViewScene: (v) => (v === 'geo' ? others.geo.exportScene() : others.get(v)?.getScene()) || null, revealGeo: (g) => others.geo.reveal(g), onExit: () => opt.onExit() });
+    commands = createEditorCommands({ store, es, canvasView, getViewScene: (v) => (v === 'geo' ? others.geo.exportScene() : others.get(v)?.getScene()) || null, revealGeo: (g) => others.geo.reveal(g), onExit: () => opt.onExit(),
+      // 地理から路線図を作ったら、路線図を開いて全体を見せる
+      showSchematic: () => {
+        changeView('schematic');
+        requestAnimationFrame(() => canvasView.fitAll());
+      } });
     cleanups.push(() => commands.dispose());
     const checkView = createCheckView({ store, close: () => es.set({ drawer: null }), go: (target) => commands.goTo(target), refresh: () => render() });
 

@@ -41,4 +41,5 @@ export const files = [
   'geo-edit.test.js',
   'geo-symbols.test.js',
   'structure-suggest.test.js',
+  'auto-schematic.test.js',
 ];

@@ -32,6 +32,7 @@ export default {
   'terrain.summary': '地形：{shape}・{km}km 四方・都市 {cities}・{admin1} {regions}',
   'newProject.world.fictional': '架空の地形（自動で作る）',
   'restore.reason.terrain': '地形を付ける前',
+  'restore.reason.autoSchematic': '地理から路線図を作る前',
 
   // 地理ビュー（§5.4）
   'views.geo': '地理',
@@ -59,6 +60,11 @@ export default {
   'via.geoCount': '地理の経由点 {count}個。選択ツールで四角い点をドラッグすると動かせます（長押しで消せます）。',
   'geo.loading': '地形を読み込んでいます…',
   'geo.failed': '地形を表示できませんでした。画面を開き直してください。',
+  // 地理から路線図を作る
+  'autoSchematic.title': '地理から路線図を作る',
+  'autoSchematic.confirm': '地理ビューの駅の位置をもとに、路線図の駅を格子の上に並べ直します（線は水平・垂直・45°）。今の路線図の配置は置き換わり、路線図の経由点・曲がり方と駅名の札の位置も自動に戻ります（地理ビューは変わりません）。作る前に復元ポイントを作るので、あとから戻せます。',
+  'autoSchematic.ok': '作る',
+  'autoSchematic.done': '路線図を作りました（駅{count}）。↶ で元に戻せます',
   // 地図に描く文字（地図の言語）
   'map.scale.km': '{n} km',
   'map.scale.mi': '{n} mi',
